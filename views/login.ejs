@@ -1,52 +1,7 @@
-<% this.title = '登录' %>
-<% include header %>
-<div class="ui error message" id="error" hidden></div>
-<div class="ui middle aligned center aligned grid">
-  <div class="row">
-    <div class="column" style="max-width: 450px">
-      <h2 class="ui image header">
-        <div class="content" style="margin-bottom: 10px; ">
-          登录
-        </div>
-      </h2>
-      <form class="ui large form">
-        <div class="ui existing segment">
-          <div class="field">
-            <div class="ui left icon input">
-              <i class="user icon"></i>
-              <input name="email" placeholder="用户名" type="text" id="username" onkeydown="key_login(event)">
-            </div>
-          </div>
-          <div class="field">
-            <div class="ui left icon input">
-              <i class="lock icon"></i>
-              <input name="password" placeholder="密码" type="password" id="password" onkeydown="key_login(event)">
-            </div>
-          </div>
-          <div class="ui fluid large submit button" id="login">登录</div>
-        </div>
-
-        <div class="ui error message"></div>
-
-      </form>
-
-      <div class="ui message">
-        <a href="/sign_up">注册账号</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <a href="<%= syzoj.utils.makeUrl(['forget']) %>">忘记密码</a>
-      </div>
-    </div>
-  </div>
-</div>
 <script src="<%- lib('blueimp-md5/2.10.0/js/md5.min.js') %>"></script>
 <script type="text/javascript">
-function key_login(event) {
-    if (event.keyCode == 13) {
-        login();
-    }
-}
 function show_error(error) {
-    $("#error").text(error);
-    $("#error").show();
+  $("#global_banner #msg").text(error).fadeIn("slow").delay(2000).fadeOut();
 }
 function success(session_id) {
     window.location.href = location.protocol + '//' + location.host + <%- serializejs(req.query.url || '/') %>;
@@ -97,4 +52,3 @@ $(document).ready(function() {
     });
 });
 </script>
-<% include footer %>

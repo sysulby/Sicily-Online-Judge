@@ -1,31 +1,66 @@
-<% this.title = '注册' %>
 <% include header %>
-<div class="padding">
-  <h1>注册</h1>
-  <div class="ui error message" id="error" data-am-alert hidden>
-    <p id="error_info"></p>
-  </div>
-          <form class="ui form">
-                <div class="field">
-                    <label for="username">用户名</label>
-                    <input type="text" placeholder="" id="username">
-                </div>
-                <div class="field">
-                    <label for="email">邮箱</label>
-                    <input type="email" placeholder="" id="email">
-                </div>
-                <div class="two fields">
-                    <div class="field">
-                    <label class="ui header">密码</label>
-                      <input type="password" placeholder="" id="password1">
-                    </div>
-                    <div class="field">
-                      <label class="ui header">确认密码</label>
-                      <input type="password" placeholder="" id="password2">
-                    </div>
-                </div>
-                <a id="sign_up" class="ui button" href="javascript:submit();">注册</a>
-            </form>
+<div class="background_container">
+    <div class="ui-corner-all ui-widget-content">
+        <table width="900" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td width="300" height="100" bgcolor="#F0F0F0"><img src="/sicily/images/register_01.jpg" width="300" height="100"></td>
+                <td rowspan="3" align="center" valign="top" background="/sicily/images/register_02.jpg">
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                    <form id="setting_form">
+                        <table class="tblcontainer ui-widget-content ui-corner-all ui-widget" border="0" cellpadding="4" cellspacing="2">
+                            <tr>
+                                <th class="ui-widget-header" height="20" colspan="2" align="center"><b>注册新用户</b></th>
+                            </tr>
+                            <tr>
+                                <td width="130" height="20" align="right">用户名 &nbsp;</td>
+                                <td width="220" align="left">&nbsp;
+                                    <input type="text" id="username" size="30" maxlength="30">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td height="20" align="right">密码 &nbsp;</td>
+                                <td align="left">&nbsp;
+                                    <input type="password" id="password1" size="30" maxlength="20">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td height="20" align="right">确认密码 &nbsp;</td>
+                                <td align="left">&nbsp;
+                                    <input type="password" id="password2" size="30" maxlength="20">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="130" height="20" align="right">电子邮箱 &nbsp;</td>
+                                <td width="220" align="left">&nbsp;
+                                    <input type="email" id="email" size="30" maxlength="30">
+                                </td>
+                            </tr>
+                            <tr align="center">
+                                <td height="20" colspan="2" align="center">
+                                    <a id="sign_up" class="ui button" href="javascript:submit();">注册</a>
+                                    <div class="ui-state-error ui-widget ui-corner-all" id="error" data-am-alert hidden>
+                                        <p id="error_info"></p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                </td>
+            </tr>
+            <tr>
+                <td height="282" bgcolor="#F0F0F0"><img src="/sicily/images/register_03.jpg" width="300" height="282">
+                </td>
+            </tr>
+            <tr>
+                <td height="100" bgcolor="#F0F0F0"><img src="/sicily/images/register_04.jpg" width="300" height="100">
+                </td>
+            </tr>
+        </table>
+
+    </div>
 </div>
 <script src="<%- lib('blueimp-md5/2.10.0/js/md5.min.js') %>"></script>
 <script type="text/javascript">

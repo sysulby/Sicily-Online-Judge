@@ -44,6 +44,7 @@ app.get('/find_user', async (req, res) => {
 });
 
 // Login
+/*
 app.get('/login', async (req, res) => {
   if (res.locals.user) {
     res.render('error', {
@@ -53,6 +54,7 @@ app.get('/login', async (req, res) => {
     res.render('login');
   }
 });
+*/
 
 // Sign up
 app.get('/sign_up', async (req, res) => {

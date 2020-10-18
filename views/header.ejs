@@ -1,11 +1,19 @@
 <% include util %>
-<!DOCTYPE html>
-<html lang="zh-CN" style="position: fixed; width: 100%; overflow: hidden; ">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
 <head>
-    <meta charset="utf-8">
-    <meta content="IE=edge" http-equiv="X-UA-Compatible">
-    <meta name="viewport" content="width=1200">
-    <title><%= title %> - <%= syzoj.config.title %></title>
+    <title>Sicily Online Judge</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="shortcut icon" href="/sicily/images/favicon.ico" />
+    <link type = "text/css" rel = "stylesheet" href="/sicily/css/global.css"/>
+    <link type = "text/css" rel = "stylesheet" href="/sicily/css/sicilychan/static.css"/>
+    <link type = "text/css" rel = "stylesheet" href="/sicily/css/project_hord.css"/>
+    <link type = "text/css" rel = "stylesheet" href="/sicily/css/jquery-ui-1.8.6.custom.css"/>
+    <script type="text/javascript" src="/sicily/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/sicily/js/jquery-ui-1.8.6.custom.min.js"></script>
+    <script type="text/javascript" src="/sicily/js/nav.js"></script>
+    <script type="text/javascript" src="/sicily/js/sicilychan/static.js"></script>
+    <script type="text/javascript"><%= "var is_logged = " + (user != null) + ";" %></script>
     <link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
     <link href="<%- selfLib('tomorrow.css') %>" rel="stylesheet">
     <link href="<%- selfLib('math.css') %>" rel="stylesheet">
@@ -46,74 +54,106 @@
     </script>
     <% } %>
 </head>
-<body style="position: relative; margin-top: 49px; height: calc(100% - 49px); overflow-y: overlay; ">
-    <div class="ui fixed borderless menu" style="position: fixed; height: 49px; ">
-        <div class="ui container">
-            <%
-            if (syzoj.config.logo.url) {
-              let width = syzoj.config.logo.width ? syzoj.config.logo.width + 'px' : 'auto';
-              let height = syzoj.config.logo.height ? syzoj.config.logo.height + 'px' : 'auto';
-            %>
-            <a class="header item" href="/"><img src="<%= syzoj.config.logo.url %>" style="width: <%= width %>; height: <%= height %>; "></a>
-            <% } else { %>
-            <a class="header item" href="/"><span style="font-family: 'Exo 2'; font-size: 1.5em; font-weight: 600; "><%= syzoj.config.title %></span></a>
-            <% } %>
-            <a class="item<% if (active === '') { %> active<% } %>" href="/"><i class="home icon"></i> 首页</a>
-            <a class="item<% if (active.startsWith('problem')) { %> active<% } %>" href="/problems"><i class="list icon"></i> 题库</a>
-            <a class="item<% if (active.startsWith('contest')) { %> active<% } %>" href="/contests"><i class="calendar icon"></i> 比赛</a>
-            <a class="item<% if (active.startsWith('submission')) { %> active<% } %>" href="/submissions"><i class="tasks icon"></i> 评测</a>
-            <a class="item<% if (active.startsWith('ranklist')) { %> active<% } %>" href="/ranklist"><i class="signal icon"></i> 排名</a>
-            <a class="item<% if (active.startsWith('discussion') || active.startsWith('article')) { %> active<% } %>" href="/discussion/global"><i class="comments icon"></i> 讨论</a>
-            <a class="item<% if (active.startsWith('help')) { %> active<% } %>" href="/help"><i class="help circle icon"></i> 帮助</a>
-            <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
-              <a id="back_to_contest" class="item" href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>"><i class="arrow left icon"></i> 返回比赛</a>
-            <% } %>
-            <div class="right menu">
-              <% if (user) { %>
-              <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" style="color: inherit; ">
-              <div class="ui simple dropdown item">
-                <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %> <i class="dropdown icon"></i>
-                <div class="menu">
-                  <a class="item" href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>"><i class="edit icon"></i>修改资料</a>
-                  <% if (user.is_admin) { %>
-                    <a class="item" href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>"><i class="settings icon"></i>后台管理</a>
-                    <div class="ui basic modal" id="modal-restart">
-                      <div class="ui icon header">
-                        <i class="redo icon"></i>
-                        <p style="margin-top: 15px; ">重启服务</p>
-                      </div>
-                      <div class="content" style="text-align: center; ">
-                        <p>确认重新启动 SYZOJ Web 服务吗？</p>
-                      </div>
-                      <div class="actions">
-                        <div class="ui red basic cancel inverted button">
-                          <i class="remove icon"></i>
-                          否
-                        </div>
-                        <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['admin', 'restart'], { url: req.query['url'] || req.originalUrl }) %>">
-                          <i class="checkmark icon"></i>
-                          是
-                        </a>
-                      </div>
-                    </div>
-                    <a class="item" href="#" onclick="$('#modal-restart').modal('show')"><i class="redo icon"></i>重启服务</a>
-                  <% } %>
-                  <a class="item" href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>"><i class="power icon"></i>注销</a>
-                </div>
+<% include login %>
+<body>
+  <div id="global_banner_container">
+    <div id="global_banner">
+      <div id="sicily_logo">
+        <a href="/"><img src="<%= syzoj.config.logo.url %>" alt="Sicily"></a>
+      </div>
+      <div id="topbar">
+      </div>
+      <div id="loginbox">
+        <% if (user) { %>
+          <% if (user.is_show) { %>
+            <a title="公开用户"><img src="/sicily/images/authorize2.gif" alt="公开用户" /></a>
+          <% } else { %>
+            <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户" /></a>
+          <% } %>
+          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class='nickname'>
+            <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
+          </a>
+          <% if (user.information) { %>
+            <div id="signature" class="font-content"><%= user.information %></div>
+          <% } else { %>
+            <div id="signature" class="font-content">你还没有设置任何签名^_^</div>
+          <% } %>
+          <a href="/" href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>">登出</a>
+        <% } else { %>
+          <form id="loginform" action="/api/login" method="post" name="loginform">
+            <div style="width: 0px; height: 0px; overflow: hidden"><input type="submit" /></div>
+            <div style="text-align: right">
+              <div>
+                <label for="username">用户名：</label>
+                <input name="username" type="text" id="username" size="10" maxlength="30" />
+                <label for="password">密码：</label>
+                <input name="password" type="password" id="password" size="10" maxlength="16" />
+                <!--
+                <button class='button_blue' onclick='$("#loginform").submit();return false;'>登录</button>
+                -->
+                <button class='button_blue' onclick="login()">登录</button>
               </div>
-              </a>
-                <% } else { %>
-                <div class="item">
-                    <a class="ui button" style="margin-right: 0.5em; " href="<%= syzoj.utils.makeUrl(['login'], { url: req.query['url'] || req.originalUrl }) %>">
-                        登录
-                    </a>
-                    <a class="ui primary button" href="<%= syzoj.utils.makeUrl(['sign_up'], { url: req.query['url'] || req.originalUrl }) %>">
-                        注册
-                    </a>
-                </div>
-                <% } %>
+              <div id="msg">用户名或者密码错误</div>
+              <div>
+                <input id="lsession" name="lsession" type="checkbox" checked='1' />
+                <label for="lsession">记住我的登录状态</label>
+                | <a href="/sign_up" title="注册一个新的账号" class='hord_link'>注册账号</a>
+                | <a href="<%= syzoj.utils.makeUrl(['forget']) %>" title="点击这里找回密码" class='hord_link'>忘记密码</a>
+              </div>
             </div>
-        </div>
+          </form>
+        <% } %>
+      </div>
     </div>
-    <div style="margin-top: 28px; ">
-    <div class="ui main container">
+  </div>
+
+  <div class="clear"></div>
+  <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
+    <div id="contest_box">
+      <h1 style="margin: 0px"><?= $cinfo['title'] ?></h1>
+      <div id="contestClock"></div>
+      <div id="hintClock"></div>
+    </div>
+    <script type="text/javascript">
+      $("#topbar").append($("#contest_box"));
+    </script>
+  <% } else { %>
+    <div style="display:none">
+      <div id="searchbox">
+        <form action="<%= syzoj.utils.makeUrl(['problems', 'search']) %>" method="get">
+          <div class="ui search" style="width: 100%; ">
+            <div class="ui left icon input" style="width: 100%; ">
+              <input class="prompt" style="width: 100%; " type="text" placeholder="ID / 题目名 …" name="keyword">
+              <i class="search icon"></i>
+            </div>
+            <div class="results" style="width: 100%; "></div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script type="text/javascript">
+      $("#topbar").append($("#searchbox"));
+    </script>
+  <% } %>
+
+  <div class="topmenu-container">
+    <div class="topmenu ui-corner-all">
+      <ul>
+        <li><a href="/">主页</a></li>
+        <li><a href="/problems">题目</a></li>
+        <li><a href="/contests">比赛</a></li>
+        <li><a href="/courses">课程</a></li>
+        <li><a href="/ranklist">排名</a></li>
+        <% if (user) { %>
+          <li><a href="/submissions">提交状态</a></li>
+          <li><a href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>">设定</a></li>
+        <% } %>
+          <li><a href="/discussion/global">讨论</a></li>
+        <% if (user && user.is_admin) { %>
+          <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a>
+        <% } %>
+      </ul>
+    <div class="rssbut" id="toggleWidth" title="更改窗口宽度">&lt;-&gt;</div>
+  </div>
+</div>
+<div class="main_frame">
