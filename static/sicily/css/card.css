@@ -1,0 +1,102 @@
+.entry .card {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    table-layout: fixed;
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: collapse;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    transition: box-shadow 0.2s ease;
+}
+.entry .card:hover {
+    box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+}
+
+.entry .card .c {
+    background-color: #fff;
+    background-repeat: no-repeat;
+    border: 0;
+    padding: 0;
+}
+
+.entry .card .ctl,.entry .card .cl,.entry .card .cbl,.entry .card .ctr,.entry .card .cr,.entry .card .cbr,.entry .card .cal,.entry .card .car,.entry .card .caal,.entry .card .caar {
+    width: 0px;
+    height: 0px;
+}
+.entry .card .card-bottomrow {
+    font-size: 0;
+    line-height: 0;
+}
+.entry-main {
+    padding: 2em;
+}
+
+.headline {
+    color: #337dd4;
+    font-size: 16pt;
+    font-weight: bold;
+    margin-top: 1.25em;
+    margin-bottom: 0.75em;
+}
+
+.headline .cent
+{
+	text-align: center;	
+}
+
+
+.viceheadline{ 
+	font-weight: bold;
+	text-align: center;
+}
+
+.description {
+	font-family: Arial;
+	font-size: 12pt;
+	line-height: 15pt; 
+}
+
+.description ol{
+	margin-left: 25px;
+}
+
+.rtbar {
+	float: right;
+	font-size: 12pt;
+	font-weight: bold;
+	margin-top: 1em;
+}
+pre {
+	font-family: "Courier New", monospace;
+	font-size: 12pt;
+	line-height: 15pt;
+	overflow: auto;
+    margin: 4px;
+    padding: 1em;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    transition: box-shadow 0.2s ease;
+}
+pre:hover {
+    box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+}
+
+#container {
+	width:100%;
+	background-color:#fff;
+	/* background-image:url("../images/bg2.gif") */
+}
+
+#info_board {
+	margin-left: auto;
+	margin-right: auto;
+  border: none !important;
+}
+
+.alignleft {
+	text-align: left;
+}
+
+.alignright {
+	text-align: right;
+}

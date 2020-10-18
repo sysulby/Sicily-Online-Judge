@@ -1,0 +1,64 @@
+#center_container {
+	top: 0px;
+	position: absolute;
+	left: 50%;
+	top: 450px;
+}
+
+#judge_box {
+  padding: 2em;
+}
+.ui-progressbar  {
+  height: 1.5em;
+  margin: 1em 0;
+}
+.ui-progressbar-value {
+  transition: width 0.5s ease;
+}
+#judge_info {
+  font-size: 20px;
+}
+#status_box {
+  font-family: initial;
+  padding: 2em;
+}
+.ui-dialog {
+  border: none;
+  outline: none;
+  padding: 0;
+  padding-bottom: 2em;
+  z-index: 2;
+  box-shadow: 0 0 30px 0px rgba(0, 0, 0, 0.25);
+}
+.ui-dialog-titlebar-close {
+  display: none;
+}
+.ui-dialog .ui-dialog-buttonpane {
+  border: none;
+}
+#status_info {
+    font-size: 30px;
+}
+#status_more_info {
+  text-align: left;
+  margin-top: 2em;
+}
+.ce-info {
+  overflow: auto;
+}
+.ce-info>pre {
+  overflow: unset;
+}
+
+.Accepted {
+    color: green;
+}
+
+.Wrong {
+    color: red;
+}
+
+#source, #editor {
+  width: 100%;
+  height: 300px;
+}
