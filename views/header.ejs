@@ -4,6 +4,12 @@
 <head>
     <title>Sicily Online Judge</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
+    <link href="<%- selfLib('tomorrow.css') %>" rel="stylesheet">
+    <link href="<%- selfLib('math.css') %>" rel="stylesheet">
+    <link href="<%- selfLib('style.css') %>?20181212" rel="stylesheet">
+    <link href="<%- lib('morris.js/0.5.1/morris.css') %>" rel="stylesheet">
+    <script data-cfasync="false" src="<%- lib('jquery/3.3.1/jquery.min.js') %>"></script>
     <link rel="shortcut icon" href="/sicily/images/favicon.ico" />
     <link type = "text/css" rel = "stylesheet" href="/sicily/css/global.css"/>
     <link type = "text/css" rel = "stylesheet" href="/sicily/css/sicilychan/static.css"/>
@@ -13,12 +19,7 @@
     <script type="text/javascript" src="/sicily/js/jquery-ui-1.8.6.custom.min.js"></script>
     <script type="text/javascript" src="/sicily/js/nav.js"></script>
     <script type="text/javascript" src="/sicily/js/sicilychan/static.js"></script>
-    <script type="text/javascript"><%= "var is_logged = " + (user != null) + ";" %></script>
-    <link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
-    <link href="<%- selfLib('tomorrow.css') %>" rel="stylesheet">
-    <link href="<%- selfLib('math.css') %>" rel="stylesheet">
-    <link href="<%- selfLib('style.css') %>?20181212" rel="stylesheet">
-    <link href="<%- lib('morris.js/0.5.1/morris.css') %>" rel="stylesheet">
+    <script type="text/javascript">var is_logged = <%= user != null %>;</script>
     <% if (useLocalLibs || !syzoj.config.google_fonts || !['like-google-fonts', 'like-local', 'built-in'].includes(syzoj.config.google_fonts.type)) { %>
       <link href="<%- syzoj.utils.makeUrl(['google-fonts', 'fira-mono.css']) %>" rel="stylesheet">
       <link href="<%- syzoj.utils.makeUrl(['google-fonts', 'lato.css']) %>" rel="stylesheet">
@@ -40,7 +41,6 @@
       <link href="<%- this.builtInCdnUrl %>/google-fonts/open-sans.css" rel="stylesheet">
       <link href="<%- this.builtInCdnUrl %>/google-fonts/exo-2.css" rel="stylesheet">
     <% } %>
-    <script data-cfasync="false" src="<%- lib('jquery/3.3.1/jquery.min.js') %>"></script>
     <% if (syzoj.config.google_analytics && syzoj.config.google_analytics !== 'UA-XXXXXXXX-X') { %>
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -56,6 +56,7 @@
 </head>
 <% include login %>
 <body>
+  <div id="msg-dialog" title="提示"></div>
   <div id="global_banner_container">
     <div id="global_banner">
       <div id="sicily_logo">
@@ -66,17 +67,17 @@
       <div id="loginbox">
         <% if (user) { %>
           <% if (user.is_show) { %>
-            <a title="公开用户"><img src="/sicily/images/authorize2.gif" alt="公开用户" /></a>
+            <a title="公开用户"><img src="/sicily/images/authorize2.gif" alt="公开用户"/></a>
           <% } else { %>
-            <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户" /></a>
+            <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户"/></a>
           <% } %>
-          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class='nickname'>
+          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class="nickname" style="margin-left: 0px;">
             <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
           </a>
           <% if (user.information) { %>
-            <div id="signature" class="font-content"><%= user.information %></div>
+            <div id="signature"><%= user.information %></div>
           <% } else { %>
-            <div id="signature" class="font-content">你还没有设置任何签名^_^</div>
+            <div id="signature">你还没有设置任何签名^_^</div>
           <% } %>
           <a href="/" href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>">登出</a>
         <% } else { %>
@@ -91,14 +92,14 @@
                 <!--
                 <button class='button_blue' onclick='$("#loginform").submit();return false;'>登录</button>
                 -->
-                <button class='button_blue' onclick="login()">登录</button>
+                <button class="button_blue" onclick="login()">登录</button>
               </div>
               <div id="msg">用户名或者密码错误</div>
               <div>
-                <input id="lsession" name="lsession" type="checkbox" checked='1' />
+                <input id="lsession" name="lsession" type="checkbox" checked="1" />
                 <label for="lsession">记住我的登录状态</label>
-                | <a href="/sign_up" title="注册一个新的账号" class='hord_link'>注册账号</a>
-                | <a href="<%= syzoj.utils.makeUrl(['forget']) %>" title="点击这里找回密码" class='hord_link'>忘记密码</a>
+                | <a href="/sign_up" title="注册一个新的账号">注册账号</a>
+                | <a href="<%= syzoj.utils.makeUrl(['forget']) %>" title="点击这里找回密码">忘记密码</a>
               </div>
             </div>
           </form>
@@ -132,15 +133,27 @@
       $("#topbar").append($("#contest_box"));
     </script>
   <% } else { %>
+    <script>
+      $(function () {
+        $('.ui.search').search({
+          debug: true,
+          apiSettings: {
+            url: '/api/v2/search/problems/{query}',
+            cache: false
+          },
+          fields: {
+            title: 'name'
+          }
+        });
+      });
+    </script>
     <div style="display:none">
       <div id="searchbox">
-        <form action="<%= syzoj.utils.makeUrl(['problems', 'search']) %>" method="get">
-          <div class="ui search" style="width: 100%; ">
-            <div class="ui left icon input" style="width: 100%; ">
-              <input class="prompt" style="width: 100%; " type="text" placeholder="ID / 题目名 …" name="keyword">
-              <i class="search icon"></i>
-            </div>
-            <div class="results" style="width: 100%; "></div>
+        <form action="<%= syzoj.utils.makeUrl(['problems', 'search']) %>" method="get" id="search_form">
+          <div class="ui search">
+            <input class="prompt search_bar" type="text" placeholder="搜索题目编号或者标题" name="keyword">
+            <button class="button_blue" onclick="$(#search_form).submit();return false">搜索</button>
+            <div class="results"></div>
           </div>
         </form>
       </div>
@@ -156,13 +169,13 @@
         <li><a href="/">主页</a></li>
         <li><a href="/problems">题目</a></li>
         <li><a href="/contests">比赛</a></li>
-        <li><a href="/courses">课程</a></li>
+        <li><a href="/contests">课程</a></li>
         <li><a href="/ranklist">排名</a></li>
         <% if (user) { %>
           <li><a href="/submissions">提交状态</a></li>
           <li><a href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>">设定</a></li>
         <% } %>
-          <li><a href="/discussion/global">讨论</a></li>
+        <li><a href="/discussion/global">讨论</a></li>
         <% if (user && user.is_admin) { %>
           <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a>
         <% } %>
