@@ -42,7 +42,7 @@ function GetCookie (name) {
 }
 
 function LoginSubmit() {
-    var lsession = $("#lsession:checked").val() ? 1 : 0;
+	var lsession = $("#lsession:checked").val() ? 1 : 0;
 	$.post("action.php?act=Login", 
 	{
 		"username": $("#loginform #username").val(), 
@@ -86,14 +86,11 @@ function ToggleWidth() {
 }
 
 function SetWidth(isWide) {
-  $('.main_frame').removeClass('wide normal');
 	if (isWide) {
 		$(".main_frame").addClass('wide');
 	} else {
-		$(".main_frame").addClass('normal');
+		$(".main_frame").removeClass('wide');
 	}
-	// hotfix for datatable
-	$(".advtable_fix").css("width", "100%");
 }
 
 function InitWidth() {
