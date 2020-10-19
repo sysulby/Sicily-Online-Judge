@@ -109,8 +109,22 @@
 
   <div class="clear"></div>
   <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
+    <script type="text/javascript">
+      var startTime = new Date(<%= contest.start_time %> * 1000);
+      var endTime = new Date(<%= contest.end_time %> * 1000);
+      var currentTime = new Date();
+      var msg_pending = '比赛尚未开始';
+      var msg_contestends = '比赛还剩 ';
+      var msg_contestfinished = '比赛结束';
+      var msg_months = ' 月 ';
+      var msg_days = ' 天 ';
+      var msg_hours = ' 小时 ';
+      var msg_mins = ' 分钟 ';
+      var msg_secs = ' 秒 ';
+    </script>
+    <script type="text/javascript" src="/sicily/js/contest.js"></script>
     <div id="contest_box">
-      <h1 style="margin: 0px"><?= $cinfo['title'] ?></h1>
+      <h1 style="margin: 0px"><%= contest.title %></h1>
       <div id="contestClock"></div>
       <div id="hintClock"></div>
     </div>
