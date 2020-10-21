@@ -67,9 +67,9 @@
       <div id="loginbox">
         <% if (user) { %>
           <% if (user.is_show) { %>
-            <a title="公开用户"><img src="/sicily/images/authorize2.gif" alt="公开用户"/></a>
+            <a title="公开用户"><img src="/sicily/images/authorize2.gif" alt="公开用户" /></a>
           <% } else { %>
-            <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户"/></a>
+            <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户" /></a>
           <% } %>
           <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class="nickname" style="margin-left: 0px;">
             <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
@@ -180,7 +180,7 @@
           <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a>
         <% } %>
       </ul>
-    <div class="rssbut" id="toggleWidth" title="更改窗口宽度">&lt;-&gt;</div>
+      <div class="rssbut" id="toggleWidth" title="更改窗口宽度">&lt;-&gt;</div>
+    </div>
   </div>
-</div>
-<div class="main_frame">
+  <div class="main_frame">
