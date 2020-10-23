@@ -4,7 +4,7 @@ function show_error(error) {
   $("#global_banner #msg").text(error).fadeIn("slow").delay(2000).fadeOut();
 }
 function success(session_id) {
-    window.location.href = location.protocol + '//' + location.host + <%- serializejs(req.query.url || '/') %>;
+    window.location.reload();
 }
 function login() {
     password = md5($("#password").val() + "syzoj2_xxx");

@@ -4,11 +4,13 @@
 <head>
     <title>Sicily Online Judge</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <!--
     <link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
     <link href="<%- selfLib('tomorrow.css') %>" rel="stylesheet">
     <link href="<%- selfLib('math.css') %>" rel="stylesheet">
     <link href="<%- selfLib('style.css') %>?20181212" rel="stylesheet">
     <link href="<%- lib('morris.js/0.5.1/morris.css') %>" rel="stylesheet">
+    -->
     <script data-cfasync="false" src="<%- lib('jquery/3.3.1/jquery.min.js') %>"></script>
     <link rel="shortcut icon" href="/sicily/images/favicon.ico" />
     <link type = "text/css" rel = "stylesheet" href="/sicily/css/global.css"/>
@@ -54,7 +56,6 @@
     </script>
     <% } %>
 </head>
-<% include login %>
 <body>
   <div id="msg-dialog" title="提示"></div>
   <div id="global_banner_container">
@@ -81,18 +82,15 @@
           <% } %>
           <a href="/" href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>">登出</a>
         <% } else { %>
-          <form id="loginform" action="/api/login" method="post" name="loginform">
-            <div style="width: 0px; height: 0px; overflow: hidden"><input type="submit" /></div>
+          <% include login %>
+          <form id="loginform" name="loginform">
             <div style="text-align: right">
               <div>
                 <label for="username">用户名：</label>
                 <input name="username" type="text" id="username" size="10" maxlength="30" />
                 <label for="password">密码：</label>
                 <input name="password" type="password" id="password" size="10" maxlength="16" />
-                <!--
-                <button class='button_blue' onclick='$("#loginform").submit();return false;'>登录</button>
-                -->
-                <button class="button_blue" onclick="login()">登录</button>
+                <button class="button_blue" onclick="login();return false;">登录</button>
               </div>
               <div id="msg">用户名或者密码错误</div>
               <div>
