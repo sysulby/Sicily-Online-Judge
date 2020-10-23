@@ -13,8 +13,18 @@ app.get('/ranklist', async (req, res) => {
       throw new ErrorMessage('错误的排序参数。');
     }
     let paginate = syzoj.utils.paginate(await User.countForPagination({ is_show: true }), req.query.page, syzoj.config.page.ranklist);
-    let ranklist = await User.queryPage(paginate, { is_show: true }, { [sort]: order.toUpperCase() });
-    await ranklist.forEachAsync(async x => x.renderInformation());
+    // let ranklist = await User.queryPage(paginate, { is_show: true }, { [sort]: order.toUpperCase() });
+    // await ranklist.forEachAsync(async x => x.renderInformation());
+
+    let query = User.createQueryBuilder();
+    if (res.locals.user == null || !res.locals.user.is_admin) {
+      query.where({ is_show: true });
+    }
+    query.orderBy(sort, order.toUpperCase());
+    if (sort == 'ac_num') {
+      query.addOrderBy('submit_num', order == 'desc' ? 'ASC': 'DESC');
+    }
+    let ranklist = await User.queryPage(paginate, query);
 
     res.render('ranklist', {
       ranklist: ranklist,
