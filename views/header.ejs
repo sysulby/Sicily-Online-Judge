@@ -6,11 +6,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <!--
     <link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
+    -->
     <link href="<%- selfLib('tomorrow.css') %>" rel="stylesheet">
     <link href="<%- selfLib('math.css') %>" rel="stylesheet">
     <link href="<%- selfLib('style.css') %>?20181212" rel="stylesheet">
     <link href="<%- lib('morris.js/0.5.1/morris.css') %>" rel="stylesheet">
-    -->
     <script data-cfasync="false" src="<%- lib('jquery/3.3.1/jquery.min.js') %>"></script>
     <link rel="shortcut icon" href="/sicily/images/favicon.ico" />
     <link type = "text/css" rel = "stylesheet" href="/sicily/css/global.css"/>
@@ -72,7 +72,7 @@
           <% } else { %>
             <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户" /></a>
           <% } %>
-          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class="nickname" style="margin-left: 0px;">
+          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class="nickname">
             <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
           </a>
           <% if (user.information) { %>
@@ -170,7 +170,11 @@
         <li><a href="/contests">课程</a></li>
         <li><a href="/ranklist">排名</a></li>
         <% if (user) { %>
-          <li><a href="/submissions">提交状态</a></li>
+          <% if (user.is_admin) { %>
+            <li><a href="/submissions">提交状态</a></li>
+          <% } else { %>
+            <li><a href="/submissions?submitter=<%= user.username %>">提交状态</a></li>
+          <% } %>
           <li><a href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>">设定</a></li>
         <% } %>
         <li><a href="/discussion/global">讨论</a></li>
