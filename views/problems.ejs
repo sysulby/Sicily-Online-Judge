@@ -1,10 +1,12 @@
 <% include header %>
-<div style="margin-top: 10px; margin-bottom: 20px; ">
-  <% include page %>
-</div>
 <% if (user && user.is_admin) { %>
-  <a href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit']) %>">新建题目</a>
-  <a href="<%= syzoj.utils.makeUrl(['problem', 0, 'import']) %>">导入题目</a>
+  <fieldset>
+    <legend>Basic Operation</legend>
+    <a href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit']) %>">[新建题目]</a>
+    <a href="<%= syzoj.utils.makeUrl(['problem', 0, 'import']) %>">[导入题目]</a>
+  </fieldset>
+<% } else { %>
+  <br>
 <% } %>
 <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
   <thead>
@@ -39,7 +41,9 @@
           <td height=25 align="center"><%= problem.id %></td>
           <td class="left aligned">
             <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['problem', problem.id]) %>"><%= problem.title %>
-              <% if (!problem.is_public) { %><font color=red>[未公开]<% } %>
+              <% if (problem.type === 'interaction') { %> [交互]<% } %>
+              <% if (problem.type === 'submit-answer') { %> [提交答案]<% } %>
+              <% if (!problem.is_public) { %><font color=red> [未公开]</font><% } %>
             </a>
           </td>
           <td align="center"><%= problem.ac_num %></td>
@@ -50,5 +54,7 @@
   <% } %>
   </tbody>
 </table>
+<br>
+<% include page %>
 <br>
 <% include footer %>

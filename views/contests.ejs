@@ -1,8 +1,13 @@
 <% include header %>
-<h1>当前比赛</h1>
 <% if (user && user.is_admin) { %>
-  <a href="<%= syzoj.utils.makeUrl(['contest', 0, 'edit']) %>">新建比赛</a>
+  <fieldset>
+    <legend>Basic Operation</legend>
+    <a href="<%= syzoj.utils.makeUrl(['contest', 0, 'edit']) %>">[新建比赛]</a>
+  </fieldset>
+<% } else { %>
+  <h1>当前比赛</h1>
 <% } %>
+
 <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
   <thead>
     <tr align="center" class="ui-widget-header">
@@ -38,4 +43,5 @@
 </table>
 <br>
 <% include page %>
+<br>
 <% include footer %>
