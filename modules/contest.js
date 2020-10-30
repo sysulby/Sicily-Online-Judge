@@ -497,11 +497,11 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
       throw new ErrorMessage('比赛尚未开始。');
     }
 
+    problem.state = await problem.getJudgeState(res.locals.user, true);
     problem.specialJudge = await problem.hasSpecialJudge();
 
     await syzoj.utils.markdown(problem, ['description', 'input_format', 'output_format', 'example', 'limit_and_hint']);
 
-    let state = await problem.getJudgeState(res.locals.user, false);
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
 
     await problem.loadRelationships();
@@ -510,7 +510,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
       pid: pid,
       contest: contest,
       problem: problem,
-      state: state,
+      lastState: await problem.getJudgeState(res.locals.user, false),
       lastLanguage: res.locals.user ? await res.locals.user.getLastSubmitLanguage() : null,
       testcases: testcases
     });

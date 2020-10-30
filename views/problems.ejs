@@ -27,9 +27,9 @@
       <tr>
           <% if (user) { %>
               <td align="center">
-              <% if (problem.judge_state) { %>
-                <a href="<%= syzoj.utils.makeUrl(['submission', problem.judge_state.id]) %>">
-                  <% if (problem.judge_state.status != "Accepted") { %>
+              <% if (problem.state) { %>
+                <a href="<%= syzoj.utils.makeUrl(['submission', problem.state.id]) %>">
+                  <% if (problem.state.status !== 'Accepted') { %>
                     <img class='no' src='/sicily/images/not_yet.gif' />
                   <% } else { %>
                     <img class='yes' src='/sicily/images/yes.gif' />
@@ -41,9 +41,14 @@
           <td height=25 align="center"><%= problem.id %></td>
           <td class="left aligned">
             <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['problem', problem.id]) %>"><%= problem.title %>
-              <% if (problem.type === 'interaction') { %> [交互]<% } %>
-              <% if (problem.type === 'submit-answer') { %> [提交答案]<% } %>
-              <% if (!problem.is_public) { %><font color=red> [未公开]</font><% } %>
+              <% if (problem.type === 'interaction') { %>
+                [交互题]
+              <% } else if (problem.type === 'submit-answer') { %>
+                [提交答案题]
+              <% } else if (problem.specialJudge) { %>
+                [Special Judge]
+              <% } %>
+              <% if (!problem.is_public) { %><font color=red>[未公开]</font><% } %>
             </a>
           </td>
           <td align="center"><%= problem.ac_num %></td>

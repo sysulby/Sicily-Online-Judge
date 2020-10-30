@@ -41,8 +41,9 @@ app.get('/problems', async (req, res) => {
 
     await problems.forEachAsync(async problem => {
       problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
-      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.state = await problem.getJudgeState(res.locals.user, true);
       problem.tags = await problem.getTags();
+      problem.specialJudge = await problem.hasSpecialJudge();
     });
 
     res.render('problems', {
@@ -212,21 +213,18 @@ app.get('/problem/:id', async (req, res) => {
       throw new ErrorMessage('您没有权限进行此操作。');
     }
 
-    let state = await problem.getJudgeState(res.locals.user, false);
-
+    problem.state = await problem.getJudgeState(res.locals.user, true);
     problem.tags = await problem.getTags();
+    problem.specialJudge = await problem.hasSpecialJudge();
     await problem.loadRelationships();
 
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
 
-    let discussionCount = await Article.count({ problem_id: id });
-
     res.render('problem', {
       problem: problem,
-      state: state,
+      lastState: await problem.getJudgeState(res.locals.user, false),
       lastLanguage: res.locals.user ? await res.locals.user.getLastSubmitLanguage() : null,
-      testcases: testcases,
-      discussionCount: discussionCount
+      testcases: testcases
     });
   } catch (e) {
     syzoj.log(e);
