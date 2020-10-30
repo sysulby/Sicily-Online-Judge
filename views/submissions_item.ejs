@@ -56,21 +56,15 @@ Vue.component('submission-item', {
 
 <script id="submissionItemTemplate" type="text/x-template">
 <tr>
-  <td height=20 align="center">{{ data.info.submissionId }}</td>
+  <td height=20 align="center"><a :href="submissionLink">{{ data.info.submissionId }}</a></td>
   <td><a :href="userLink">{{ data.info.user }}</a></td>
   <td align="center"><a :href="problemLink">{{ config.inContest ? alpha(data.info.problemId) : data.info.problemId }}</a></td>
-  <td align="center">
-    <span v-if="data.info.language"><a :href="submissionLink">{{ data.info.language }}</a></span>
-  </td>
-  <td align="center"><a :href="submissionLink"><status-label :status="statusString" :progress="progress"></status-label></a></td>
+  <td align="center"><span v-if="data.info.language"><a :href="submissionLink">{{ data.info.language }}</a></span></td>
+  <td align="center"><a :href="submissionLink"><b><status-label :status="statusString" :progress="progress"></status-label></b></a></td>
   <template v-if="data.result">
   <td align="center" v-if="config.showScore"><a :href="submissionLink"><span class="score" :class="scoreClass">{{ Math.floor(data.result.score || 0) }}</span></a></td>
   <td align="center" v-if="config.showUsage">{{ (data.result.time || 0).toString() + ' ms' }}</td>
-  <% if (active === 'submissions') { %>
   <td align="center" v-if="config.showUsage">{{ formatSize(data.result.memory * 1024, 2) }}</td>
-  <% } else { %>
-  <td align="center" v-if="config.showUsage">{{ (data.result.memory || 0).toString() + ' K'}}</td>
-  <% } %>
   </template> <template v-else>
   <td align="center" v-if="config.showScore"><a :href="submissionLink"><span class="score score_0">0</span></a></td>
   <td align="center" v-if="config.showUsage">0 ms</td>
