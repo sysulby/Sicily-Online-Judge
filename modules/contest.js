@@ -504,12 +504,74 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
 
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
 
+    let player = null;
+
+    if (res.locals.user) {
+      player = await ContestPlayer.findInContest({
+        contest_id: contest.id,
+        user_id: res.locals.user.id
+      });
+    }
+
     await problem.loadRelationships();
+
+    problem.status = null;
+    problem.judge_id = null;
+    if (player) {
+      if (contest.type === 'noi') {
+        if (player.score_details[problem.id]) {
+          let judge_state = await JudgeState.findById(player.score_details[problem.id].judge_id);
+          problem.status = judge_state.status;
+          if (!contest.ended && !await problem.isAllowedEditBy(res.locals.user) && !['Compile Error', 'Waiting', 'Compiling'].includes(problem.status)) {
+            problem.status = 'Submitted';
+          }
+          problem.judge_id = player.score_details[problem.id].judge_id;
+        }
+      } else if (contest.type === 'ioi') {
+        if (player.score_details[problem.id]) {
+          let judge_state = await JudgeState.findById(player.score_details[problem.id].judge_id);
+          problem.status = judge_state.status;
+          problem.judge_id = player.score_details[problem.id].judge_id;
+          await contest.loadRelationships();
+          let multiplier = contest.ranklist.ranking_params[problem.id] || 1.0;
+          problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
+        }
+      } else if (contest.type === 'acm') {
+        if (player.score_details[problem.id]) {
+          problem.status = {
+            accepted: player.score_details[problem.id].accepted,
+            unacceptedCount: player.score_details[problem.id].unacceptedCount
+          };
+          problem.judge_id = player.score_details[problem.id].judge_id;
+        } else {
+          problem.status = null;
+        }
+      }
+    }
+
+    let hasStatistics = false;
+    if ((!contest.hide_statistics) || (contest.ended) || (await contest.isSupervisior(curUser))) {
+      hasStatistics = true;
+
+      await contest.loadRelationships();
+      let players = await contest.ranklist.getPlayers();
+      problem.statistics = { attempt: 0, accepted: 0 };
+
+      for (let player of players) {
+        if (player.score_details[problem.id]) {
+          problem.statistics.attempt++;
+          if ((contest.type === 'acm' && player.score_details[problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.id].score === 100)) {
+            problem.statistics.accepted++;
+          }
+        }
+      }
+    }
 
     res.render('problem', {
       pid: pid,
       contest: contest,
       problem: problem,
+      hasStatistics: hasStatistics,
       lastState: await problem.getJudgeState(res.locals.user, false),
       lastLanguage: res.locals.user ? await res.locals.user.getLastSubmitLanguage() : null,
       testcases: testcases
