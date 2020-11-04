@@ -36,7 +36,7 @@
           <font color=green>结束于 <%= syzoj.utils.formatDate(contest.end_time) %><br />
         <% } %>
       </td>
-      <td align="center"><%- contest.type %></td>
+      <td align="center"><%- (contest.type === 'acm' ? 'icpc' : contest.type).toUpperCase() %></td>
     </tr>
     <% } %>
   </tbody>

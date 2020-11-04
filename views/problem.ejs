@@ -4,29 +4,22 @@
 <link type="text/css" rel="stylesheet" href="/sicily/css/post.css" />
 <div id="catalog">
   <ul class="hord_list">
-    <li><span class="hord_headline">题目概况</span></li>
-    <li>
-      <dl class="hord_list">
-        <% if (typeof contest !== 'undefined' && contest) { %>
+    <% if (typeof contest !== 'undefined' && contest) { %>
+      <li><span class="hord_headline">题目概况</span></li>
+      <li>
+        <dl class="hord_list">
           <dt class="hord_dt">通过数量</dt>
           <dd class="hord_dd"><%= hasStatistics ? problem.statistics.accepted : 'N/A' %></dd>
           <dt class="hord_dt">提交数量</dt>
           <dd class="hord_dd"><%= hasStatistics ? problem.statistics.attempt : 'N/A' %></dd>
-        <% } else { %>
-          <dt class="hord_dt">通过数量</dt>
-          <dd class="hord_dd"><%= problem.ac_num %></dd>
-          <dt class="hord_dt">提交数量</dt>
-          <dd class="hord_dd"><%= problem.submit_num %></dd>
-        <% } %>
-      </dl>
-    </li>
-    <% if (typeof contest !== 'undefined' && contest) { %>
+        </dl>
+      </li>
       <% if (problem.judge_id) { %>
         <% if (typeof problem.status === 'string') { %>
           <% if (problem.status === 'Accepted') { %>
             <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
           <% } else if (problem.status === 'Submitted') { %>
-            <li><img src="/sicily/images/not_yet.gif" alt="" width="20" height="20"><em>题目已经提交</em></li>
+            <li><img src="/sicily/images/not_yet.gif" alt="" width="20" height="20"><em>等待测评</em></li>
           <% } else { %>
             <li><img src="/sicily/images/not_yet.gif" alt="" width="20" height="20"><em>分数: <%= problem.feedback %></em></li>
           <% } %>
@@ -36,18 +29,34 @@
           <% } %>
         <% } %>
       <% } %>
-      <% if (user) { %>
-        <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { problem_id: pid, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
+    <% } else { %>
+      <li><span class="hord_headline">题目概况</span></li>
+      <li>
+        <dl class="hord_list">
+          <dt class="hord_dt">通过数量</dt>
+          <dd class="hord_dd"><%= problem.ac_num ? problem.ac_num : 0 %></dd>
+          <dt class="hord_dt">提交数量</dt>
+          <dd class="hord_dd"><%= problem.submit_num ? problem.submit_num : 0 %></dd>
+        </dl>
+      </li>
+      <% if (problem.state && problem.state.status === 'Accepted') { %>
+        <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
       <% } %>
-    <% } else if (problem.state && problem.state.status === 'Accepted') { %>
-      <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
-      <% if (user) { %>
+    <% } %>
+    <% if (user) { %>
+      <% if (typeof contest !== 'undefined' && contest) { %>
+        <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { problem_id: pid, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
+      <% } else { %>
         <li><a href="<%= syzoj.utils.makeUrl(['submissions'], { problem_id: problem.id, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
       <% } %>
-      <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'statistics', problem.type === 'submit-answer' ? 'shortest' : 'fastest']) %>" title="" class="hord_link">统计</a></li>
-      <li><a href="<%= syzoj.utils.makeUrl(['discussion', 'problem', problem.id]) %>" title="" class="hord_link">讨论</a>
     <% } %>
-    </li>
+    <% if (typeof contest === 'undefined' || !contest) { %>
+      <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'statistics', problem.type === 'submit-answer' ? 'shortest' : 'fastest']) %>" title="" class="hord_link">统计</a></li>
+      <li><a href="<%= syzoj.utils.makeUrl(['discussion', 'problem', problem.id]) %>" title="" class="hord_link">讨论</a></li>
+    <% } %>
+    <% if (problem.additional_file) { %>
+      <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'download', 'additional_file']) %>" title="" class="hord_link">附加文件</a></li>
+    <% } %>
   </ul>
 </div>
 <div id="posts">
