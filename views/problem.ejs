@@ -14,20 +14,8 @@
           <dd class="hord_dd"><%= hasStatistics ? problem.statistics.attempt : 'N/A' %></dd>
         </dl>
       </li>
-      <% if (problem.judge_id) { %>
-        <% if (typeof problem.status === 'string') { %>
-          <% if (problem.status === 'Accepted') { %>
-            <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
-          <% } else if (problem.status === 'Submitted') { %>
-            <li><img src="/sicily/images/not_yet.gif" alt="" width="20" height="20"><em>等待测评</em></li>
-          <% } else { %>
-            <li><img src="/sicily/images/not_yet.gif" alt="" width="20" height="20"><em>分数: <%= problem.feedback %></em></li>
-          <% } %>
-        <% } else if (typeof problem.status === 'object') { %>
-          <% if (problem.status.accepted) { %>
-            <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
-          <% } %>
-        <% } %>
+      <% if (problem.judge_id && ((typeof problem.status === 'string' && problem.status === 'Accepted') || (typeof problem.status === 'object' && problem.status.accepted))) { %>
+        <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
       <% } %>
     <% } else { %>
       <li><span class="hord_headline">题目概况</span></li>
@@ -67,7 +55,7 @@
           <% if (contest) { %>
             <%= this.alpha(pid) %>. <%= syzoj.utils.removeTitleTag(problem.title) %>
           <% } else { %>
-            <%= problem.id %>. <%= problem.title %><% if (problem.allowedEdit && !problem.is_public) { %><font color=red> [未公开]</font><% } %>
+            <%= problem.id %>. <%= syzoj.utils.removeTitleTag(problem.title) %><% if (problem.allowedEdit && !problem.is_public) { %><font color=red> [未公开]</font><% } %>
           <% } %>
         </h1>
       </center>
@@ -133,4 +121,9 @@
     <% } %>
   </div>
 </div>
+<script>
+  $(function() {
+    document.title = "<%= contest ? this.alpha(pid) : problem.id %>" + ". <%= syzoj.utils.removeTitleTag(problem.title) %> - Sicily Online Judge";
+  });
+</script>
 <% include footer %>

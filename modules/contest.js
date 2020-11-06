@@ -147,6 +147,7 @@ app.get('/contest/:id', async (req, res) => {
     problems = problems.map(x => ({ problem: x, status: null, judge_id: null, statistics: null }));
     if (player) {
       for (let problem of problems) {
+        problem.problem.specialJudge = await problem.problem.hasSpecialJudge();
         if (contest.type === 'noi') {
           if (player.score_details[problem.problem.id]) {
             let judge_state = await JudgeState.findById(player.score_details[problem.problem.id].judge_id);
@@ -155,6 +156,11 @@ app.get('/contest/:id', async (req, res) => {
               problem.status = 'Submitted';
             }
             problem.judge_id = player.score_details[problem.problem.id].judge_id;
+            if (contest.ended) {
+              await contest.loadRelationships();
+              let multiplier = contest.ranklist.ranking_params[problem.problem.id] || 1.0;
+              problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
+            }
           }
         } else if (contest.type === 'ioi') {
           if (player.score_details[problem.problem.id]) {
