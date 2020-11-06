@@ -73,9 +73,7 @@
           <% } else { %>
             <a title="隐藏用户"><img src="/sicily/images/authorize0.gif" alt="隐藏用户" /></a>
           <% } %>
-          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class="nickname">
-            <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
-          </a>
+          <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" class="nickname"><%= user.username %></a><% if (user.nameplate) { %><%- user.nameplate %><% } %>
           <% if (user.information) { %>
             <div id="signature"><%= user.information %></div>
           <% } else { %>
@@ -168,7 +166,9 @@
         <li><a href="/">主页</a></li>
         <li><a href="/problems">题目</a></li>
         <li><a href="/contests">比赛</a></li>
+        <!--
         <li><a href="/contests">课程</a></li>
+        -->
         <li><a href="/ranklist">排名</a></li>
         <% if (user) { %>
           <% if (user.is_admin) { %>
