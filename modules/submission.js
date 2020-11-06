@@ -38,11 +38,12 @@ app.get('/submissions', async (req, res) => {
       isFiltered = true;
     }
 
+    let contest;
     if (!req.query.contest) {
       query.andWhere('type = 0');
     } else {
       const contestId = Number(req.query.contest);
-      const contest = await Contest.findById(contestId);
+      contest = await Contest.findById(contestId);
       contest.ended = contest.isEnded();
       if ((contest.ended && contest.is_public) || // If the contest is ended and is not hidden
         (curUser && await contest.isSupervisior(curUser)) // Or if the user have the permission to check
@@ -140,6 +141,7 @@ app.get('/submissions', async (req, res) => {
       pushType: 'rough',
       form: req.query,
       displayConfig: displayConfig,
+      contest: contest,
       isFiltered: isFiltered,
       fast_pagination: syzoj.config.submissions_page_fast_pagination
     });
@@ -202,6 +204,7 @@ app.get('/submission/:id', async (req, res) => {
         displayConfig: displayConfig
       }, syzoj.config.session_secret) : null,
       displayConfig: displayConfig,
+      contest: contest,
     });
   } catch (e) {
     syzoj.log(e);

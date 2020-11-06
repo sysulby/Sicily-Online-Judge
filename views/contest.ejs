@@ -1,85 +1,88 @@
 <% include header %>
-<% if (isSupervisior) { %>
+<% if (user && user.is_admin) { %>
   <fieldset>
     <legend>Basic Operation</legend>
+    <a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'edit']) %>">[编辑比赛]</a>
   </fieldset>
 <% } else { %>
   <br>
 <% } %>
-<table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
-  <thead>
-    <tr align="center" class="ui-widget-header">
-      <% if (user) { %>
-        <th width="10%">提交状态</th>
-      <% } %>
-      <th width="6%" height=20>编号</th>
-      <th class="place_left">题目标题</th>
-      <% if (hasStatistics) { %>
-      <th width="15%">通过</th>
-      <th width="15%">提交数量</th>
-      <th width="15%">通过率</th>
-      <% } %>
-    </tr>
-  </thead>
-  <tbody>
-    <%
-    let i = 0;
-    for (let problem of problems) {
-      i++;
-    %>
-    <tr>
-      <% if (user) { %>
-      <td align="center">
-      <% if (problem.judge_id) { %>
-        <a href="<%= syzoj.utils.makeUrl(['contest', 'submission', problem.judge_id]) %>">
-        <% if (typeof problem.status === 'string') { %>
-          <% if (problem.status === 'Submitted') { %>
-            <img class='no' src='/sicily/images/not_yet.gif' />
-          <% } else { %>
-            <span class="status <%= problem.status.toLowerCase().split(' ').join('_') %>"><b><%= problem.feedback %></b></span>
-          <% } %>
-        <% } else if (typeof problem.status === 'object') { %>
-          <% if (problem.status.accepted) { %>
-            <span class="score score_10">
-              <% if (problem.status.unacceptedCount === 0) { %>
-                <b>+</b>
-              <% } else { %>
-                <b>+<%= problem.status.unacceptedCount %></b>
-              <% } %>
-            </span>
-          <% } else { %>
-            <span class="score score_0">
-              <% if (problem.status.unacceptedCount !== 0) { %>
-                <b>-<%= problem.status.unacceptedCount %></b>
-              <% } %>
-            </span>
+<% if ((user && user.is_admin) || syzoj.utils.getCurrentDate() >= contest.start_time) { %>
+  <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
+    <thead>
+      <tr align="center" class="ui-widget-header">
+        <% if (user) { %>
+          <th width="10%">提交状态</th>
+        <% } %>
+        <th width="6%" height=20>编号</th>
+        <th class="place_left">题目标题</th>
+        <% if (hasStatistics) { %>
+        <th width="15%">通过</th>
+        <th width="15%">提交数量</th>
+        <th width="15%">通过率</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+      let i = 0;
+      for (let problem of problems) {
+        i++;
+      %>
+      <tr>
+        <% if (user) { %>
+        <td align="center">
+        <% if (problem.judge_id) { %>
+          <a href="<%= syzoj.utils.makeUrl(['contest', 'submission', problem.judge_id]) %>">
+          <% if (typeof problem.status === 'string') { %>
+            <% if (problem.status === 'Submitted') { %>
+              <img class='no' src='/sicily/images/not_yet.gif' />
+            <% } else { %>
+              <span class="status <%= problem.status.toLowerCase().split(' ').join('_') %>"><b><%= problem.feedback %></b></span>
+            <% } %>
+          <% } else if (typeof problem.status === 'object') { %>
+            <% if (problem.status.accepted) { %>
+              <span class="score score_10">
+                <% if (problem.status.unacceptedCount === 0) { %>
+                  <b>+</b>
+                <% } else { %>
+                  <b>+<%= problem.status.unacceptedCount %></b>
+                <% } %>
+              </span>
+            <% } else { %>
+              <span class="score score_0">
+                <% if (problem.status.unacceptedCount !== 0) { %>
+                  <b>-<%= problem.status.unacceptedCount %></b>
+                <% } %>
+              </span>
+            <% } %>
           <% } %>
         <% } %>
+        </td>
+        <% } %>
+        <td height=25 align="center"><%= i + 999 %></td>
+        <td class="left aligned">
+          <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'problem', i]) %>">
+            <%= problem.problem.title %>
+            <% if (problem.problem.type === 'interaction') { %>
+              [交互题]
+            <% } else if (problem.problem.type === 'submit-answer') { %>
+              [提交答案题]
+            <% } else if (problem.problem.specialJudge) { %>
+              [Special Judge]
+            <% } %>
+          </a>
+        </td>
+        <% if (hasStatistics) { %>
+          <td align="center"><%= problem.statistics.accepted %></td>
+          <td align="center"><%= problem.statistics.attempt %></td>
+          <td align="center"><%= problem.statistics.attempt != 0 ? (((problem.statistics.accepted / problem.statistics.attempt * 100) || 0).toFixed(2) + '%') : '-' %></td>
+        <% } %>
+      </tr>
       <% } %>
-      </td>
-      <% } %>
-      <td height=25 align="center"><%= i + 999 %></td>
-      <td class="left aligned">
-        <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'problem', i]) %>">
-          <%= problem.problem.title %>
-          <% if (problem.problem.type === 'interaction') { %>
-            [交互题]
-          <% } else if (problem.problem.type === 'submit-answer') { %>
-            [提交答案题]
-          <% } else if (problem.problem.specialJudge) { %>
-            [Special Judge]
-          <% } %>
-        </a>
-      </td>
-      <% if (hasStatistics) { %>
-        <td align="center"><%= problem.statistics.accepted %></td>
-        <td align="center"><%= problem.statistics.attempt %></td>
-        <td align="center"><%= problem.statistics.attempt != 0 ? (((problem.statistics.accepted / problem.statistics.attempt * 100) || 0).toFixed(2) + '%') : '-' %></td>
-      <% } %>
-    </tr>
-    <% } %>
-  </tbody>
-</table>
+    </tbody>
+  </table>
+<% } %>
 <script>
   $(function() {
     document.title = "<%= contest.title %> - Sicily Online Judge";

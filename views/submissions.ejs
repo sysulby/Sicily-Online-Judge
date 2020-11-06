@@ -30,33 +30,32 @@
     <input type="submit" value="查询" width="8">
   </form>
 </fieldset>
-  <table id="vueAppFuckSafari" class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2" id="table">
-    <thead>
-      <tr align="center" class="ui-widget-header">
-        <th width="8%" height="20">提交序号</th>
-        <th class="place_left">用户名</th>
-        <th width="8%">题目编号</th>
-        <th width="12%">语言种类</th>
-        <th width="18%">提交状态</th>
-        <th width="6%" v-if="displayConfig.showScore">分数</th>
-        <th width="8%" v-if="displayConfig.showUsage">运行时间</th>
-        <th width="8%" v-if="displayConfig.showUsage">内存用量</th>
-        <th width="7%">代码长度</th>
-        <th width="17%">提交时间</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="item in items" :config="displayConfig" :show-rejudge="false" :data="item" is='submission-item' :rough="true">
-      </tr>
-    </tbody>
-  </table>
-  <br>
-  <% if (fast_pagination) { %>
-    <% include page_fast %>
-  <% } else { %>
-    <% include page %>
-  <% } %>
-</div>
+<table id="vueAppFuckSafari" class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2" id="table">
+  <thead>
+    <tr align="center" class="ui-widget-header">
+      <th width="8%" height="20">提交序号</th>
+      <th class="place_left">用户名</th>
+      <th width="8%">题目编号</th>
+      <th width="12%">语言种类</th>
+      <th width="18%">提交状态</th>
+      <th width="6%" v-if="displayConfig.showScore">分数</th>
+      <th width="8%" v-if="displayConfig.showUsage">运行时间</th>
+      <th width="8%" v-if="displayConfig.showUsage">内存用量</th>
+      <th width="7%">代码长度</th>
+      <th width="17%">提交时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="item in items" :config="displayConfig" :show-rejudge="false" :data="item" is='submission-item' :rough="true">
+    </tr>
+  </tbody>
+</table>
+<br>
+<% if (fast_pagination) { %>
+  <% include page_fast %>
+<% } else { %>
+  <% include page %>
+<% } %>
 
 <script src="<%- lib('vue/2.5.21/vue.min.js') %>"></script>
 <script src="<%- lib('socket.io/2.2.0/socket.io.js') %>"></script>

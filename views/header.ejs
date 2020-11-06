@@ -164,23 +164,37 @@
     <div class="topmenu ui-corner-all">
       <ul>
         <li><a href="/">主页</a></li>
-        <li><a href="/problems">题目</a></li>
-        <li><a href="/contests">比赛</a></li>
-        <!--
-        <li><a href="/contests">课程</a></li>
-        -->
-        <li><a href="/ranklist">排名</a></li>
-        <% if (user) { %>
-          <% if (user.is_admin) { %>
-            <li><a href="/submissions">提交状态</a></li>
-          <% } else { %>
-            <li><a href="/submissions?submitter=<%= user.username %>">提交状态</a></li>
+        <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
+          <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>">题目</a></li>
+          <% if (user) { %>
+            <% let submissionsUrl = user.is_admin || contest.ended ?
+              syzoj.utils.makeUrl(['submissions'], {contest: contest.id}) :
+              syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { submitter: user.username }); %>
+            <li><a href="<%= submissionsUrl %>">提交状态</a></li>
           <% } %>
-          <li><a href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>">设定</a></li>
-        <% } %>
-        <li><a href="/discussion/global">讨论</a></li>
-        <% if (user && user.is_admin) { %>
-          <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a>
+          <% if ((user && user.is_admin) || contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers())) { %>
+            <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'ranklist']) %>">排名</a></li>
+          <% } %>
+          <li><a href="/contests">返回</a></li>
+        <% } else { %>
+          <li><a href="/problems">题目</a></li>
+          <li><a href="/contests">比赛</a></li>
+          <!--
+          <li><a href="/contests">课程</a></li>
+          -->
+          <li><a href="/ranklist">排名</a></li>
+          <% if (user) { %>
+            <% if (user.is_admin) { %>
+              <li><a href="/submissions">提交状态</a></li>
+            <% } else { %>
+              <li><a href="/submissions?submitter=<%= user.username %>">提交状态</a></li>
+            <% } %>
+            <li><a href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>">设定</a></li>
+          <% } %>
+          <li><a href="/discussion/global">讨论</a></li>
+          <% if (user && user.is_admin) { %>
+            <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a>
+          <% } %>
         <% } %>
       </ul>
       <div class="rssbut" id="toggleWidth" title="更改窗口宽度">&lt;-&gt;</div>
