@@ -79,7 +79,7 @@
           <% } else { %>
             <div id="signature">你还没有设置任何签名^_^</div>
           <% } %>
-          <a href="/" href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>">登出</a>
+          <a href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>">登出</a>
         <% } else { %>
           <% include login %>
           <form id="loginform" name="loginform">

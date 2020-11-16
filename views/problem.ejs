@@ -2,6 +2,21 @@
 <% if (typeof contest === 'undefined') contest = null; %>
 <% include header %>
 <link type="text/css" rel="stylesheet" href="/sicily/css/post.css" />
+<% if (problem.allowedManage) { %>
+  <fieldset>
+    <legend>Basic Operation</legend>
+      <a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'testdata']) %>">[测试数据]</a>
+      <a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'edit']) %>">[编辑]</a>
+      <a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'manage']) %>">[管理]</a>
+      <% if (problem.is_public) {  %>
+        <a id="dis_public" href-post="<%= syzoj.utils.makeUrl(['problem', problem.id, 'dis_public']) %>">[取消公开]</a>
+      <% } else { %>
+        <a id="public" href-post="<%= syzoj.utils.makeUrl(['problem', problem.id, 'public']) %>">[公开]</a>
+      <% } %>
+      <a onclick="javascript:if(!confirm('确认删除此题目吗？'))return false;document.getElementById('confirm-delete').click();">[删除]</a>
+      <a id="confirm-delete" href-post="<%= syzoj.utils.makeUrl(['problem', problem.id, 'delete']) %>"></a>
+  </fieldset>
+<% } %>
 <div id="catalog">
   <ul class="hord_list">
     <% if (typeof contest !== 'undefined' && contest) { %>
