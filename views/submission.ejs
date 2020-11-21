@@ -1,6 +1,12 @@
-<% this.title = '提交记录 #' + info.submissionId %>
 <% include util %>
 <% include header %>
+<link href="/sicily/css/card.css" rel="Stylesheet" type="text/css" />
+<link type="text/css" rel="stylesheet" href="/sicily/css/sh/shCore.css"/>
+<link type="text/css" rel="stylesheet" href="/sicily/css/sh/shThemeDefault.css"/>
+<% if (displayConfig.showTestdata) { %>
+<link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
+<% } %>
+<link href="<%- selfLib('tomorrow.css') %>" rel="stylesheet">
 <script src="<%- lib('textfit/2.3.1/textFit.min.js') %>"></script>
 <style>
 .single-subtask {
@@ -29,21 +35,23 @@
     margin-bottom: -10px !important;
 }
 </style>
+<br>
 <span id="submission_content">
-<div class="padding" id="vueAppFuckSafari">
-  <table class="ui very basic center aligned table" id="status_table">
+<div id="vueAppFuckSafari">
+  <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2" id="status_table">
     <thead>
       <tr>
-        <th>编号</th>
-        <th>题目</th>
-        <th>状态</th>
-        <th v-if="displayConfig.showScore">分数</th>
-        <th v-if="displayConfig.showUsage">总时间</th>
-        <th v-if="displayConfig.showUsage">内存</th>
-        <th v-if="displayConfig.showCode">代码 / 答案文件</th>
-        <th>提交者</th>
-        <th>提交时间</th>
-        <th v-if="showRejudge">重新评测</th>
+        <th width="8%" height="20">提交序号</th>
+        <th class="place_left">用户名</th>
+        <th width="8%">题目编号</th>
+        <th width="8%">语言种类</th>
+        <th width="18%">提交状态</th>
+        <th width="6%" v-if="displayConfig.showScore">分数</th>
+        <th width="8%" v-if="displayConfig.showUsage">运行时间</th>
+        <th width="8%" v-if="displayConfig.showUsage">内存用量</th>
+        <th width="8%">代码长度</th>
+        <th width="18%">提交时间</th>
+        <th v-if="showRejudge">管理</th>
       </tr>
     </thead>
     <tbody>
@@ -51,21 +59,11 @@
     </tbody>
   </table>
 
-  <code-box no-escape v-bind:content="code">
-    <% if (formattedCode !== null) { %>
-      <a onclick="toggleFormattedCode()" class="ui button" style="position: absolute; top: 0px; right: -4px; border-top-left-radius: 0; border-bottom-right-radius: 0; ">
-        <template v-if="currentFormatted">
-          显示原始代码
-        </template>
-        <template v-if="!currentFormatted">
-          格式化代码
-        </template>
-      </a>
-    <% } %>
-  </code-box>
+  <code-box no-escape v-bind:content="code"></code-box>
   <code-box v-if="detailResult && detailResult.compile" no-escape title="编译信息" v-bind:content="detailResult.compile.message"></code-box>
   <code-box v-if="detailResult" title="系统信息" v-bind:content="detailResult.systemMessage"></code-box>
 
+  <% if (displayConfig.showTestdata) { %>
   <div class="ui styled fluid accordion" :class="singleSubtask ? 'single-subtask' : '' " v-if="detailResult && detailResult.judge && detailResult.judge.subtasks">
     <template v-for="subtask, $index in detailResult.judge.subtasks">
       <div class="title" :class="singleSubtask ? 'active' : ''">
@@ -123,6 +121,41 @@
       </div>
     </template>
   </div>
+  <% } else { %>
+  <div v-if="detailResult && detailResult.judge && detailResult.judge.subtasks">
+    <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2" id="status_table">
+      <tbody>
+        <template v-for="subtask, $index in detailResult.judge.subtasks">
+          <tr v-if="!singleSubtask">
+            <td height=20><b>子任务 #{{ $index + 1 }}</b></td>
+            <td><b><status-label :status="getSubtaskResult(subtask)" :progress="getProgress($index)"></status-label></b></td>
+            <td colspan="3"><b>得分：<span style="font-weight: normal; ">{{ Math.trunc(subtask.score) }}</span></b></td>
+          </tr>
+          <template v-for="curCase, $caseIndex in subtask.cases">
+            <tr>
+              <td><span v-if="!singleSubtask">&nbsp;&nbsp;&nbsp;&nbsp;</span>测试点 #{{ $caseIndex + 1 }}</td>
+              <template v-if="!checkTestcaseOK(curCase)">
+                <td colspan="4"><span v-if="!singleSubtask">&nbsp;&nbsp;&nbsp;&nbsp;</span><status-label :status="getTestcaseStatus(curCase)"></status-label></td>
+              </template>
+              <template v-if="checkTestcaseOK(curCase)">
+                <td><span v-if="!singleSubtask">&nbsp;&nbsp;&nbsp;&nbsp;</span><status-label :status="getTestcaseStatus(curCase)"></status-label></td>
+                <td>
+                  <span v-if="!singleSubtask">&nbsp;&nbsp;&nbsp;&nbsp;</span>得分：<span style="font-weight: normal; ">{{ Math.trunc(curCase.result.scoringRate * 100) }}</span>
+                </td>
+                <td>
+                  <span v-if="!singleSubtask">&nbsp;&nbsp;&nbsp;&nbsp;</span>用时：<span style="font-weight: normal; ">{{ curCase.result.time }} ms</span>
+                </td>
+                <td>
+                  <span v-if="!singleSubtask">&nbsp;&nbsp;&nbsp;&nbsp;</span>内存：<span style="font-weight: normal; ">{{ curCase.result.memory }} KiB</span>
+                </td>
+              </template>
+            </tr>
+          </template>
+        </template>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
 </div>
 <script src="<%- lib('vue/2.5.21/vue.min.js') %>"></script>
 <script src="<%- lib('socket.io/2.2.0/socket.io.js') %>"></script>
@@ -136,10 +169,10 @@
            <strong v-html="title"></strong>
            <a v-if="download" style="color: #000; " :href="download"><i class="download icon"></i></a>
         </p>
-        <div class="ui existing segment">
+        <div id="source">
           <slot></slot>
-          <pre v-if="!noEscape" style="margin-top: 0; margin-bottom: 0; "><code>{{ content }}</code></pre>
-          <pre v-if="noEscape" style="margin-top: 0; margin-bottom: 0; "><code v-html="content"></code></pre>
+          <pre v-if="!noEscape"><code>{{ content }}</code></pre>
+          <pre v-if="noEscape"><code v-html="content"></code></pre>
         </div>
     </div>
 </script>
@@ -218,8 +251,8 @@ const vueApp = new Vue({
       running: false,
       displayConfig: displayConfig
     },
-    code: <%- serializejs(preferFormattedCode && formattedCode !== null) -%> ? formattedCode : unformattedCode,
-    currentFormatted: <%- serializejs(preferFormattedCode && formattedCode !== null) -%>,
+    code: unformattedCode,
+    currentFormatted: false,
     detailResult: <%- serializejs(detailResult) %>,
     displayConfig: displayConfig,
   },
@@ -373,4 +406,5 @@ if (token != null) {
   });
 </script>
 </span>
+<br>
 <% include footer %>

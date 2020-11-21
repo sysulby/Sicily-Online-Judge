@@ -73,28 +73,9 @@ Vue.component('submission-item', {
   <td align="center">{{ formatSize(data.info.codeSize, 1) }}</td>
   <td align="center">{{ data.info.submitTime }}</td>
   <td v-if="showRejudge">
-    <a id="rejudge-button" :onclick="'check_rejudge(' + (statusString === 'Waiting' || statusString.startsWith('Running')).toString() + ')'" style="color: #000; " href="#"><i class="repeat icon"></i></a>
+    <a id="rejudge-button" :onclick="'check_rejudge(' + (statusString === 'Waiting' || statusString.startsWith('Running')).toString() + ')'" href="#">[rejudge]</a>
     <% if (active === 'submission') { %>
-    <div class="ui basic modal" id="modal-rejudge">
-      <div class="ui icon header">
-        <i class="retweet icon"></i>
-        <p style="margin-top: 15px; ">重新评测</p>
-      </div>
-      <div class="content" style="text-align: center; ">
-        <p>确认重新评测该提交记录吗？</p>
-        <p id="warning_pending"><strong>警告：只有管理员可以重新评测一个未评测完成的记录，<br>这种情况一般发生在评测服务中断后，如果一个提交正在被评测，<br>则将其重新评测会导致系统错乱！</strong></p>
-      </div>
-      <div class="actions">
-        <div class="ui red basic cancel inverted button">
-          <i class="remove icon"></i>
-          否
-        </div>
-        <a class="ui green ok inverted button" :href-post="submissionLink + '/rejudge'">
-          <i class="checkmark icon"></i>
-          是
-        </a>
-      </div>
-    </div>
+    <a id="confirm-rejudge" :href-post="submissionLink + '/rejudge'"></a>
     <% } %>
   </td>
 </tr>
@@ -103,11 +84,11 @@ Vue.component('submission-item', {
 <script>
 function check_rejudge(pending) {
   if (pending) {
-    $('#warning_pending').css('display', '');
-  } else {
-    $('#warning_pending').css('display', 'none');
+    alert("警告：只有管理员可以重新评测一个未评测完成的记录，这种情况一般发生在评测服务中断后，如果一个提交正在被评测，则将其重新评测会导致系统错乱！");
   }
-  $('#modal-rejudge').modal('show');
+  if (confirm('确认重新评测该提交记录吗？')) {
+    document.getElementById('confirm-rejudge').click()
+  }
 }
 </script>
 <% } %>

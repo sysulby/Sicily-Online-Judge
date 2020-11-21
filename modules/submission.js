@@ -13,7 +13,7 @@ const displayConfig = {
   showCode: true,
   showResult: true,
   showOthers: true,
-  showTestdata: true,
+  showTestdata: false,
   showDetailResult: true,
   inContest: false,
   showRejudge: false
@@ -191,6 +191,7 @@ app.get('/submission/:id', async (req, res) => {
     }
 
     displayConfig.showRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
+    displayConfig.showTestdata = await judge.problem.isAllowedEditBy(res.locals.user);
     res.render('submission', {
       info: getSubmissionInfo(judge, displayConfig),
       roughResult: getRoughResult(judge, displayConfig, false),
