@@ -40,7 +40,7 @@
 <div id="vueAppFuckSafari">
   <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2" id="status_table">
     <thead>
-      <tr>
+      <tr align="center" class="ui-widget-header">
         <th width="8%" height="20">提交序号</th>
         <th class="place_left">用户名</th>
         <th width="8%">题目编号</th>
@@ -251,8 +251,8 @@ const vueApp = new Vue({
       running: false,
       displayConfig: displayConfig
     },
-    code: unformattedCode,
-    currentFormatted: false,
+    code: <%- serializejs(preferFormattedCode && formattedCode !== null) -%> ? formattedCode : unformattedCode,
+    currentFormatted: <%- serializejs(preferFormattedCode && formattedCode !== null) -%>,
     detailResult: <%- serializejs(detailResult) %>,
     displayConfig: displayConfig,
   },

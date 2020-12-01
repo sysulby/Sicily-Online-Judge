@@ -96,6 +96,9 @@ app.get('/user/:id', async (req, res) => {
     user.allowedEdit = await user.isAllowedEditBy(res.locals.user);
 
     let statistics = await user.getStatistics();
+    for (var i = 0; i < statistics.length; ++i) {
+      user.submit_num += statistics[i].value;
+    }
     await user.renderInformation();
     user.emailVisible = user.public_email || user.allowedEdit;
 

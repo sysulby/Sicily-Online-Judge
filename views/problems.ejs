@@ -39,8 +39,8 @@
               </td>
           <% } %>
           <td height=25 align="center"><%= problem.id %></td>
-          <td class="left aligned">
-            <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['problem', problem.id]) %>">
+          <td>
+            <a href="<%= syzoj.utils.makeUrl(['problem', problem.id]) %>">
               <%= problem.title %>
               <% if (problem.type === 'interaction') { %>
                 [交互题]
