@@ -66,12 +66,14 @@
               <% } %>
             <% } %>
         </tr>
+        <% if (show_user.submit_num) { %>
         <tr>
           <td style="font-size: large; word-spacing: 0.3em">
             <div id="pie_chart_legend"></div>
             <div style="width: 260px; height: 260px; margin-left: 33.5px; "><canvas style="width: 260px; height: 260px; " id="pie_chart"></canvas></div>
           </td>
         </tr>
+        <% } %>
       </table>
       <br>
       <% if (show_user.articles.length) { %>
