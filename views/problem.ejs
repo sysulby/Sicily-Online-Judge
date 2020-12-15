@@ -20,7 +20,7 @@
 <div id="catalog">
   <ul class="hord_list">
     <% if (typeof contest !== 'undefined' && contest) { %>
-      <li><span class="hord_headline">题目概况</span></li>
+      <li><span class="hord_headline">题目</span></li>
       <li>
         <dl class="hord_list">
           <dt class="hord_dt">通过数量</dt>
@@ -33,7 +33,7 @@
         <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
       <% } %>
     <% } else { %>
-      <li><span class="hord_headline">题目概况</span></li>
+      <li><span class="hord_headline">题目</span></li>
       <li>
         <dl class="hord_list">
           <dt class="hord_dt">通过数量</dt>
@@ -46,6 +46,9 @@
         <li><img src="/sicily/images/yes.gif" alt="" width="20" height="20"><em>题目已经通过</em></li>
       <% } %>
     <% } %>
+    <% if (problem.additional_file) { %>
+      <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'download', 'additional_file']) %>" title="" class="hord_link">附加文件</a></li>
+    <% } %>
     <% if (user) { %>
       <% if (typeof contest !== 'undefined' && contest) { %>
         <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { problem_id: pid, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
@@ -56,9 +59,6 @@
     <% if (typeof contest === 'undefined' || !contest) { %>
       <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'statistics', problem.type === 'submit-answer' ? 'shortest' : 'fastest']) %>" title="" class="hord_link">统计</a></li>
       <li><a href="<%= syzoj.utils.makeUrl(['discussion', 'problem', problem.id]) %>" title="" class="hord_link">讨论</a></li>
-    <% } %>
-    <% if (problem.additional_file) { %>
-      <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'download', 'additional_file']) %>" title="" class="hord_link">附加文件</a></li>
     <% } %>
   </ul>
 </div>
