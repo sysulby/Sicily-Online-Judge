@@ -1,26 +1,7 @@
 <% include header %>
 <div class="main_content">
   <div class='main_weibo'>
-    <table class="tblcontainer ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
-      <thead>
-        <tr align="center" class="ui-widget-header">
-          <th colspan="2" style="height: 45px; ">公告栏</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% for (var i = 0; i < 8; i++) { %>
-          <tr>
-            <% if (i < notices.length) { %>
-              <td style="height: 31px; "><a href="<%= notices[i].url %>"><%= notices[i].title %></a></td>
-              <td width="30%" style="text-align:right; "><%= notices[i].date %></td>
-            <% } else { %>
-              <td style="height: 31px; "><br/></td>
-              <td><br/></td>
-            <% } %>
-          </tr>
-        <% } %>
-      <tbody>
-    </table>
+    <iframe width="100%" height="450" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=450&fansRow=2&ptype=1&speed=0&skin=5&isTitle=1&noborder=1&isWeibo=1&isFans=0&uid=2687206183&verifier=6b62aa09&dpc=1"></iframe>
   </div>
   <div class="main_news">
     <img src="/sicily/images/logo.jpg" />

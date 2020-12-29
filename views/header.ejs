@@ -165,23 +165,35 @@
       <ul>
         <li><a href="/">主页</a></li>
         <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
-          <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>">题目</a></li>
-          <% if (user) { %>
-            <% let submissionsUrl = user.is_admin || contest.ended ?
-              syzoj.utils.makeUrl(['submissions'], {contest: contest.id}) :
-              syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { submitter: user.username }); %>
-            <li><a href="<%= submissionsUrl %>">提交状态</a></li>
+          <% if (typeof course !== 'undefined' && course && course.id) { %>
+            <li><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', cid]) %>">题目</a></li>
+            <% if (user) { %>
+              <% let submissionsUrl = user.is_admin ?
+                syzoj.utils.makeUrl(['submissions'], {course: course.id, cid: cid}) :
+                syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'submissions'], { submitter: user.username }); %>
+              <li><a href="<%= submissionsUrl %>">提交状态</a></li>
+            <% } %>
+            <% if ((user && user.is_admin) || contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers())) { %>
+              <li><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'ranklist']) %>">排名</a></li>
+            <% } %>
+            <li><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>">返回</a></li>
+          <% } else { %>
+            <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>">题目</a></li>
+            <% if (user) { %>
+              <% let submissionsUrl = user.is_admin || contest.ended ?
+                syzoj.utils.makeUrl(['submissions'], {contest: contest.id}) :
+                syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { submitter: user.username }); %>
+              <li><a href="<%= submissionsUrl %>">提交状态</a></li>
+            <% } %>
+            <% if ((user && user.is_admin) || contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers())) { %>
+              <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'ranklist']) %>">排名</a></li>
+            <% } %>
+            <li><a href="/contests">返回</a></li>
           <% } %>
-          <% if ((user && user.is_admin) || contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers())) { %>
-            <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'ranklist']) %>">排名</a></li>
-          <% } %>
-          <li><a href="/contests">返回</a></li>
         <% } else { %>
           <li><a href="/problems">题目</a></li>
           <li><a href="/contests">比赛</a></li>
-          <!--
-          <li><a href="/contests">课程</a></li>
-          -->
+          <li><a href="/courses">课程</a></li>
           <li><a href="/ranklist">排名</a></li>
           <% if (user) { %>
             <% if (user.is_admin) { %>

@@ -1,4 +1,5 @@
 <% include header %>
+<% if (typeof course === 'undefined') course = null; %>
 <style>
 .submit_time {
   font-size: 0.8em;
@@ -20,7 +21,7 @@
       <th class="place_left">用户名</th>
       <% for (let i = 0; i < problems.length; i++) { %>
       <th>
-        <a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'problem', i + 1]) %>">
+        <a href="<%= course ? syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'problem', i + 1]) : syzoj.utils.makeUrl(['contest', contest.id, 'problem', i + 1]) %>">
           <%= i + 1000 %>
         </a>
       </th>
@@ -87,6 +88,8 @@
           <% } else if (contest.type === 'acm') { %>
             <% if ((user && user.is_admin) || contest.isEnded()) { %>
               <a href="<%= syzoj.utils.makeUrl(['submission', item.player.score_details[problem.id].judge_id]) %>">
+            <% } else if (course) { %>
+              <a href="<%= syzoj.utils.makeUrl(['course', 'contest', 'submission', item.player.score_details[problem.id].judge_id]) %>">
             <% } else { %>
               <a href="<%= syzoj.utils.makeUrl(['contest', 'submission', item.player.score_details[problem.id].judge_id]) %>">
             <% } %>
@@ -112,6 +115,8 @@
           <% } else if (contest.type === 'noi' || contest.type === 'ioi') { %>
             <% if ((user && user.is_admin) || contest.isEnded()) { %>
               <a href="<%= syzoj.utils.makeUrl(['submission', item.player.score_details[problem.id].judge_id]) %>">
+            <% } else if (course) { %>
+              <a href="<%= syzoj.utils.makeUrl(['course', 'contest', 'submission', item.player.score_details[problem.id].judge_id]) %>">
             <% } else { %>
               <a href="<%= syzoj.utils.makeUrl(['contest', 'submission', item.player.score_details[problem.id].judge_id]) %>">
             <% } %>

@@ -1,6 +1,7 @@
 let Problem = syzoj.model('problem');
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
+let Course = syzoj.model('course');
 let Contest = syzoj.model('contest');
 let ProblemTag = syzoj.model('problem_tag');
 let Article = syzoj.model('article');
@@ -662,9 +663,26 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       });
     }
 
+    let course_id = parseInt(req.query.course_id);
+    let course;
     let contest_id = parseInt(req.query.contest_id);
     let contest;
-    if (contest_id) {
+    if (course_id) {
+      course = await Course.findById(course_id);
+      if (!course) throw new ErrorMessage('无此课程。');
+      let contests_id = await course.getContests();
+      if (!contest_id || contest_id < 1 || contest_id > contests_id.length) throw new ErrorMessage('无此课节。');
+      contest = await Contest.findById(contests_id[contest_id-1]);
+      if (!contest) throw new ErrorMessage('无此课节。');
+      if ((!contest.isRunning()) && (!await contest.isSupervisior(curUser))) throw new ErrorMessage('课节未开始或已结束。');
+      let problems_id = await contest.getProblems();
+      if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
+
+      judge_state.type = 2;
+      judge_state.type_info = course_id * 1000 + contest_id;
+
+      await judge_state.save();
+    } else if (contest_id) {
       contest = await Contest.findById(contest_id);
       if (!contest) throw new ErrorMessage('无此比赛。');
       if ((!contest.isRunning()) && (!await contest.isSupervisior(curUser))) throw new ErrorMessage('比赛未开始或已结束。');
@@ -714,7 +732,9 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       throw new ErrorMessage(`无法开始评测：${err.toString()}`);
     }
 
-    if (contest && (!await contest.isSupervisior(curUser))) {
+    if (course && (!await course.isSupervisior(curUser))) {
+      res.redirect(syzoj.utils.makeUrl(['course', course_id, 'contest', contest_id, 'submissions']));
+    } else if (contest && (!await contest.isSupervisior(curUser))) {
       res.redirect(syzoj.utils.makeUrl(['contest', contest_id, 'submissions']));
     } else {
       res.redirect(syzoj.utils.makeUrl(['submission', judge_state.id]));

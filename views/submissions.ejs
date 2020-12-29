@@ -1,8 +1,9 @@
 <% include header %>
 <% include util %>
+<% if (typeof course === 'undefined') course = null; %>
 <fieldset>
   <legend>Filter Status</legend>
-  <form action="<%= syzoj.utils.makeUrl(displayConfig.inContest ? ['contest', contest.id, 'submissions'] : ['submissions']) %>" method="get" role="form" id="form" name="search">
+  <form action="<%= syzoj.utils.makeUrl(course ? ['course', course.id, 'contest', cid, 'submissions'] : displayConfig.inContest ? ['contest', contest.id, 'submissions'] : ['submissions']) %>" method="get" role="form" id="form" name="search">
     <input type="hidden" name="contest" value="<%= form.contest %>" />
     题目编号：
     <input name="problem_id" type="text" value="<%= form.problem_id %>" size="8">

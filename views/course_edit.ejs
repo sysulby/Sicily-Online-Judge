@@ -1,0 +1,109 @@
+<% include header %>
+<link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
+<div class="padding">
+        <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>" method="post">
+          <div class="ui form">
+              <div class="field">
+                <label>课程名称</label>
+                <input type="text" name="title" value="<%= course.title %>">
+              </div>
+              <div class="field">
+                <label>课程描述</label>
+                <input type="text" name="subtitle" class="markdown-edit" value="<%= course.subtitle %>">
+              </div>
+            <div class="field">
+                <label>课节列表</label>
+                <select class="ui fluid search dropdown" multiple="" id="search_contests" name="contests">
+                <% for (let contest of contests) { %>
+                <option value="<%= contest.id %>" selected>#<%= contest.id %>. <%= contest.title %></option>
+                <% } %>
+                </select>
+            </div>
+            <div class="field">
+                <label>课程管理员</label>
+                <select class="ui fluid search dropdown" multiple="" id="search_admins" name="admins">
+                <% for (let admin of admins) { %>
+                <option value="<%= admin.id %>" selected><%= admin.username %></option>
+                <% } %>
+                </select>
+            </div>
+            <div class="field">
+                <label>参与学生</label>
+                <select class="ui fluid search dropdown" multiple="" id="search_participants" name="participants">
+                <% for (let participant of participants) { %>
+                <option value="<%= participant.id %>" selected><%= participant.username %></option>
+                <% } %>
+                </select>
+            </div>
+            <div class="field">
+                <label>课程公告</label>
+                <textarea rows="5" name="information" class="markdown-edit"><%= course.information %></textarea>
+            </div>
+            <div class="field">
+                <label>开始时间</label>
+                <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(course.start_time || syzoj.utils.getCurrentDate()) %>">
+            </div>
+            <div class="field">
+                <label>结束时间</label>
+                <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(course.end_time || syzoj.utils.getCurrentDate()) %>">
+            </div>
+            <div class="inline field">
+              <label class="ui header">公开</label>
+              <div class="ui toggle checkbox">
+                <input type="checkbox"<% if (course.is_public) { %> checked<% } %> name="is_public">
+                <label><span style="visibility: hidden; ">　</span></label>
+              </div>
+            </div>
+            <div style="text-align: center; "><button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>提交</button></div>
+          </div>
+        </form>
+<script>
+$(function () {
+  $('#search_participants')
+    .dropdown({
+      debug: true,
+      apiSettings: {
+        url: '/api/v2/search/users/{query}',
+        onResponse: function (response) {
+          var a = $('#search_participants').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+  $('#search_admins')
+    .dropdown({
+      debug: true,
+      apiSettings: {
+        url: '/api/v2/search/users/{query}',
+        onResponse: function (response) {
+          var a = $('#search_admins').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+  $('#search_contests')
+    .dropdown({
+      debug: true,
+      apiSettings: {
+        url: '/api/v2/search/contests/{query}',
+        onResponse: function (response) {
+          var a = $('#search_contests').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x) {return !a.includes(parseInt(x.value));});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+});
+</script>
+<% include footer %>

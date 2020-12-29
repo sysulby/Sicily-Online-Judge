@@ -1,4 +1,5 @@
 <% include util %>
+<% if (typeof course === 'undefined') course = null; %>
 <% if (typeof contest === 'undefined') contest = null; %>
 <% include header %>
 <link type="text/css" rel="stylesheet" href="/sicily/css/post.css" />
@@ -50,7 +51,9 @@
       <li><a href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'download', 'additional_file']) %>" title="" class="hord_link">附加文件</a></li>
     <% } %>
     <% if (user) { %>
-      <% if (typeof contest !== 'undefined' && contest) { %>
+      <% if (typeof course !== 'undefined' && course) { %>
+        <li><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'submissions'], { problem_id: pid, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
+      <% } else if (typeof contest !== 'undefined' && contest) { %>
         <li><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { problem_id: pid, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
       <% } else { %>
         <li><a href="<%= syzoj.utils.makeUrl(['submissions'], { problem_id: problem.id, submitter: user.username }) %>" title="" class="hord_link">源代码</a></li>
@@ -106,7 +109,7 @@
     </div>
     <% if ((typeof contest === 'undefined' || !contest || !contest.ended) && (testcases && !testcases.error)) { %>
       <h1>提交</h1>
-      <% const formUrl = syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { contest_id: contest ? contest.id : undefined }); %>
+      <% const formUrl = syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { course_id: course ? course.id : undefined, contest_id: course ? cid : contest ? contest.id : undefined }); %>
       <form action="<%= formUrl %>" method="post" onsubmit="return submit_code()" id="submit_code" enctype="multipart/form-data">
         <% if (problem.type !== 'submit-answer') { %>
           <p>

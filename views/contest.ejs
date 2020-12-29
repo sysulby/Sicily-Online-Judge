@@ -7,7 +7,7 @@
 <% } else { %>
   <br>
 <% } %>
-<% if ((user && user.is_admin) || syzoj.utils.getCurrentDate() >= contest.start_time) { %>
+<% if ((user && user.is_admin) || contest.isSupervisior || syzoj.utils.getCurrentDate() >= contest.start_time) { %>
   <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
     <thead>
       <tr align="center" class="ui-widget-header">
@@ -33,7 +33,11 @@
         <% if (user) { %>
         <td align="center">
         <% if (problem.judge_id) { %>
+          <% if (typeof course !== 'undefined' && course) { %>
+          <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', 'submission', problem.judge_id]) %>">
+          <% } else { %>
           <a href="<%= syzoj.utils.makeUrl(['contest', 'submission', problem.judge_id]) %>">
+          <% } %>
           <% if (typeof problem.status === 'string') { %>
             <% if (problem.status === 'Submitted') { %>
               <img class='no' src='/sicily/images/not_yet.gif' />
@@ -62,7 +66,11 @@
         <% } %>
         <td height=25 align="center"><%= i + 999 %></td>
         <td class="left aligned">
+          <% if (typeof course !== 'undefined' && course) { %>
+          <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'problem', i]) %>">
+          <% } else { %>
           <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'problem', i]) %>">
+          <% } %>
             <%= problem.problem.title %>
             <% if (problem.problem.type === 'interaction') { %>
               [交互题]
