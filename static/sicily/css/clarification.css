@@ -1,0 +1,172 @@
+/* 
+    Document   : post
+    Created on : 2011-7-2, 21:13:41
+    Author     : hovey
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+
+
+#catalog {
+    width: 160px;    
+    border-right: #cccccc solid 1px;
+    padding: 20px;
+    float: left;
+}
+
+#catalog #oldlink {
+    height: 40px;
+}
+
+#posts {
+    padding: 20px;
+    border-left: #cccccc solid 1px;
+    margin-left: 200px;
+}
+
+#market_posts {
+}
+
+
+.edit_box {
+    width: 100%;
+}
+
+.new_edit_box {
+    width: 100%;
+}
+
+#banner_extend {
+    display: none;
+}
+
+
+.quick_reply_box {
+    display: none;
+    border-top: #cccccc solid 1px;
+    margin: 10px 0px;
+    padding: 10px 0px;
+}
+
+.post_box {
+    position: relative;
+    border: solid #cccccc 1px;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+}
+
+.post_box_extend {
+    padding: 10px 20px 10px 40px;
+}
+
+.reply_post_box {
+    border-top: #cccccc solid 1px;
+    margin-left: 20px;
+}
+
+.more_reply_box {
+    border-top: #cccccc solid 1px;
+    margin: 0px 0px 0px 20px;
+    padding: 10px 0px;
+    cursor: pointer;
+    color: #005DA9;
+}
+
+.more_reply_box:hover {
+    background-color: #F0F0F0;
+    text-decoration: none;
+}
+
+
+.post_header {
+    font-weight: bold;
+    margin: 0px 0px 10px 0px;
+}
+
+.post_body, .post_body font, .post_body p, .post_body span {
+    margin: 10px 0px;
+    font-size: 15px;
+    line-height: 150%;
+	font-family: Verdana;
+}
+.post_body pre {
+    line-height: normal;
+}
+
+.post_content {
+    word-break: break-all;
+    white-space: pre-wrap;
+    *white-space: pre;
+    *word-break: break-word;
+    font-family: monospace;
+}
+
+.operations {
+	display: none;
+}
+
+.post_box:hover .operations {
+	display: inline;
+}
+
+.post_left_bar {
+    position: absolute;
+    width: 30px;
+    left: 5px;
+    top: 5px;
+}
+
+
+.useful_rating {
+    behavior: url('css/PIE.php');
+    font-size: 19px;
+    color: white;
+    border: 1px solid firebrick;
+    background-color: firebrick;
+    background-image: linear-gradient(top,tomato,firebrick);
+    background-image: -webkit-linear-gradient(top,tomato,firebrick);
+    background-image: -moz-linear-gradient(top,tomato,firebrick);
+    background-image: -ms-linear-gradient(top,tomato,firebrick);
+    background-image: -o-linear-gradient(top,tomato,firebrick);
+    -pie-background: firebrick linear-gradient(top,tomato,firebrick);
+    text-align: center;
+    cursor: default;
+    position: relative;
+}
+
+.useful_rating_highlight {
+    behavior: url('css/PIE.php');
+    border: 1px solid forestgreen;
+    background-color: forestgreen;
+    background-image: linear-gradient(top,limegreen,forestgreen);
+    background-image: -webkit-linear-gradient(top,limegreen,forestgreen);
+    background-image: -moz-linear-gradient(top,limegreen,forestgreen);
+    background-image: -ms-linear-gradient(top,limegreen,forestgreen);
+    background-image: -o-linear-gradient(top,limegreen,forestgreen);
+    -pie-background: forestgreen linear-gradient(top,limegreen,forestgreen);
+    position: relative;
+}
+
+.addition_info {
+    color: grey;
+    display: inline;
+    font-weight: normal;
+}
+
+.catalog_title {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.solution_icon {
+    width: 32px;
+    height: 32px;
+    background-image: url("../images/solution.png");
+}
+
+.clarification_icon {
+    width: 32px;
+    height: 32px;
+    background-image: url("../images/clarification.png");
+}

@@ -1,0 +1,176 @@
+/* 
+    Document   : project_hord
+    Created on : 2011-7-3, 16:51:16
+    Author     : hovey
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+/* 
+   TODO customize this sample style
+   Syntax recommendation http://www.w3.org/TR/REC-CSS2/
+*/
+
+.hord_button {
+    behavior: url('css/PIE.php');
+    vertical-align: middle;
+    display:inline-block;
+    margin: 3px 5px;
+    padding: 4px 10px;
+    background-color: whiteSmoke;
+    background-image: linear-gradient(top,whiteSmoke,#F1F1F1);
+    background-image: -webkit-linear-gradient(top,whiteSmoke,#F1F1F1);
+    background-image: -moz-linear-gradient(top,whiteSmoke,#F1F1F1);
+    background-image: -ms-linear-gradient(top,whiteSmoke,#F1F1F1);
+    background-image: -o-linear-gradient(top,whiteSmoke,#F1F1F1);
+    -pie-background: whiteSmoke linear-gradient(top,whiteSmoke,#F1F1F1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    font-weight: bold;
+    font-size: 11px;
+    color: #666;
+    cursor: pointer;
+    overflow: auto;
+    position:relative;
+    -webkit-box-shadow: #666 0px 1px 2px;
+    -moz-box-shadow: #666 0px 1px 2px;
+    box-shadow: #666 0px 1px 2px;
+
+
+    /* hot fix for ie7 */
+    zoom:1;
+    *display:inline;
+}
+
+
+.hord_button:hover {
+    behavior: url('css/PIE.php');
+    background-color: #F8F8F8;
+    -pie-background: #F8F8F8;
+    border: 1px solid #C6C6C6;
+    -webkit-box-shadow: #666 0px 0px 1px;
+    -moz-box-shadow: #666 0px 0px 1px;
+    box-shadow: #666 0px 0px 1px;
+}
+
+.hord_theme_blue {
+    behavior: url('css/PIE.php');
+    color: white;
+    border: 1px solid royalblue;
+    background-color: royalblue;
+    background-image: linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -webkit-linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -moz-linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -ms-linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -o-linear-gradient(top,cornflowerblue,royalblue);
+    -pie-background: royalblue linear-gradient(top,cornflowerblue,royalblue);
+}
+
+.hord_theme_blue:hover {
+    behavior: url('css/PIE.php');
+    color: white;
+    border: 1px solid royalblue;
+    background-color: royalblue;
+    background-image: linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -webkit-linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -moz-linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -ms-linear-gradient(top,cornflowerblue,royalblue);
+    background-image: -o-linear-gradient(top,cornflowerblue,royalblue);
+    -pie-background: royalblue linear-gradient(top,cornflowerblue,royalblue);
+    -webkit-box-shadow: #666 0px 0px 1px;
+    -moz-box-shadow: #666 0px 0px 1px;
+    box-shadow: #666 0px 0px 1px;
+}
+
+.hord_theme_green {
+    behavior: url('css/PIE.php');
+    color: white;
+    border: 1px solid forestgreen;
+    background-color: forestgreen;
+    background-image: linear-gradient(top,limegreen,forestgreen);
+    background-image: -webkit-linear-gradient(top,limegreen,forestgreen);
+    background-image: -moz-linear-gradient(top,limegreen,forestgreen);
+    background-image: -ms-linear-gradient(top,limegreen,forestgreen);
+    background-image: -o-linear-gradient(top,limegreen,forestgreen);
+    -pie-background: forestgreen linear-gradient(top,limegreen,forestgreen);
+}
+
+.hord_theme_green:hover {
+    behavior: url('css/PIE.php');
+    color: white;
+    border: 1px solid forestgreen;
+    background-color: forestgreen;
+    background-image: linear-gradient(top,limegreen,forestgreen);
+    background-image: -webkit-linear-gradient(top,limegreen,forestgreen);
+    background-image: -moz-linear-gradient(top,limegreen,forestgreen);
+    background-image: -ms-linear-gradient(top,limegreen,forestgreen);
+    background-image: -o-linear-gradient(top,limegreen,forestgreen);
+    -pie-background: forestgreen linear-gradient(top,limegreen,forestgreen);
+    -webkit-box-shadow: #666 0px 0px 1px;
+    -moz-box-shadow: #666 0px 0px 1px;
+    box-shadow: #666 0px 0px 1px;
+}
+
+.hord_theme_red {
+    behavior: url('css/PIE.php');
+    color: white;
+    border: 1px solid firebrick;
+    background-color: firebrick;
+    background-image: linear-gradient(top,tomato,firebrick);
+    background-image: -webkit-linear-gradient(top,tomato,firebrick);
+    background-image: -moz-linear-gradient(top,tomato,firebrick);
+    background-image: -ms-linear-gradient(top,tomato,firebrick);
+    background-image: -o-linear-gradient(top,tomato,firebrick);
+    -pie-background: firebrick linear-gradient(top,tomato,firebrick);
+}
+
+.hord_theme_red:hover {
+    behavior: url('css/PIE.php');
+    color: white;
+    border: 1px solid firebrick;
+    background-color: firebrick;
+    background-image: linear-gradient(top,tomato,firebrick);
+    background-image: -webkit-linear-gradient(top,tomato,firebrick);
+    background-image: -moz-linear-gradient(top,tomato,firebrick);
+    background-image: -ms-linear-gradient(top,tomato,firebrick);
+    background-image: -o-linear-gradient(top,tomato,firebrick);
+    -pie-background: firebrick linear-gradient(top,tomato,firebrick);
+    -webkit-box-shadow: #666 0px 0px 1px;
+    -moz-box-shadow: #666 0px 0px 1px;
+    box-shadow: #666 0px 0px 1px;
+}
+
+
+.hord_headline {
+    font-weight: bold;
+    text-decoration: underline;
+    color: green;
+}
+
+.hord_link {
+    color: #005DA9;
+}
+
+.hord_link:hover {
+    color: #005DA9;
+}
+
+.hord_list {
+    list-style-type: none;
+    padding-left: 20px;
+    line-height: 20px;
+
+}
+
+.hord_list_selected {
+
+}
+
+.hord_dt {
+    line-height: 20px;
+    font-weight: bold;
+}
+
+.hord_dd {
+    margin-left: 20px;
+}
