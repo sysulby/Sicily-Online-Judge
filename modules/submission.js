@@ -56,7 +56,7 @@ app.get('/submissions', async (req, res) => {
           let contestId = contests_id[cid - 1];
           contest = await Contest.findById(contestId);
           contest.ended = contest.isEnded();
-          if (curUser && (await course.isSupervisior(curUser) || course.participants.includes(curUser.id.toString()))) {
+          if (curUser && (await course.isSupervisior(curUser) || course.participants.split('|').includes(curUser.id.toString()))) {
             query.andWhere('type = 2');
             query.andWhere('type_info = :type_info', { type_info: courseId * 1000 + cid });
             inContest = true;
@@ -207,7 +207,7 @@ app.get('/submission/:id', async (req, res) => {
       contest = await Contest.findById(contests_id[cid-1]);
       if (!(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
         if (!course.is_public) throw new Error("课节未结束或未公开。");
-        if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+        if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
       }
     }
 

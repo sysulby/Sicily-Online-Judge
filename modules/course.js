@@ -46,7 +46,7 @@ app.get('/course/:id/edit', async (req, res) => {
       course.id = 0;
     } else {
       // if course exists, both system administrators and contest administrators can edit it.
-      if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.split('|').includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
 
       await course.loadRelationships();
     }
@@ -84,7 +84,7 @@ app.post('/course/:id/edit', async (req, res) => {
       course.holder_id = res.locals.user.id;
     } else {
       // if course exists, both system administrators and course administrators can edit it.
-      if (!res.locals.user || (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!res.locals.user || (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
       
       await course.loadRelationships();
     }
@@ -125,10 +125,10 @@ app.get('/course/:id', async (req, res) => {
     const isSupervisior = await course.isSupervisior(curUser);
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     course.running = course.isRunning();
@@ -183,10 +183,10 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
     const curUser = res.locals.user;
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     let contests_id = await course.getContests();
@@ -314,10 +314,10 @@ app.get('/course/:id/contest/:cid/ranklist', async (req, res) => {
     const curUser = res.locals.user;
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     let contests_id = await course.getContests();
@@ -406,10 +406,10 @@ app.get('/course/:id/contest/:cid/submissions', async (req, res) => {
     const curUser = res.locals.user;
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     let contests_id = await course.getContests();
@@ -559,10 +559,10 @@ app.get('/course/contest/submission/:id', async (req, res) => {
     if (!course) throw new ErrorMessage('无此课程。');
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     let contests_id = await course.getContests();
@@ -620,10 +620,10 @@ app.get('/course/:id/contest/:cid/problem/:pid', async (req, res) => {
     const curUser = res.locals.user;
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     let contests_id = await course.getContests();
@@ -748,10 +748,10 @@ app.get('/course/:id/contest/:cid/:pid/download/additional_file', async (req, re
     if (!course) throw new ErrorMessage('无此课程。');
 
     if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.includes(res.locals.user.id.toString())) {
+    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
     }
 
     let contests_id = await course.getContests();
