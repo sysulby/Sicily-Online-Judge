@@ -257,9 +257,6 @@ img {
     margin: auto;
     background-color: #FFFFFF;
     padding: 5px;
-
-}
-.main_frame.normal {
     width: 960px;
 }
 .main_frame.wide {

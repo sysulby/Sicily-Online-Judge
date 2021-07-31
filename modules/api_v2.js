@@ -36,6 +36,43 @@ app.get('/api/v2/search/users/:keyword*?', async (req, res) => {
   }
 });
 
+app.get('/api/v2/search/contests/:keyword*?', async (req, res) => {
+  try {
+    let Contest = syzoj.model('contest');
+
+    let keyword = req.params.keyword || '';
+    let contests = await Contest.find({
+      where: {
+        title: TypeORM.Like(`%${req.params.keyword}%`)
+      },
+      order: {
+        id: 'ASC'
+      }
+    });
+
+    let result = [];
+
+    let id = parseInt(keyword);
+    if (id) {
+      let contestById = await Contest.findById(parseInt(keyword));
+      if (contestById && await contestById.isSupervisior(res.locals.user)) {
+        result.push(contestById);
+      }
+    }
+    await contests.forEachAsync(async contest => {
+      if (await contest.isSupervisior(res.locals.user) && result.length < syzoj.config.page.edit_course_contest_list && contest.id !== id) {
+        result.push(problem);
+      }
+    });
+
+    result = result.map(x => ({ name: `#${x.id}. ${x.title}`, value: x.id, url: syzoj.utils.makeUrl(['contest', x.id]) }));
+    res.send({ success: true, results: result });
+  } catch (e) {
+    syzoj.log(e);
+    res.send({ success: false });
+  }
+});
+
 app.get('/api/v2/search/problems/:keyword*?', async (req, res) => {
   try {
     let Problem = syzoj.model('problem');

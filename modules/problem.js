@@ -1,6 +1,7 @@
 let Problem = syzoj.model('problem');
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
+let Course = syzoj.model('course');
 let Contest = syzoj.model('contest');
 let ContestPlayer = syzoj.model('contest_player');
 let ProblemTag = syzoj.model('problem_tag');
@@ -42,8 +43,9 @@ app.get('/problems', async (req, res) => {
 
     await problems.forEachAsync(async problem => {
       problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
-      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.state = await problem.getJudgeState(res.locals.user, true);
       problem.tags = await problem.getTags();
+      problem.specialJudge = await problem.hasSpecialJudge();
     });
 
     res.render('problems', {
@@ -213,21 +215,18 @@ app.get('/problem/:id', async (req, res) => {
       throw new ErrorMessage('您没有权限进行此操作。');
     }
 
-    let state = await problem.getJudgeState(res.locals.user, false);
-
+    problem.state = await problem.getJudgeState(res.locals.user, true);
     problem.tags = await problem.getTags();
+    problem.specialJudge = await problem.hasSpecialJudge();
     await problem.loadRelationships();
 
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
 
-    let discussionCount = await Article.count({ problem_id: id });
-
     res.render('problem', {
       problem: problem,
-      state: state,
+      lastState: await problem.getJudgeState(res.locals.user, false),
       lastLanguage: res.locals.user ? await res.locals.user.getLastSubmitLanguage() : null,
-      testcases: testcases,
-      discussionCount: discussionCount
+      testcases: testcases
     });
   } catch (e) {
     syzoj.log(e);
@@ -278,6 +277,7 @@ app.get('/problem/:id/edit', async (req, res) => {
 
     if (!problem) {
       if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
         memory_limit: syzoj.config.default.problem.memory_limit,
@@ -312,6 +312,7 @@ app.post('/problem/:id/edit', async (req, res) => {
     let problem = await Problem.findById(id);
     if (!problem) {
       if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -379,6 +380,7 @@ app.get('/problem/:id/import', async (req, res) => {
 
     if (!problem) {
       if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -413,6 +415,7 @@ app.post('/problem/:id/import', async (req, res) => {
     let problem = await Problem.findById(id);
     if (!problem) {
       if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -665,9 +668,26 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       });
     }
 
+    let course_id = parseInt(req.query.course_id);
+    let course;
     let contest_id = parseInt(req.query.contest_id);
     let contest;
-    if (contest_id) {
+    if (course_id) {
+      course = await Course.findById(course_id);
+      if (!course) throw new ErrorMessage('无此课程。');
+      let contests_id = await course.getContests();
+      if (!contest_id || contest_id < 1 || contest_id > contests_id.length) throw new ErrorMessage('无此课节。');
+      contest = await Contest.findById(contests_id[contest_id-1]);
+      if (!contest) throw new ErrorMessage('无此课节。');
+      if ((!contest.isRunning()) && (!await contest.isSupervisior(curUser))) throw new ErrorMessage('课节未开始或已结束。');
+      let problems_id = await contest.getProblems();
+      if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
+
+      judge_state.type = 2;
+      judge_state.type_info = course_id * 1000 + contest_id;
+
+      await judge_state.save();
+    } else if (contest_id) {
       contest = await Contest.findById(contest_id);
       if (!contest) throw new ErrorMessage('无此比赛。');
       const isSupervisior = await contest.isSupervisior(curUser);
@@ -729,7 +749,9 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       throw new ErrorMessage(`无法开始评测：${err.toString()}`);
     }
 
-    if (contest && (!await contest.isSupervisior(curUser))) {
+    if (course && (!await course.isSupervisior(curUser))) {
+      res.redirect(syzoj.utils.makeUrl(['course', course_id, 'contest', contest_id, 'submissions']));
+    } else if (contest && (!await contest.isSupervisior(curUser))) {
       res.redirect(syzoj.utils.makeUrl(['contest', contest_id, 'submissions']));
     } else {
       res.redirect(syzoj.utils.makeUrl(['submission', judge_state.id]));

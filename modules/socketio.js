@@ -37,7 +37,7 @@ function processOverallResult(source, config) {
                         time: config.showUsage ? cs.result.time : undefined,
                         memory: config.showUsage ? cs.result.memory : undefined,
                         scoringRate: cs.result.scoringRate,
-                        systemMessage: cs.result.systemMessage,
+                        systemMessage: config.showTestdata ? cs.result.systemMessage: undefined,
                         input: config.showTestdata ? cs.result.input : undefined,
                         output: config.showTestdata ? cs.result.output : undefined,
                         userOutput: config.showTestdata ? cs.result.userOutput : undefined,

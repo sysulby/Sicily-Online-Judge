@@ -1,6 +1,7 @@
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
 let User = syzoj.model('user');
+let Course = syzoj.model('course');
 let Contest = syzoj.model('contest');
 let Problem = syzoj.model('problem');
 
@@ -13,7 +14,7 @@ const displayConfig = {
   showCode: true,
   showResult: true,
   showOthers: true,
-  showTestdata: true,
+  showTestdata: false,
   showDetailResult: true,
   inContest: false,
   showRejudge: false
@@ -38,11 +39,37 @@ app.get('/submissions', async (req, res) => {
       isFiltered = true;
     }
 
+    let course;
+    const courseId = Number(req.query.course);
+    course = await Course.findById(courseId);
+
+    let cid;
+    cid = Number(req.query.cid);
+
+    let contest;
     if (!req.query.contest) {
-      query.andWhere('type = 0');
+      if (course) {
+        let contests_id = await course.getContests();
+        if (!cid || cid < 1 || cid > contests_id.length) {
+          query.andWhere('type = 0');
+        } else {
+          let contestId = contests_id[cid - 1];
+          contest = await Contest.findById(contestId);
+          contest.ended = contest.isEnded();
+          if (curUser && (await course.isSupervisior(curUser) || course.participants.split('|').includes(curUser.id.toString()))) {
+            query.andWhere('type = 2');
+            query.andWhere('type_info = :type_info', { type_info: courseId * 1000 + cid });
+            inContest = true;
+          } else {
+            throw new Error("您暂时无权查看此课节的详细评测信息。");
+          }
+        }
+      } else {
+        query.andWhere('type = 0');
+      }
     } else {
       const contestId = Number(req.query.contest);
-      const contest = await Contest.findById(contestId);
+      contest = await Contest.findById(contestId);
       contest.ended = contest.isEnded();
       if ((contest.ended && contest.is_public) || // If the contest is ended and is not hidden
         (curUser && await contest.isSupervisior(curUser)) // Or if the user have the permission to check
@@ -140,6 +167,9 @@ app.get('/submissions', async (req, res) => {
       pushType: 'rough',
       form: req.query,
       displayConfig: displayConfig,
+      course: course,
+      cid: cid,
+      contest: contest,
       isFiltered: isFiltered,
       fast_pagination: syzoj.config.submissions_page_fast_pagination
     });
@@ -159,6 +189,8 @@ app.get('/submission/:id', async (req, res) => {
     const curUser = res.locals.user;
     if (!await judge.isAllowedVisitBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
+    let course;
+    let cid;
     let contest;
     if (judge.type === 1) {
       contest = await Contest.findById(judge.type_info);
@@ -167,6 +199,15 @@ app.get('/submission/:id', async (req, res) => {
       if ((!contest.ended || !contest.is_public) &&
         !(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
         throw new Error("比赛未结束或未公开。");
+      }
+    } else if (judge.type === 2) {
+      course = await Course.findById(judge.type_info / 1000);
+      cid = judge.type_info % 1000;
+      let contests_id = await course.getContests();
+      contest = await Contest.findById(contests_id[cid-1]);
+      if (!(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
+        if (!course.is_public) throw new Error("课节未结束或未公开。");
+        if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
       }
     }
 
@@ -189,6 +230,7 @@ app.get('/submission/:id', async (req, res) => {
     }
 
     displayConfig.showRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
+    displayConfig.showTestdata = await judge.problem.isAllowedEditBy(res.locals.user);
     res.render('submission', {
       info: getSubmissionInfo(judge, displayConfig),
       roughResult: getRoughResult(judge, displayConfig, false),
@@ -202,6 +244,9 @@ app.get('/submission/:id', async (req, res) => {
         displayConfig: displayConfig
       }, syzoj.config.session_secret) : null,
       displayConfig: displayConfig,
+      course: course,
+      cid: cid,
+      contest: contest,
     });
   } catch (e) {
     syzoj.log(e);

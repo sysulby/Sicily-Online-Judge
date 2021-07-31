@@ -1,0 +1,46 @@
+<% include header %>
+<% if (user && user.is_admin) { %>
+  <fieldset>
+    <legend>Basic Operation</legend>
+    <a href="<%= syzoj.utils.makeUrl(['course', 0, 'edit']) %>">[新建课程]</a>
+  </fieldset>
+<% } else { %>
+  <br>
+<% } %>
+
+<table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
+  <thead>
+    <tr align="center" class="ui-widget-header">
+      <th width="6%" height=20>编号</th>
+      <th class="place_left">课程标题</th>
+      <th width="10%">教师</th>
+      <th width="30%">状态</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%
+    for (let course of courses) {
+      let now = syzoj.utils.getCurrentDate();
+    %>
+    <tr>
+      <td height=25 align="center"><%= course.id %></td>
+      <td><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>"><%= course.title %></a></td>
+      <td align="center"><%- course.holder_id %></td>
+      <td align="center">
+        <% if (now < course.start_time) { %>
+          <% if (course.start_time - now < 900) { %><font color=red><% } %>
+          开始于 <%= syzoj.utils.formatDate(course.start_time) %><br />
+          还剩下 <%= syzoj.utils.formatTime(course.start_time - now) %>
+        <% } else if (now >= course.start_time && now < course.end_time) { %>
+          <font color=red>正在进行中，还剩下 <%= syzoj.utils.formatTime(course.end_time - now) %><br />
+        <% } else { %>
+          <font color=green>结束于 <%= syzoj.utils.formatDate(course.end_time) %><br />
+        <% } %>
+      </td>
+    </tr>
+    <% } %>
+  </tbody>
+</table>
+<br>
+<% include page %>
+<% include footer %>

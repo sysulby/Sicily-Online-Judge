@@ -1,0 +1,59 @@
+<% include header %>
+<% if (user && user.is_admin) { %>
+  <fieldset>
+    <legend>Basic Operation</legend>
+    <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">[编辑课程]</a>
+  </fieldset>
+<% } else { %>
+  <br>
+<% } %>
+<% if ((user && user.is_admin) || syzoj.utils.getCurrentDate() >= course.start_time) { %>
+  <table class="tblcontainer ui-widget-content ui-corner-all" width="100%" border="0" cellpadding="4" cellspacing="2">
+    <thead>
+      <tr align="center" class="ui-widget-header">
+        <th width="6%" height=20>编号</th>
+        <th class="place_left">课节标题</th>
+        <th width="30%">计划</th>
+        <% if (user) { %>
+        <th width="10%">完成进度</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+      let i = 0;
+      for (let contest of contests) {
+        i++;
+        let now = syzoj.utils.getCurrentDate();
+      %>
+      <tr>
+        <td height=25 align="center"><%= i + 999 %></td>
+        <td class="left aligned">
+          <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i]) %>"><%= contest.contest.title %></a>
+        </td>
+        <td align="center">
+          <% if (now < contest.contest.start_time) { %>
+            <% if (contest.contest.start_time - now < 900) { %><font color=red><% } %>
+            开始于 <%= syzoj.utils.formatDate(contest.contest.start_time) %><br />
+            还剩下 <%= syzoj.utils.formatTime(contest.contest.start_time - now) %>
+          <% } else if (now >= contest.contest.start_time && now < contest.contest.end_time) { %>
+            <font color=red>正在进行中，还剩下 <%= syzoj.utils.formatTime(contest.contest.end_time - now) %><br />
+          <% } else { %>
+            <font color=green>结束于 <%= syzoj.utils.formatDate(contest.contest.end_time) %><br />
+          <% } %>
+        </td>
+        <% if (user) { %>
+        <td align="center"><%= contest.statistics.ac_num %>/<%= contest.statistics.problem_num %></td>
+        <% } %>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+<% } %>
+<script>
+  $(function() {
+    document.title = "<%= course.title %> - Sicily Online Judge";
+  });
+</script>
+<br>
+<% include footer %>

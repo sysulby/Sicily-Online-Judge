@@ -6,6 +6,7 @@ declare var syzoj, ErrorMessage: any;
 import User from "./user";
 import Problem from "./problem";
 import Contest from "./contest";
+import Course from "./course";
 
 const Judger = syzoj.lib('judger');
 
@@ -122,14 +123,18 @@ export default class JudgeState extends Model {
     await this.loadRelationships();
 
     if (user && user.id === this.problem.user_id) return true;
-    else if (this.type === 0) return this.problem.is_public || (user && (await user.hasPrivilege('manage_problem')));
-    else if (this.type === 1) {
+    else if (this.type === 0) {
+      return this.problem.is_public || (user && (await user.hasPrivilege('manage_problem')));
+    } else if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
       if (contest.isRunning()) {
         return user && await contest.isSupervisior(user);
       } else {
         return true;
       }
+    } else if (this.type === 2) {
+      let course = await Course.findById(this.type_info / 1000);
+      return user && await course.isSupervisior(user);
     }
   }
 
@@ -148,6 +153,11 @@ export default class JudgeState extends Model {
       await Promise.all(promises);
     } else if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
+      await contest.newSubmission(this);
+    } else if (this.type === 2) {
+      let course = await Course.findById(this.type_info / 1000);
+      let contests_id = await course.getContests();
+      let contest = await Contest.findById(contests_id[this.type_info % 1000 - 1]);
       await contest.newSubmission(this);
     }
   }

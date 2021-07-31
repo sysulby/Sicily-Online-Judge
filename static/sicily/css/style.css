@@ -1,0 +1,151 @@
+:not(.status_detail).status.success,
+.title:hover .status_detail.status.success,
+.title.active .status_detail.status.success,
+:not(.status_detail).status.submitted,
+.title:hover .status_detail.status.submitted,
+.title.active .status_detail.status.submitted,
+:not(.status_detail).status.accepted,
+.title:hover .status_detail.status.accepted,
+.title.active .status_detail.status.accepted {
+    color: forestgreen;
+}
+
+:not(.status_detail).status.wrong_answer,
+.title:hover .status_detail.status.wrong_answer,
+.title.active .status_detail.status.wrong_answer {
+    color: red;
+}
+
+:not(.status_detail).status.invalid_interaction,
+.title:hover .status_detail.status.invalid_interaction,
+.title.active .status_detail.status.invalid_interaction,
+:not(.status_detail).status.runtime_error,
+.title:hover .status_detail.status.runtime_error,
+.title.active .status_detail.status.runtime_error,
+:not(.status_detail).status.file_error,
+.title:hover .status_detail.status.file_error,
+.title.active .status_detail.status.file_error {
+    color: darkorchid;
+}
+
+:not(.status_detail).status.memory_limit_exceeded,
+.title:hover .status_detail.status.memory_limit_exceeded,
+.title.active .status_detail.status.memory_limit_exceeded,
+:not(.status_detail).status.time_limit_exceeded,
+.title:hover .status_detail.status.time_limit_exceeded,
+.title.active .status_detail.status.time_limit_exceeded,
+:not(.status_detail).status.output_limit_exceeded,
+.title:hover .status_detail.status.output_limit_exceeded,
+.title.active .status_detail.status.output_limit_exceeded {
+    color: sandybrown;
+}
+
+:not(.status_detail).status.waiting,
+.title:hover .status_detail.status.waiting,
+.title.active .status_detail.status.waiting,
+:not(.status_detail).status.system_error {
+    color: grey;
+}
+
+:not(.status_detail).status.unknown {
+    color: #e28989;
+}
+
+:not(.status_detail).status.running,
+.title:hover .status_detail.status.running,
+.title.active .status_detail.status.running,
+:not(.status_detail).status.pending,
+.title:hover .status_detail.status.pending,
+.title.active .status_detail.status.pending,
+:not(.status_detail).status.judging,
+.title:hover .status_detail.status.judging,
+.title.active .status_detail.status.judging {
+    color: #6cf;
+}
+
+:not(.status_detail).status.partially_correct,
+.title:hover .status_detail.status.partially_correct,
+.title.active .status_detail.status.partially_correct {
+  color: #01bab2;
+}
+
+:not(.status_detail).status.judgement_failed,
+.title:hover .status_detail.status.judgement_failed,
+.title.active .status_detail.status.judgement_failed {
+  color: #FF5722;
+}
+
+:not(.status_detail).status.skipped,
+.title:hover .status_detail.status.skipped,
+.title.active .status_detail.status.skipped {
+  color: #78909C;
+}
+
+:not(.status_detail).status.compiling {
+    color: #00b5ad;
+}
+
+:not(.status_detail).status.no_testdata {
+    color: brown;
+}
+
+:not(.status_detail).status.compile_error {
+    color: rgb(0, 68, 136);
+}
+
+/* score color */
+.score_0 {
+    color: red;
+}
+
+.score_1 {
+    color: #ff4b00;
+}
+
+.score_2 {
+    color: #ff6200;
+}
+
+.score_3 {
+    color: #ffa900;
+}
+
+.score_4 {
+    color: #ffd800;
+}
+
+.score_5 {
+    color: #c8ff00;
+}
+
+.score_6 {
+    color: #a5ff00;
+}
+
+.score_7 {
+    color: #52ff00;
+}
+
+.score_8 {
+    color: #41f741;
+}
+
+.score_9 {
+    color: #34d034;
+}
+
+.score_10 {
+    color: forestgreen;
+}
+
+.score {
+    text-shadow: 0 0 0.1px;
+}
+
+.rating_up {
+  color: #dd4b39;
+}
+
+.rating_down {
+  color: #3d9400;
+}

@@ -12,9 +12,20 @@ app.get('/ranklist', async (req, res) => {
     if (!['ac_num', 'rating', 'id', 'username'].includes(sort) || !['asc', 'desc'].includes(order)) {
       throw new ErrorMessage('错误的排序参数。');
     }
-    let paginate = syzoj.utils.paginate(await User.countForPagination({ is_show: true }), req.query.page, syzoj.config.page.ranklist);
-    let ranklist = await User.queryPage(paginate, { is_show: true }, { [sort]: order.toUpperCase() });
-    await ranklist.forEachAsync(async x => x.renderInformation());
+    // let paginate = syzoj.utils.paginate(await User.countForPagination({ is_show: true }), req.query.page, syzoj.config.page.ranklist);
+    // let ranklist = await User.queryPage(paginate, { is_show: true }, { [sort]: order.toUpperCase() });
+    // await ranklist.forEachAsync(async x => x.renderInformation());
+
+    let query = User.createQueryBuilder();
+    if (res.locals.user == null || !res.locals.user.is_admin) {
+      query.where({ is_show: true });
+    }
+    let paginate = syzoj.utils.paginate(await User.countForPagination(query), req.query.page, syzoj.config.page.ranklist);
+    query.orderBy(sort, order.toUpperCase());
+    if (sort == 'ac_num') {
+      query.addOrderBy('submit_num', order == 'desc' ? 'ASC': 'DESC');
+    }
+    let ranklist = await User.queryPage(paginate, query);
 
     res.render('ranklist', {
       ranklist: ranklist,
@@ -44,6 +55,7 @@ app.get('/find_user', async (req, res) => {
 });
 
 // Login
+/*
 app.get('/login', async (req, res) => {
   if (res.locals.user) {
     res.render('error', {
@@ -53,6 +65,7 @@ app.get('/login', async (req, res) => {
     res.render('login');
   }
 });
+*/
 
 // Sign up
 app.get('/sign_up', async (req, res) => {
@@ -83,6 +96,9 @@ app.get('/user/:id', async (req, res) => {
     user.allowedEdit = await user.isAllowedEditBy(res.locals.user);
 
     let statistics = await user.getStatistics();
+    for (var i = 0; i < statistics.length; ++i) {
+      user.submit_num += statistics[i].value;
+    }
     await user.renderInformation();
     user.emailVisible = user.public_email || user.allowedEdit;
 
