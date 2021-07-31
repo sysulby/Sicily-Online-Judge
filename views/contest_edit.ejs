@@ -43,8 +43,14 @@
               </div>
               <div class="field">
                 <div class="ui radio checkbox">
-                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-acm" value="acm"<% if (contest.type === 'acm') { %> checked="checked"<% } %>>
-                  <label for="type-acm">ICPC</label>
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-usaco" value="usaco"<% if (contest.type === 'usaco') { %> checked="checked"<% } %>>
+                  <label for="type-usaco">USACO</label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="ui radio checkbox">
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-icpc" value="icpc"<% if (contest.type === 'icpc') { %> checked="checked"<% } %>>
+                  <label for="type-icpc">ICPC</label>
                 </div>
               </div>
             </div>
@@ -58,11 +64,23 @@
             </div>
             <div class="field">
                 <label>开始时间</label>
-                <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(contest.start_time || syzoj.utils.getCurrentDate()) %>">
+                <input type="text" name="start_time" value="<%= contest.start_time == null ? '' : syzoj.utils.formatDate(contest.start_time) %>">
             </div>
             <div class="field">
                 <label>结束时间</label>
-                <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(contest.end_time || syzoj.utils.getCurrentDate()) %>">
+                <input type="text" name="end_time" value="<%= contest.end_time == null ? '' : syzoj.utils.formatDate(contest.end_time) %>">
+            </div>
+            <div class="field">
+                <label>持续时间</label>
+                <input type="text" name="duration" value="<%= contest.duration == null ? '' : syzoj.utils.formatTime(contest.duration) %>">
+            </div>
+            <div class="field">
+                <label>注册信息</label>
+                <textarea rows="5" name="reg_info" class="markdown-edit"><%= contest.reg_info %></textarea>
+            </div>
+            <div class="field">
+                <label>注册密码</label>
+                <input type="text" name="password" value="<%= contest.password %>">
             </div>
             <div class="inline field">
               <label class="ui header">公开</label>

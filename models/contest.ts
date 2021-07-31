@@ -11,7 +11,8 @@ import ContestPlayer from "./contest_player";
 enum ContestType {
   NOI = "noi",
   IOI = "ioi",
-  ICPC = "acm"
+  USACO = "usaco",
+  ICPC = "icpc"
 }
 
 @TypeORM.Entity()
@@ -33,16 +34,25 @@ export default class Contest extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   end_time: number;
 
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  duration: number;
+
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
   holder_id: number;
 
-  // type: noi, ioi, acm
+  // type: noi, ioi, usaco, icpc
   @TypeORM.Column({ nullable: true, type: "enum", enum: ContestType })
   type: ContestType;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   information: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  reg_info: string;
+
+  @TypeORM.Column({ nullable: true, type: "varchar", length: 120 })
+  password: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   problems: string;
@@ -73,22 +83,22 @@ export default class Contest extends Model {
   }
 
   allowedSeeingOthers() {
-    if (this.type === 'acm') return true;
+    if (this.type === 'icpc') return true;
     else return false;
   }
 
   allowedSeeingScore() { // If not, then the user can only see status
-    if (this.type === 'ioi') return true;
+    if (this.type === 'ioi' || this.type === 'usaco') return true;
     else return false;
   }
 
   allowedSeeingResult() { // If not, then the user can only see compile progress
-    if (this.type === 'ioi' || this.type === 'acm') return true;
+    if (this.type === 'ioi' || this.type === 'usaco' || this.type === 'icpc') return true;
     else return false;
   }
 
   allowedSeeingTestcase() {
-    if (this.type === 'ioi') return true;
+    if (this.type === 'ioi' || this.type === 'usaco') return true;
     return false;
   }
 
@@ -127,7 +137,8 @@ export default class Contest extends Model {
       if (!player) {
         player = await ContestPlayer.create({
           contest_id: this.id,
-          user_id: judge_state.user_id
+          user_id: judge_state.user_id,
+          reg_time: judge_state.submit_time
         });
         await player.save();
       }
@@ -143,11 +154,13 @@ export default class Contest extends Model {
 
   isRunning(now?) {
     if (!now) now = syzoj.utils.getCurrentDate();
-    return now >= this.start_time && now < this.end_time;
+    if (this.start_time && now < this.start_time) return false;
+    if (this.end_time && now > this.end_time) return false;
+    return true;
   }
 
   isEnded(now?) {
     if (!now) now = syzoj.utils.getCurrentDate();
-    return now >= this.end_time;
+    return this.end_time && now > this.end_time;
   }
 }

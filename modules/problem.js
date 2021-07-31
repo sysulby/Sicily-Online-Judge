@@ -2,6 +2,7 @@ let Problem = syzoj.model('problem');
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
 let Contest = syzoj.model('contest');
+let ContestPlayer = syzoj.model('contest_player');
 let ProblemTag = syzoj.model('problem_tag');
 let Article = syzoj.model('article');
 
@@ -669,7 +670,19 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
     if (contest_id) {
       contest = await Contest.findById(contest_id);
       if (!contest) throw new ErrorMessage('无此比赛。');
-      if ((!contest.isRunning()) && (!await contest.isSupervisior(curUser))) throw new ErrorMessage('比赛未开始或已结束。');
+      const isSupervisior = await contest.isSupervisior(curUser);
+      // if contest is non-public, both system administrators and contest administrators can see it.
+      if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+      if (!contest.isRunning() && !isSupervisior) throw new ErrorMessage('比赛未开始或已结束。');
+      let player = await ContestPlayer.findInContest({
+        contest_id: contest.id,
+        user_id: curUser.id
+      });
+      if (!isSupervisior && !player) {
+        res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
+        return;
+      }
+      if (contest.type === 'usaco' && parseInt((new Date()).getTime()) / 1000 > player.reg_time + contest.duration)  throw new ErrorMessage('答题时间结束。');
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
 
