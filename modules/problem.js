@@ -702,7 +702,7 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
         res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
         return;
       }
-      if (contest.type === 'usaco' && parseInt((new Date()).getTime()) / 1000 > player.reg_time + contest.duration)  throw new ErrorMessage('答题时间结束。');
+      if (contest.type === 'usaco' && player != null && parseInt((new Date()).getTime()) / 1000 > player.reg_time + contest.duration)  throw new ErrorMessage('答题时间结束。');
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
 

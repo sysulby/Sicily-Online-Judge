@@ -239,7 +239,7 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
               problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
             }
           }
-        } else if (contest.type === 'ioi') {
+        } else if (contest.type === 'ioi' || contest.type === 'usaco') {
           if (player.score_details[problem.problem.id]) {
             let judge_state = await JudgeState.findById(player.score_details[problem.problem.id].judge_id);
             problem.status = judge_state.status;
@@ -248,7 +248,7 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
             let multiplier = contest.ranklist.ranking_params[problem.problem.id] || 1.0;
             problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
           }
-        } else if (contest.type === 'acm') {
+        } else if (contest.type === 'icpc') {
           if (player.score_details[problem.problem.id]) {
             problem.status = {
               accepted: player.score_details[problem.problem.id].accepted,
@@ -271,18 +271,18 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
       for (let problem of problems) {
         problem.statistics = { attempt: 0, accepted: 0 };
 
-        if (contest.type === 'ioi' || contest.type === 'noi') {
+        if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
           problem.statistics.partially = 0;
         }
 
         for (let player of players) {
           if (player.score_details[problem.problem.id]) {
             problem.statistics.attempt++;
-            if ((contest.type === 'acm' && player.score_details[problem.problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.problem.id].score === 100)) {
+            if ((contest.type === 'icpc' && player.score_details[problem.problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') && player.score_details[problem.problem.id].score === 100)) {
               problem.statistics.accepted++;
             }
 
-            if ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.problem.id].score > 0) {
+            if ((contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') && player.score_details[problem.problem.id].score > 0) {
               problem.statistics.partially++;
             }
           }
@@ -343,7 +343,7 @@ app.get('/course/:id/contest/:cid/ranklist', async (req, res) => {
     let ranklist = await players_id.mapAsync(async player_id => {
       let player = await ContestPlayer.findById(player_id);
 
-      if (contest.type === 'noi' || contest.type === 'ioi') {
+      if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
         player.score = 0;
       }
 
@@ -351,7 +351,7 @@ app.get('/course/:id/contest/:cid/ranklist', async (req, res) => {
         player.score_details[i].judge_state = await JudgeState.findById(player.score_details[i].judge_id);
 
         /*** XXX: Clumsy duplication, see ContestRanklist::updatePlayer() ***/
-        if (contest.type === 'noi' || contest.type === 'ioi') {
+        if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
           let multiplier = (contest.ranklist.ranking_params || {})[i] || 1.0;
           player.score_details[i].weighted_score = player.score_details[i].score == null ? null : Math.round(player.score_details[i].score * multiplier);
           player.score += player.score_details[i].weighted_score;
@@ -682,7 +682,7 @@ app.get('/course/:id/contest/:cid/problem/:pid', async (req, res) => {
           }
           problem.judge_id = player.score_details[problem.id].judge_id;
         }
-      } else if (contest.type === 'ioi') {
+      } else if (contest.type === 'ioi' || contest.type === 'usaco') {
         if (player.score_details[problem.id]) {
           let judge_state = await JudgeState.findById(player.score_details[problem.id].judge_id);
           problem.status = judge_state.status;
@@ -691,7 +691,7 @@ app.get('/course/:id/contest/:cid/problem/:pid', async (req, res) => {
           let multiplier = contest.ranklist.ranking_params[problem.id] || 1.0;
           problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
         }
-      } else if (contest.type === 'acm') {
+      } else if (contest.type === 'icpc') {
         if (player.score_details[problem.id]) {
           problem.status = {
             accepted: player.score_details[problem.id].accepted,
@@ -715,7 +715,7 @@ app.get('/course/:id/contest/:cid/problem/:pid', async (req, res) => {
       for (let player of players) {
         if (player.score_details[problem.id]) {
           problem.statistics.attempt++;
-          if ((contest.type === 'acm' && player.score_details[problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.id].score === 100)) {
+          if ((contest.type === 'icpc' && player.score_details[problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') && player.score_details[problem.id].score === 100)) {
             problem.statistics.accepted++;
           }
         }

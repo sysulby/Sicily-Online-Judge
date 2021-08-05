@@ -654,7 +654,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
       }
       throw new ErrorMessage('比赛尚未开始。');
     }
-    if (contest.type === 'usaco' && parseInt((new Date()).getTime()) / 1000 > player.reg_time + contest.duration) contest.ended = true;
+    if (contest.type === 'usaco' && player != null && parseInt((new Date()).getTime()) / 1000 > player.reg_time + contest.duration) contest.ended = true;
 
     problem.state = await problem.getJudgeState(res.locals.user, true);
     problem.specialJudge = await problem.hasSpecialJudge();
@@ -662,15 +662,6 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
     await syzoj.utils.markdown(problem, ['description', 'input_format', 'output_format', 'example', 'limit_and_hint']);
 
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
-
-    let player = null;
-
-    if (res.locals.user) {
-      player = await ContestPlayer.findInContest({
-        contest_id: contest.id,
-        user_id: res.locals.user.id
-      });
-    }
 
     await problem.loadRelationships();
 
@@ -686,7 +677,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
           }
           problem.judge_id = player.score_details[problem.id].judge_id;
         }
-      } else if (contest.type === 'ioi') {
+      } else if (contest.type === 'ioi' || contest.type === 'usaco') {
         if (player.score_details[problem.id]) {
           let judge_state = await JudgeState.findById(player.score_details[problem.id].judge_id);
           problem.status = judge_state.status;
@@ -695,7 +686,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
           let multiplier = contest.ranklist.ranking_params[problem.id] || 1.0;
           problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
         }
-      } else if (contest.type === 'acm') {
+      } else if (contest.type === 'icpc') {
         if (player.score_details[problem.id]) {
           problem.status = {
             accepted: player.score_details[problem.id].accepted,
@@ -719,7 +710,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
       for (let player of players) {
         if (player.score_details[problem.id]) {
           problem.statistics.attempt++;
-          if ((contest.type === 'acm' && player.score_details[problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.id].score === 100)) {
+          if ((contest.type === 'icpc' && player.score_details[problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') && player.score_details[problem.id].score === 100)) {
             problem.statistics.accepted++;
           }
         }
