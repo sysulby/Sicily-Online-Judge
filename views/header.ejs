@@ -173,7 +173,8 @@
                 syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'submissions'], { submitter: user.username }); %>
               <li><a href="<%= submissionsUrl %>">提交状态</a></li>
             <% } %>
-            <% if ((user && user.is_admin) || contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers())) { %>
+            <% if ((user && (user.is_admin || course.admins.split('|').includes(user.id.toString()))) ||
+			       contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers())) { %>
               <li><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'ranklist']) %>">排名</a></li>
             <% } %>
             <li><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>">返回</a></li>

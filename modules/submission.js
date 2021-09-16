@@ -205,7 +205,8 @@ app.get('/submission/:id', async (req, res) => {
       cid = judge.type_info % 1000;
       let contests_id = await course.getContests();
       contest = await Contest.findById(contests_id[cid-1]);
-      if (!(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
+      if (!(await judge.problem.isAllowedEditBy(res.locals.user) ||
+		  await course.isSupervisior(curUser) || await contest.isSupervisior(curUser))) {
         if (!course.is_public) throw new Error("课节未结束或未公开。");
         if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
       }

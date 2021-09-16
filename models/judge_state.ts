@@ -122,15 +122,18 @@ export default class JudgeState extends Model {
   async isAllowedVisitBy(user) {
     await this.loadRelationships();
 
-    if (user && user.id === this.problem.user_id) return true;
+    if (user && user.id === this.user_id) return true;
+    else if (user && user.id === this.problem.user_id) return true;
     else if (this.type === 0) {
-      return this.problem.is_public || (user && (await user.hasPrivilege('manage_problem')));
+      // return this.problem.is_public || (user && (await user.hasPrivilege('manage_problem')));
+      return user && (await user.hasPrivilege('manage_problem'));
     } else if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
       if (contest.isRunning()) {
         return user && await contest.isSupervisior(user);
       } else {
-        return true;
+        // return true;
+        return false;
       }
     } else if (this.type === 2) {
       let course = await Course.findById(this.type_info / 1000);

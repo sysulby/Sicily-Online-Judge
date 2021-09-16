@@ -332,6 +332,7 @@ app.get('/course/:id/contest/:cid/ranklist', async (req, res) => {
 
     if ([contest.allowedSeeingResult() && contest.allowedSeeingOthers(),
     contest.isEnded(),
+	await course.isSupervisior(curUser),
     await contest.isSupervisior(curUser)].every(x => !x))
       throw new ErrorMessage('您没有权限进行此操作。');
 

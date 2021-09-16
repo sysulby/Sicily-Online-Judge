@@ -444,7 +444,9 @@ app.post('/problem/:id/import', async (req, res) => {
     let json = await request({
       uri: req.body.url + (req.body.url.endsWith('/') ? 'export' : '/export'),
       timeout: 1500,
-      json: true
+      json: true,
+      strictSSL: false, // allow us to use our self-signed cert for testing
+      rejectUnauthorized: false
     });
 
     if (!json.success) throw new ErrorMessage('题目加载失败。', null, json.error);
