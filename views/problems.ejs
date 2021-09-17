@@ -1,5 +1,5 @@
 <% include header %>
-<% if (user && user.is_admin) { %>
+<% if (user && (user.is_admin || allowedManageTag)) { %>
   <fieldset>
     <legend>Basic Operation</legend>
     <a href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit']) %>">[新建题目]</a>
