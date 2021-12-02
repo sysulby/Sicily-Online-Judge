@@ -279,3 +279,27 @@ app.post('/submission/:id/rejudge', async (req, res) => {
     });
   }
 });
+
+
+app.post('/submission/:id/reject', async (req, res) => {
+  try {
+    let id = parseInt(req.params.id);
+    let judge = await JudgeState.findById(id);
+
+    if (judge.pending && !(res.locals.user && await res.locals.user.hasPrivilege('manage_problem'))) throw new ErrorMessage('无法拒接一个评测中的提交。');
+
+    await judge.loadRelationships();
+
+    let allowedRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
+    if (!allowedRejudge) throw new ErrorMessage('您没有权限进行此操作。');
+
+    await judge.reject();
+
+    res.redirect(syzoj.utils.makeUrl(['submission', id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});

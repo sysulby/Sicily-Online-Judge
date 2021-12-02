@@ -20,6 +20,7 @@ enum Status {
   NO_TESTDATA = "No Testdata",
   OUTPUT_LIMIT_EXCEEDED = "Output Limit Exceeded",
   PARTIALLY_CORRECT = "Partially Correct",
+  REJECTED = "Rejected",
   RUNTIME_ERROR = "Runtime Error",
   SYSTEM_ERROR = "System Error",
   TIME_LIMIT_EXCEEDED = "Time Limit Exceeded",
@@ -194,6 +195,19 @@ export default class JudgeState extends Model {
         console.log("Error while connecting to judge frontend: " + err.toString());
         throw new ErrorMessage("无法开始评测。");
       }
+    });
+  }
+
+  async reject() {
+    await syzoj.utils.lock(['JudgeState::reject', this.id], async () => {
+      await this.loadRelationships();
+
+      this.status = Status.REJECTED;
+      this.score = 0;
+
+      await this.save();
+
+      await this.updateRelatedInfo(false);
     });
   }
 

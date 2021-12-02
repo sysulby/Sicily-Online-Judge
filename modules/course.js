@@ -92,16 +92,91 @@ app.post('/course/:id/edit', async (req, res) => {
     if (!req.body.title.trim()) throw new ErrorMessage('课程名不能为空。');
     course.title = req.body.title;
     course.subtitle = req.body.subtitle;
+    course.start_time = syzoj.utils.parseDate(req.body.start_time);
+    course.end_time = syzoj.utils.parseDate(req.body.end_time);
+
+    course.information = req.body.information;
+    course.reg_info = req.body.reg_info;
+    course.password = req.body.password;
+
     if (!Array.isArray(req.body.contests)) req.body.contests = [req.body.contests];
     if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
-    if (!Array.isArray(req.body.participants)) req.body.admins = [req.body.participants];
+    if (!Array.isArray(req.body.participants)) req.body.participants = [req.body.participants];
     course.contests = req.body.contests.join('|');
     course.admins = req.body.admins.join('|');
     course.participants = req.body.participants.join('|');
-    course.information = req.body.information;
-    course.start_time = syzoj.utils.parseDate(req.body.start_time);
-    course.end_time = syzoj.utils.parseDate(req.body.end_time);
+
     course.is_public = req.body.is_public === 'on';
+
+    await course.save();
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/register', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let course_id = parseInt(req.params.id);
+    let course = await Course.findById(course_id);
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    // if course is non-public, both system administrators and course administrators can see it.
+    if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+    if (isSupervisior) throw new ErrorMessage('想一想，你需要注册吗？(⊙o⊙)');
+
+    if (course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您已经注册过了。');
+
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
+    course.reg_info = await syzoj.utils.markdown(course.reg_info);
+
+    res.render('course_register', {
+      course: course,
+      hasPassword: course.password && course.password.trim()
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/register', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let course_id = parseInt(req.params.id);
+    let course = await Course.findById(course_id);
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    // if course is non-public, both system administrators and course administrators can see it.
+    if (!course.is_public) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+    if (isSupervisior) throw new ErrorMessage('想一想，你需要注册吗？(⊙o⊙)');
+
+    if (course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您已经注册过了。');
+
+    let now = parseInt((new Date()).getTime()) / 1000;
+    if (course.start_time && now < course.start_time) throw new ErrorMessage('注册将在课程开始后开放，请耐心等待。');
+
+    if (course.password && course.password.trim()) {
+      if (!req.body.password.trim()) throw new ErrorMessage('请输入密码。');
+      if (req.body.password !== course.password) throw new ErrorMessage('密码错误。');
+    }
+
+    course.participants = (course.participants === "" ? curUser.id.toString() : course.participants + "|" + curUser.id.toString());
 
     await course.save();
 
@@ -117,18 +192,20 @@ app.post('/course/:id/edit', async (req, res) => {
 app.get('/course/:id', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    let course_id = parseInt(req.params.id);
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
 
+    let course_id = parseInt(req.params.id);
     let course = await Course.findById(course_id);
     if (!course) throw new ErrorMessage('无此课程。');
 
     const isSupervisior = await course.isSupervisior(curUser);
 
-    if (!res.locals.user) throw new ErrorMessage('请先登录');
-    if (!res.locals.user.is_admin && !course.admins.split('|').includes(res.locals.user.id.toString())) {
-      // if course is non-public, both system administrators and course administrators can see it.
-      if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-      if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+    // if course is non-public, both system administrators and course administrators can see it.
+    if (!isSupervisior && !course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+
+    if (!isSupervisior && !course.participants.split('|').includes(res.locals.user.id.toString())) {
+      res.redirect(syzoj.utils.makeUrl(['course', course.id, 'register']));
+      return;
     }
 
     course.running = course.isRunning();

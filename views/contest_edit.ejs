@@ -104,6 +104,7 @@ $(function () {
   $('#search_admins')
     .dropdown({
       debug: true,
+      saveRemoteData: false,
       apiSettings: {
         url: '/api/v2/search/users/{query}',
         onResponse: function (response) {
@@ -119,6 +120,7 @@ $(function () {
   $('#search_problems')
     .dropdown({
       debug: true,
+      saveRemoteData: false,
       apiSettings: {
         url: '/api/v2/search/problems/{query}',
         onResponse: function (response) {

@@ -15,6 +15,7 @@ exports.statusToString[interfaces.TestcaseResultType.RuntimeError] = "Runtime Er
 exports.statusToString[interfaces.TestcaseResultType.FileError] = "File Error";
 exports.statusToString[interfaces.TestcaseResultType.JudgementFailed] = "Judgement Failed";
 exports.statusToString[interfaces.TestcaseResultType.InvalidInteraction] = "Invalid Interaction";
+exports.statusToString[interfaces.TestcaseResultType.Rejected] = "Rejected";
 function firstNonAC(t) {
     if (t.every(v => v === interfaces.TestcaseResultType.Accepted)) {
         return interfaces.TestcaseResultType.Accepted;

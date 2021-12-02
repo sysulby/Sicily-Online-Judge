@@ -122,7 +122,8 @@ export default class Contest extends Model {
   }
 
   async newSubmission(judge_state) {
-    if (!(judge_state.submit_time >= this.start_time && judge_state.submit_time <= this.end_time)) {
+    if (!(this.type === 'usaco') &&
+        !(judge_state.submit_time >= this.start_time && judge_state.submit_time <= this.end_time)) {
       return;
     }
     let problems = await this.getProblems();

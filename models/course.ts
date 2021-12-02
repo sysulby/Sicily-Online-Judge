@@ -33,6 +33,12 @@ export default class Course extends Model {
   information: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
+  reg_info: string;
+
+  @TypeORM.Column({ nullable: true, type: "varchar", length: 120 })
+  password: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
   contests: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })

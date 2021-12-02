@@ -154,11 +154,11 @@ app.get('/contest/:id/register', async (req, res) => {
     let contest = await Contest.findById(contest_id);
     if (!contest) throw new ErrorMessage('无此比赛。');
 
-    const isSupervisior = await contest.isSupervisior(curUser);
-    if (isSupervisior) throw new ErrorMessage('想一想，你需要注册吗？(⊙o⊙)');
-
     // if contest is non-public, both system administrators and contest administrators can see it.
     if (!contest.is_public) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    const isSupervisior = await contest.isSupervisior(curUser);
+    if (isSupervisior) throw new ErrorMessage('想一想，你需要注册吗？(⊙o⊙)');
 
     let player = await ContestPlayer.findInContest({
       contest_id: contest.id,
@@ -190,11 +190,17 @@ app.post('/contest/:id/register', async (req, res) => {
     let contest = await Contest.findById(contest_id);
     if (!contest) throw new ErrorMessage('无此比赛。');
 
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
     const isSupervisior = await contest.isSupervisior(curUser);
     if (isSupervisior) throw new ErrorMessage('想一想，你需要注册吗？(⊙o⊙)');
 
-    // if contest is non-public, both system administrators and contest administrators can see it.
-    if (!contest.is_public) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+    if (player) throw new ErrorMessage('您已经注册过了。');
 
     let now = parseInt((new Date()).getTime()) / 1000;
     if (contest.type === 'usaco') {
@@ -212,12 +218,12 @@ app.post('/contest/:id/register', async (req, res) => {
       if (req.body.password !== contest.password) throw new ErrorMessage('密码错误。');
     }
 
-    let player = await ContestPlayer.create({
+    let new_player = await ContestPlayer.create({
       contest_id: contest.id,
       user_id: curUser.id,
       reg_time: now
     });
-    await player.save();
+    await new_player.save();
 
     res.redirect(syzoj.utils.makeUrl(['contest', contest.id]));
   } catch (e) {
@@ -239,7 +245,7 @@ app.get('/contest/:id', async (req, res) => {
 
     const isSupervisior = await contest.isSupervisior(curUser);
     // if contest is non-public, both system administrators and contest administrators can see it.
-    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+    if (!isSupervisior && !contest.is_public) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
 
     let player = await ContestPlayer.findInContest({
       contest_id: contest.id,

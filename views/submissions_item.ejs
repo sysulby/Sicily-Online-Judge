@@ -76,7 +76,11 @@ Vue.component('submission-item', {
   <td v-if="showRejudge">
     <a id="rejudge-button" :onclick="'check_rejudge(' + (statusString === 'Waiting' || statusString.startsWith('Running')).toString() + ')'" href="#">[rejudge]</a>
     <% if (active === 'submission') { %>
-    <a id="confirm-rejudge" :href-post="submissionLink + '/rejudge'"></a>
+      <a id="confirm-rejudge" :href-post="submissionLink + '/rejudge'"></a>
+    <% } %>
+    <a id="reject-button" :onclick="'check_reject(' + (statusString === 'Waiting' || statusString.startsWith('Running')).toString() + ')'" href="#">[reject]</a>
+    <% if (active === 'submission') { %>
+      <a id="confirm-reject" :href-post="submissionLink + '/reject'"></a>
     <% } %>
   </td>
 </tr>
@@ -89,6 +93,14 @@ function check_rejudge(pending) {
   }
   if (confirm('确认重新评测该提交记录吗？')) {
     document.getElementById('confirm-rejudge').click()
+  }
+}
+function check_reject(pending) {
+  if (pending) {
+    alert("警告：请在评测完成后再选择拒绝。");
+  }
+  if (confirm('确认拒绝该提交记录吗？')) {
+    document.getElementById('confirm-reject').click()
   }
 }
 </script>

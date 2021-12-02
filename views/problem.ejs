@@ -97,6 +97,25 @@
       <% if (problem.example) { %>
         <h1>样例</h1>
         <div class="font-content"><%- problem.example %></div>
+        <script>
+          $(document).ready(function (){
+              $("pre").parent().prev().append("&nbsp;&nbsp;<button class=\"copy-button button_blue\">复制</button>");
+              $(".copy-button").click(function() {
+                  let text = $(this).parent().next().find("code").text();
+                  let $temp = $("<textarea>");
+                  $("body").append($temp);
+                  $temp.val(text).select();
+                  document.execCommand("copy");
+                  $temp.remove();
+                  $(this).text("复制成功");
+      
+                  let e = this;
+                  setTimeout(function() {
+                          $(e).text("复制");
+                      }, 500);
+                  });
+          });
+        </script> 
       <% } %>
       <% if (problem.limit_and_hint) { %>
         <h1>提示</h1>
@@ -128,9 +147,10 @@
               <% } %>
             </select>
           </p>
+          <textarea form="submit_code" id="code" name="code" rows="32" cols="80" wrap="soft"></textarea>
         <% } %>
         <p>
-          选择文件: <input type="file" id="answer" name="answer">
+          提交文件: <input type="file" id="answer" name="answer">
         </p>
         <p>
           <button class="button_blue" type="submit">提交</button>
