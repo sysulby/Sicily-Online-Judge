@@ -1,0 +1,96 @@
+<% this.title = course.title + ' - 课程' %>
+<style>
+.ui.label.pointing.below.left::before { left: 12%; }
+.ui.label.pointing.below.right::before { left: 88%; }
+.ui.label.pointing.below.left { margin-bottom: 0; }
+.ui.label.pointing.below.right { margin-bottom: 0; float: right; }
+#back_to_course { display: none;  }
+</style>
+<% include header %>
+<div class="padding">
+  <h1><%= course.title %></h1>
+  <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
+  <% let unveiled = (isSupervisior || course.running || course.ended); %>
+  <% if (course.start_time && course.end_time) { %>
+    <% let start = syzoj.utils.formatDate(course.start_time), end = syzoj.utils.formatDate(course.end_time); %>
+    <% if (course.running && start.split(' ')[0] === end.split(' ')[0]) {
+      start = start.split(' ')[1]; end = end.split(' ')[1];
+    } %>
+    <div class="ui pointing below left label"><%= start %></div>
+    <div class="ui pointing below right label"><%= end %></div>
+    <% let timePercentage = Math.floor(Math.min(1, (syzoj.utils.getCurrentDate() - course.start_time) / (course.end_time - course.start_time)) * 100); %>
+    <div id="timer-progress" class="ui tiny indicating progress<% if (timePercentage == 100) { %> success<% } %>" data-percent="<%= timePercentage %>">
+      <div class="bar" style="width: <%= timePercentage %>%;"></div>
+    </div>
+  <% } %>
+  <div class="ui grid">
+  <% if (isSupervisior) { %>
+    <div class="row">
+      <div class="column">
+        <div class="ui buttons">
+          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'ranklist']) %>">课程统计</a>
+          <% if (user.is_admin || user.id == course.owner_id) { %>
+            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">编辑课程</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+  <% if (course.information) { %>
+    <div class="row">
+      <div class="column">
+        <h4 class="ui top attached block header">课程介绍</h4>
+        <div class="ui bottom attached segment font-content">
+          <%- course.information %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+  <% if (unveiled) { %>
+    <div class="row">
+      <div class="column">
+         <table class="ui selectable celled table">
+            <thead>
+              <tr>
+                <% if (user) { %>
+                <th class="one wide" style="text-align: center">状态</th>
+                <% } %>
+                <th>课节</th>
+                <% if (isSupervisior) { %>
+                  <th class="one wide center aligned">统计</th>
+                <% } %>
+              </tr>
+            </thead>
+            <tbody>
+              <%
+              let i = 0;
+              for (let contest of contests) {
+                i++;
+              %>
+              <tr>
+                <td class="center aligned" style="white-space: nowrap; "></td>
+                <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i]) %>"><%= syzoj.utils.removeTitleTag(contest.title) %></a></td>
+                <% if (isSupervisior) { %>
+                  <td class="center aligned" style="white-space: nowrap; "></td>
+                <% } %>
+              </tr>
+            <% } %>
+            </tbody>
+        </table>
+      </div>
+    </div>
+  <% } %>
+  </div>
+</div>
+
+<script>
+$(function () {
+  setInterval(function () {
+    $('#timer-progress').progress({
+      value: Date.now() / 1000 - <%= course.start_time %>,
+      total: <%= course.end_time - course.start_time %>
+    });
+  }, 5000);
+});
+</script>
+<% include footer %>

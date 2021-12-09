@@ -61,7 +61,8 @@ let configItems = {
   'page.ranklist': { name: '排行榜', type: Number },
   'page.discussion': { name: '讨论', type: Number },
   'page.article_comment': { name: '评论', type: Number },
-  'page.contest': { name: '比赛', type: Number }
+  'page.contest': { name: '比赛', type: Number },
+  'page.course': { name: '课程', type: Number }
 };
 
 app.get('/admin/config', async (req, res) => {
