@@ -28,7 +28,9 @@
     <div class="row">
       <div class="column">
         <div class="ui buttons">
-          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'ranklist']) %>">课程统计</a>
+          <% if (!course.parent_id && isSupervisior) { %>
+            <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'records']) %>">开课记录</a>
+          <% } %>
           <% if (user.is_admin || user.id == course.owner_id) { %>
             <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">编辑课程</a>
           <% } %>
@@ -68,7 +70,9 @@
                 i++;
               %>
               <tr>
+                <% if (user) { %>
                 <td class="center aligned" style="white-space: nowrap; "></td>
+                <% } %>
                 <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i]) %>"><%= syzoj.utils.removeTitleTag(contest.title) %></a></td>
                 <% if (isSupervisior) { %>
                   <td class="center aligned" style="white-space: nowrap; "></td>

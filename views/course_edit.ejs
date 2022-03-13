@@ -15,8 +15,24 @@
           <label>课程介绍</label>
           <textarea rows="5" name="information" class="markdown-edit"><%= course.information %></textarea>
         </div>
+        <% if (course.parent_id) { %>
+        <div class="two fields">
+          <div class="field">
+            <label>开始时间</label>
+            <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(course.start_time || syzoj.utils.getCurrentDate()) %>">
+          </div>
+          <div class="field">
+            <label>结束时间</label>
+            <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(course.end_time || syzoj.utils.getCurrentDate()) %>">
+          </div>
+        </div>
+        <% } %>
         <div class="field">
+          <% if (course.parent_id) { %>
+          <label>任课教师</label>
+          <% } else { %>
           <label>主管教师</label>
+          <% } %>
           <% if (user.is_admin) { %>
           <select class="ui fluid search dropdown" id="search_owner" name="owner">
           <option value="<%= owner.id %>" selected><%= owner.username %></option>

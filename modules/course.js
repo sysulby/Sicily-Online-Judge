@@ -8,28 +8,92 @@ app.get('/courses', async (req, res) => {
 
     let allCourses = await Course.queryAll(Course.createQueryBuilder());
 
-    let templateIDs = (await allCourses.filterAsync(async x =>
-      !x.parent_id && (x.is_public || await x.isSupervisior(curUser))
-    )).map(x => x.id);
-
-    let query = Course.createQueryBuilder();
-    if (templateIDs.length) {
-      query.andWhere('id in (:ids)', { ids: templateIDs });
-    } else {
-      query.andWhere('false');
-    }
-
-    let paginate = syzoj.utils.paginate(
-      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
-    let templateCourses = await Course.queryPage(paginate, query);
+    let templateCourses = await allCourses
+      .filterAsync(async x => !x.parent_id && (x.is_public || await x.isSupervisior(curUser)));
 
     await templateCourses.forEachAsync(async x => {
       x.subtitle = await syzoj.utils.markdown(x.subtitle);
       x.teacher = await User.findById(x.owner_id);
     });
 
+    let myCourses = await allCourses
+      .filterAsync(async x => {
+        if (!x.parent_id || !curUser) return false;
+        if (await x.isSupervisior(curUser)) return true;
+        return x.is_public && x.participants.split('|').includes(curUser.id.toString());
+      });
+
+    let activeIDs = (await myCourses.filterAsync(async x => !x.isEnded())).map(x => x.id);
+
+    let query = Course.createQueryBuilder();
+    if (activeIDs.length) {
+      query.andWhere('id in (:ids)', { ids: activeIDs });
+    } else {
+      query.andWhere('false');
+    }
+
+    let paginate = syzoj.utils.paginate(
+      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
+    let activeCourses = await Course.queryPage(paginate, query, {
+      start_time: 'DESC'
+    });
+
+    await activeCourses.forEachAsync(async x => {
+      x.running = x.isRunning();
+      x.ended = x.isEnded();
+      x.teacher = await User.findById(x.owner_id);
+    });
+
     res.render('courses', {
       template_courses: templateCourses,
+      has_any_course: myCourses.length > 0,
+      active_courses: activeCourses,
+      paginate: paginate
+    })
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/courses/archived', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let allCourses = await Course.queryAll(Course.createQueryBuilder());
+
+    let myCourses = await allCourses
+      .filterAsync(async x => {
+        if (!x.parent_id || !curUser) return false;
+        if (await x.isSupervisior(curUser)) return true;
+        return x.is_public && x.participants.split('|').includes(curUser.id.toString());
+      });
+
+    let archivedIDs = (await myCourses.filterAsync(async x => x.isEnded())).map(x => x.id);
+
+    let query = Course.createQueryBuilder();
+    if (archivedIDs.length) {
+      query.andWhere('id in (:ids)', { ids: archivedIDs });
+    } else {
+      query.andWhere('false');
+    }
+
+    let paginate = syzoj.utils.paginate(
+      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
+    let archivedCourses = await Course.queryPage(paginate, query, {
+      start_time: 'DESC'
+    });
+
+    await archivedCourses.forEachAsync(async x => {
+      x.running = x.isRunning();
+      x.ended = x.isEnded();
+      x.teacher = await User.findById(x.owner_id);
+    });
+
+    res.render('courses_archived', {
+      archived_courses: archivedCourses,
       paginate: paginate
     })
   } catch (e) {
@@ -103,6 +167,8 @@ app.post('/course/:id/edit', async (req, res) => {
     course.title = req.body.title;
     course.subtitle = req.body.subtitle;
     course.information = req.body.information;
+    if (req.body.start_time) course.start_time = syzoj.utils.parseDate(req.body.start_time);
+    if (req.body.end_time) course.end_time = syzoj.utils.parseDate(req.body.end_time);
     course.contests = '';
     course.participants = '';
     // only system administrators can set course owner
@@ -158,9 +224,69 @@ app.get('/course/:id', async (req, res) => {
   }
 });
 
-app.get('/course/:id/ranklist', async (req, res) => {
+app.get('/course/:id/records', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，敬请期待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+    if (course.parent_id) res.redirect(syzoj.utils.makeUrl(['course', course.parent_id, 'records']));
+
+    const isSupervisior = await course.isSupervisior(curUser);
+    // if course is non-public, both system administrators and course administrators can see it.
+    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
+
+    let query = Course.createQueryBuilder();
+    if (!course.parent_id) {
+      query.andWhere('parent_id = :parent_id', { parent_id: course.id });
+    } else {
+      query.andWhere('false');
+    }
+
+    let paginate = syzoj.utils.paginate(
+      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
+    let records = await Course.queryPage(paginate, query, {
+      start_time: 'DESC'
+    });
+
+    await records.forEachAsync(async x => {
+      x.running = x.isRunning();
+      x.ended = x.isEnded();
+      x.teacher = await User.findById(x.owner_id);
+    });
+
+    res.render('course_records', {
+      course: course,
+      isSupervisior: isSupervisior,
+      records: records,
+      paginate: paginate
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/record/:rid/edit', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/contest/:cid', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
