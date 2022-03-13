@@ -187,7 +187,9 @@ app.get('/submission/:id', async (req, res) => {
     const judge = await JudgeState.findById(id);
     if (!judge) throw new ErrorMessage("提交记录 ID 不正确。");
     const curUser = res.locals.user;
-    if (!await judge.isAllowedVisitBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
+    if (!await judge.isAllowedVisitBy(curUser)) {
+      if (!curUser.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
+    }
 
     let course;
     let cid;
@@ -204,9 +206,9 @@ app.get('/submission/:id', async (req, res) => {
       course = await Course.findById(judge.type_info / 1000);
       cid = judge.type_info % 1000;
       let contests_id = await course.getContests();
-      contest = await Contest.findById(contests_id[cid-1]);
+      contest = await Contest.findById(contests_id[cid - 1]);
       if (!(await judge.problem.isAllowedEditBy(res.locals.user) ||
-		  await course.isSupervisior(curUser) || await contest.isSupervisior(curUser))) {
+        await course.isSupervisior(curUser) || await contest.isSupervisior(curUser))) {
         if (!course.is_public) throw new Error("课节未结束或未公开。");
         if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
       }

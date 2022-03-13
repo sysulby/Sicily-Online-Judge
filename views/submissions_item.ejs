@@ -15,7 +15,7 @@ const submissionUrl = <%- serializejs(displayConfig.inContest ?
   (course ? syzoj.utils.makeUrl(['course', 'contest', 'submission', '20000528']) : syzoj.utils.makeUrl(['contest', 'submission', '20000528'])) :
   syzoj.utils.makeUrl(['submission', '20000528'])) %>;
 const problemUrl = <%- serializejs(displayConfig.inContest ?
-  (course ? syzoj.utils.makeUrl(['course', 'contest', cid, 'problem', '20000528']) : syzoj.utils.makeUrl(['contest', contest.id, 'problem', '20000528'])) :
+  (course ? syzoj.utils.makeUrl(['course', course.id, 'contest', cid, 'problem', '20000528']) : syzoj.utils.makeUrl(['contest', contest.id, 'problem', '20000528'])) :
   syzoj.utils.makeUrl(['problem', '20000528'])) %>;
 const userUrl = <%- serializejs(syzoj.utils.makeUrl(['user', '20000528'])) %>;
 

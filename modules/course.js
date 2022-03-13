@@ -625,8 +625,6 @@ app.get('/course/contest/submission/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     const judge = await JudgeState.findById(id);
     if (!judge) throw new ErrorMessage("提交记录 ID 不正确。");
-    const curUser = res.locals.user;
-    if ((!curUser) || judge.user_id !== curUser.id) throw new ErrorMessage("您没有权限执行此操作。");
 
     if (judge.type !== 2) {
       return res.redirect(syzoj.utils.makeUrl(['submission', id]));
@@ -641,6 +639,12 @@ app.get('/course/contest/submission/:id', async (req, res) => {
       // if course is non-public, both system administrators and course administrators can see it.
       if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
       if (!course.participants.split('|').includes(res.locals.user.id.toString())) throw new ErrorMessage('您尚未选课');
+    }
+
+    const curUser = res.locals.user;
+    const isSupervisior = await course.isSupervisior(curUser);
+    if (!isSupervisior) {
+      if ((!curUser) || judge.user_id !== curUser.id) throw new ErrorMessage("您没有权限执行此操作。");
     }
 
     let contests_id = await course.getContests();

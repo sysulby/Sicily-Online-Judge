@@ -751,9 +751,9 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       throw new ErrorMessage(`无法开始评测：${err.toString()}`);
     }
 
-    if (course && (!await course.isSupervisior(curUser))) {
+    if (course) {
       res.redirect(syzoj.utils.makeUrl(['course', course_id, 'contest', contest_id, 'submissions']));
-    } else if (contest && (!await contest.isSupervisior(curUser))) {
+    } else if (contest) {
       res.redirect(syzoj.utils.makeUrl(['contest', contest_id, 'submissions']));
     } else {
       res.redirect(syzoj.utils.makeUrl(['submission', judge_state.id]));
