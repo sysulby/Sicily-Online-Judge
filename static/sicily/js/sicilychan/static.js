@@ -1,9 +1,12 @@
-function showSicilyChan(msg){
+function showSicilyChan(hitokoto, from){
 	$("body").append(`
         <div id="sicily_chan">
             <div id="talkbox">
                 <div id="boxtop"></div>
-                <div id="boxcnt">${msg}</div>
+                <div id="boxcnt">
+                    <div>${hitokoto}</div>
+                    <div style="text-align: right; ">${from}</div>
+                </div>
                 <div id="boxbottom"></div>
             </div>
             <div id="sicilychan_body">

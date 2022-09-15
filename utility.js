@@ -145,6 +145,9 @@ module.exports = {
   gravatar(email, size) {
     return gravatar.url(email, { s: size, d: 'mm' }).replace('//www.gravatar.com/avatar', syzoj.config.gravatar_url);
   },
+  hideEmail(email) {
+    return "***" + email.substring(email.indexOf("@"));
+  },
   async parseTestdata(dir, submitAnswer) {
     if (!await syzoj.utils.isDir(dir)) return null;
 

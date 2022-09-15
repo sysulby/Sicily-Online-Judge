@@ -7,6 +7,7 @@ let ContestPlayer = syzoj.model('contest_player');
 let ProblemTag = syzoj.model('problem_tag');
 let Article = syzoj.model('article');
 
+const util = require('util');
 const randomstring = require('randomstring');
 const fs = require('fs-extra');
 const jwt = require('jsonwebtoken');
@@ -401,6 +402,111 @@ app.get('/problem/:id/import', async (req, res) => {
     res.render('problem_import', {
       problem: problem
     });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/problem/:id/upload', async (req, res) => {
+  try {
+    let id = parseInt(req.params.id) || 0;
+    let problem = await Problem.findById(id);
+
+    if (!problem) {
+      if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+
+      problem = await Problem.create({
+        time_limit: syzoj.config.default.problem.time_limit,
+        memory_limit: syzoj.config.default.problem.memory_limit,
+        type: 'traditional'
+      });
+      problem.id = id;
+      problem.new = true;
+      problem.user_id = res.locals.user.id;
+      problem.publicizer_id = res.locals.user.id;
+    } else {
+      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
+    problem.allowedManage = await problem.isAllowedManageBy(res.locals.user);
+
+    res.render('problem_upload', {
+      problem: problem
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/problem/:id/upload', app.multer.fields([{ name: 'testdata', maxCount: 1 }]), async (req, res) => {
+  try {
+    let id = parseInt(req.params.id) || 0;
+    let problem = await Problem.findById(id);
+    if (!problem) {
+      if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+
+      problem = await Problem.create({
+        time_limit: syzoj.config.default.problem.time_limit,
+        memory_limit: syzoj.config.default.problem.memory_limit,
+        type: 'traditional'
+      });
+
+      if (await res.locals.user.hasPrivilege('manage_problem')) {
+        let customID = parseInt(req.body.id);
+        if (customID) {
+          if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
+          problem.id = customID;
+        } else if (id) problem.id = id;
+      }
+
+      problem.user_id = res.locals.user.id;
+      problem.publicizer_id = res.locals.user.id;
+    } else {
+      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
+    if (!req.files['testdata']) throw new ErrorMessage('题目上传失败。');
+
+    let tmp = require('tmp-promise');
+    let tmpDir = await tmp.dir();
+
+    let execFileAsync = util.promisify(require('child_process').execFile);
+    await execFileAsync(__dirname + '/../bin/unzip', ['-j', '-o', '-d', tmpDir.path, req.files['testdata'][0].path]);
+
+    let json = JSON.parse(await fs.readFile(tmpDir.path + '/metadata.json'));
+
+    if (!json.title.trim()) throw new ErrorMessage('题目名不能为空。');
+    problem.title = json.title;
+    if (json.special_judge === '1') problem.title += '【SPJ 需要重写！！！】'
+    problem.description = json.description;
+    problem.input_format = json.input;
+    problem.output_format = json.output;
+    problem.example = '#### 样例输入\r\n\r\n```plain\r\n' + json.sample_input + '\r\n```\r\n\r\n' +
+                      '#### 样例输出\r\n\r\n```plain\r\n' + json.sample_output + '\r\n```\r\n';
+    problem.limit_and_hint = json.hint;
+    problem.time_limit = (parseInt(json.time_limit) * 1000).toString();
+    problem.memory_limit = (parseInt(json.memory_limit) / 1024).toString();
+    problem.have_additional_file = false;
+    problem.file_io = false;
+    problem.file_io_input_name = "";
+    problem.file_io_output_name = "";
+
+    let validateMsg = await problem.validate();
+    if (validateMsg) throw new ErrorMessage('无效的题目数据配置。', null, validateMsg);
+
+    await problem.save();
+
+    await problem.updateTestdata(req.files['testdata'][0].path, await res.locals.user.hasPrivilege('manage_problem'));
+
+    res.redirect(syzoj.utils.makeUrl(['problem', problem.id]));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {

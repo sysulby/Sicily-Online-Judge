@@ -1,0 +1,26 @@
+<% include header %>
+<link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
+<div class="padding">
+  <div style="margin-bottom: 30px; ">
+    <h1 style="margin-bottom: 10px; ">上传题目</h1>
+    上传 Sicily 格式的题目数据。
+  </div>
+
+  <form class="ui form" method="post" enctype="multipart/form-data" onsubmit="return checkSubmit()">
+    <% if (problem.allowedManage) { %>
+        <div class="field">
+            <label>题目编号</label>
+            <input type="text" name="id" value="<%= problem.id ? problem.id : '' %>" placeholder="留空则自动延伸" <%= problem.new ? '' : 'disabled' %>>
+        </div>
+    <% } %>
+    <div class="field">
+      <label for="testdata">上传题目数据（请使用 ZIP 格式）</label>
+      <input type="file" id="testdata" name="testdata">
+    </div>
+    <div style="text-align: center; ">
+    <button type="submit" class="ui labeled submit icon button">
+      <i class="icon edit"></i> 提交
+    </button>
+    </div>
+  </form>
+<% include footer %>

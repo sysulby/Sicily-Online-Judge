@@ -8,9 +8,9 @@
   </div>
 </div>
 <script type="text/javascript">
-  $(function () {
-    var talkmsg = "Welcome to Turing Edu!";
-    showSicilyChan(talkmsg);
+  $.get('https://v1.hitokoto.cn/?c=a', function (data) {
+    if (typeof data === 'string') data = JSON.parse(data);
+    showSicilyChan(data.hitokoto, '——' + data.from);
   });
 </script>
 <% include footer %>

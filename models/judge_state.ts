@@ -130,12 +130,12 @@ export default class JudgeState extends Model {
       return user && (await user.hasPrivilege('manage_problem'));
     } else if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
-      if (contest.isRunning()) {
-        return user && await contest.isSupervisior(user);
-      } else {
-        // return true;
-        return false;
-      }
+      return user && await contest.isSupervisior(user);
+      // if (contest.isRunning()) {
+      //   return user && await contest.isSupervisior(user);
+      // } else {
+      //   return true;
+      // }
     } else if (this.type === 2) {
       let course = await Course.findById(this.type_info / 1000);
       return user && await course.isSupervisior(user);

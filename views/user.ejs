@@ -39,9 +39,13 @@
         <% if (show_user.emailVisible) { %>
         <tr>
           <td align="right">电子邮箱</td>
+          <% if (user && (user.is_admin || user.id === show_user.id)) { %>
           <td align="left">
             <a href="mailto:<%= show_user.email %>" class="black"><%= show_user.email %></a>
           </td>
+          <% } else { %>
+          <td align="left"><%= syzoj.utils.hideEmail(show_user.email) %></td>
+          <% } %>
         </tr>
         <% } %>
         <tr>
