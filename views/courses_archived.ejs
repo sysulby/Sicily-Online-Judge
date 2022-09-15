@@ -28,12 +28,8 @@
         <tr>
           <% if (!course.is_public) { %>
             <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
-          <% } else if (course.ended) { %>
-            <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>
-          <% } else if (course.running) { %>
-            <% tag = '<span class="ui header"><div class="ui mini green label">进行中</div></span>' %>
           <% } else { %>
-            <% tag = '<span class="ui header"><div class="ui mini red label">未开始</div></span>' %>
+            <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>
           <% } %>
 
           <td><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>"><%= course.title %> <%- tag %></a></td>

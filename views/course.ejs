@@ -28,10 +28,16 @@
     <div class="row">
       <div class="column">
         <div class="ui buttons">
-          <% if (!course.parent_id && isSupervisior) { %>
-            <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'records']) %>">开课记录</a>
+          <% if (isSupervisior) { %>
+            <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">课程题库</a>
           <% } %>
-          <% if (user.is_admin || user.id == course.owner_id) { %>
+          <% if (!course.parent_id && isSupervisior) { %>
+            <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'records']) %>">开课记录</a>
+          <% } %>
+          <% if (isSuperowner) { %>
+            <a class="ui small orange button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', 0, 'edit']) %>">新建课节</a>
+          <% } %>
+          <% if (isSuperowner || user.id === course.owner_id) { %>
             <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">编辑课程</a>
           <% } %>
         </div>
@@ -54,12 +60,13 @@
          <table class="ui selectable celled table">
             <thead>
               <tr>
-                <% if (user) { %>
-                <th class="one wide" style="text-align: center">状态</th>
-                <% } %>
+                <th class="one wide" style="text-align: center">#</th>
                 <th>课节</th>
-                <% if (isSupervisior) { %>
-                  <th class="one wide center aligned">统计</th>
+                <% if (user) { %>
+                  <th class="one wide" style="text-align: center">状态</th>
+                <% } %>
+                <% if (isSuperowner) { %>
+                  <th class="two wide" style="text-align: center">操作</th>
                 <% } %>
               </tr>
             </thead>
@@ -70,12 +77,13 @@
                 i++;
               %>
               <tr>
-                <% if (user) { %>
-                <td class="center aligned" style="white-space: nowrap; "></td>
-                <% } %>
+                <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
                 <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i]) %>"><%= syzoj.utils.removeTitleTag(contest.title) %></a></td>
-                <% if (isSupervisior) { %>
+                <% if (user) { %>
                   <td class="center aligned" style="white-space: nowrap; "></td>
+                <% } %>
+                <% if (isSuperowner) { %>
+                  <td class="center aligned" style="white-space: nowrap; "><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i, 'edit']) %>">E↑↓×</a></td>
                 <% } %>
               </tr>
             <% } %>

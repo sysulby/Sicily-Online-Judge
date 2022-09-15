@@ -52,13 +52,21 @@ export default class Course extends Model {
 
   async loadRelationships() {
     this.owner = await User.findById(this.owner_id);
+    if (this.parent_id) this.parent = await Course.findById(this.parent_id);
+  }
+
+  async isSuperowner(user) {
+    if (!user) return false;
+    if (user.is_admin) return true;
+    if (!this.parent_id) return user.id === this.owner_id;
     this.parent = await Course.findById(this.parent_id);
+    return user.id === this.parent.owner_id;
   }
 
   async isSupervisior(user) {
     return user && (
-      user.is_admin ||
-      this.owner_id === user.id ||
+      this.isSuperowner(user) ||
+      user.id === this.owner_id ||
       this.admins.split('|').includes(user.id.toString()));
   }
 
@@ -69,7 +77,7 @@ export default class Course extends Model {
 
   isRunning(now?) {
     if (!now) now = syzoj.utils.getCurrentDate();
-    return !this.start_time || (this.start_time <= now && now < this.end_time);
+    return (!this.start_time || this.start_time <= now) && (!this.end_time || now < this.end_time);
   }
 
   isEnded(now?) {
