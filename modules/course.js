@@ -1,4 +1,5 @@
 let Course = syzoj.model('course');
+let Batch = syzoj.model('batch');
 let Contest = syzoj.model('contest');
 let ContestPlayer = syzoj.model('contest_player');
 let ContestRanklist = syzoj.model('contest_ranklist');
@@ -11,47 +12,70 @@ app.get('/courses', async (req, res) => {
 
     let allCourses = await Course.queryAll(Course.createQueryBuilder());
 
-    let myCourses = await allCourses.filterAsync(async x => {
-      if (!x.parent_id || !curUser) return false;
+    let courses = await allCourses.filterAsync(async x => {
+      return x.is_public || await x.isSupervisior(curUser);
+    });
+
+    await courses.forEachAsync(async x => {
+      x.subtitle = await syzoj.utils.markdown(x.subtitle);
+      x.owner = await User.findById(x.owner_id);
+    });
+
+    if (!curUser) {
+      res.render('courses', {
+        courses: courses,
+        has_batch: false
+      });
+      return;
+    }
+
+    let allBatches = await Batch.queryAll(Batch.createQueryBuilder());
+
+    let myBatches = await allBatches.filterAsync(async x => {
       if (await x.isSupervisior(curUser)) return true;
       return x.is_public && x.participants.split('|').includes(curUser.id.toString());
     });
 
-    let activeIDs = (await myCourses.filterAsync(async x => !x.isEnded())).map(x => x.id);
-
-    let query = Course.createQueryBuilder();
-    if (activeIDs.length) {
-      query.andWhere('id in (:ids)', { ids: activeIDs });
-    } else {
-      query.andWhere('false');
+    if (!myBatches.length) {
+      res.render('courses', {
+        courses: courses,
+        has_batch: false
+      });
+      return;
     }
 
+    let activeIDs = (await myBatches.filterAsync(async x => !x.isEnded())).map(x => x.id);
+
+    if (!activeIDs.length) {
+      res.render('courses', {
+        courses: courses,
+        has_batch: true,
+        active_batches: []
+      });
+      return;
+    }
+
+    let query = Batch.createQueryBuilder();
+    query.andWhere('id in (:ids)', { ids: activeIDs });
+
     let paginate = syzoj.utils.paginate(
-      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
-    let activeCourses = await Course.queryPage(paginate, query, {
+      await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
+
+    let activeBatches = await Batch.queryPage(paginate, query, {
       start_time: 'DESC'
     });
 
-    await activeCourses.forEachAsync(async x => {
+    await activeBatches.forEachAsync(async x => {
       x.running = x.isRunning();
-      x.ended = x.isEnded();
-      x.teacher = await User.findById(x.owner_id);
-    });
-
-    let templateCourses = await allCourses.filterAsync(async x =>
-      !x.parent_id && (x.is_public || await x.isSupervisior(curUser))
-    );
-    await templateCourses.forEachAsync(async x => {
-      x.subtitle = await syzoj.utils.markdown(x.subtitle);
-      x.teacher = await User.findById(x.owner_id);
+      x.teacher = await User.findById(await x.getTeacher());
     });
 
     res.render('courses', {
-      has_any_course: myCourses.length > 0,
-      active_courses: activeCourses,
-      template_courses: templateCourses,
+      courses: courses,
+      has_batch: true,
+      active_batches: activeBatches,
       paginate: paginate
-    })
+    });
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -64,37 +88,47 @@ app.get('/courses/archived', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
-    let allCourses = await Course.queryAll(Course.createQueryBuilder());
+    if (!curUser) {
+      res.render('courses_archived', {
+        archived_batches: []
+      });
+      return;
+    }
 
-    let myCourses = await allCourses.filterAsync(async x => {
-      if (!x.parent_id || !curUser) return false;
+    let allBatches = await Batch.queryAll(Batch.createQueryBuilder());
+
+    let myBatches = await allBatches.filterAsync(async x => {
       if (await x.isSupervisior(curUser)) return true;
       return x.is_public && x.participants.split('|').includes(curUser.id.toString());
     });
 
-    let archivedIDs = (await myCourses.filterAsync(async x => x.isEnded())).map(x => x.id);
+    let archivedIDs = (await myBatches.filterAsync(async x => x.isEnded())).map(x => x.id);
 
-    let query = Course.createQueryBuilder();
-    if (archivedIDs.length) {
-      query.andWhere('id in (:ids)', { ids: archivedIDs });
-    } else {
-      query.andWhere('false');
+    if (!archivedIDs.length) {
+      res.render('courses_archived', {
+        archived_batches: []
+      });
+      return;
     }
 
+    let query = Batch.createQueryBuilder();
+    query.andWhere('id in (:ids)', { ids: archivedIDs });
+
     let paginate = syzoj.utils.paginate(
-      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
-    let archivedCourses = await Course.queryPage(paginate, query, {
+      await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
+
+    let archivedBatches = await Batch.queryPage(paginate, query, {
       start_time: 'DESC'
     });
 
-    await archivedCourses.forEachAsync(async x => {
-      x.teacher = await User.findById(x.owner_id);
+    await archivedBatches.forEachAsync(async x => {
+      x.teacher = await User.findById(await x.getTeacher());
     });
 
     res.render('courses_archived', {
-      archived_courses: archivedCourses,
+      archived_batches: archivedBatches,
       paginate: paginate
-    })
+    });
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -112,33 +146,22 @@ app.get('/course/:id', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    const isSuperowner = await course.isSuperowner(curUser);
+    const hasOwnership = await course.hasOwnership(curUser);
     const isSupervisior = await course.isSupervisior(curUser);
 
-    if (!isSupervisior) {
-      if (course.parent_id) {
-        if (!curUser) throw new ErrorMessage('请先登录。',
-          { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
-        if (!course.participants.split('|').includes(curUser.id.toString())) {
-          throw new ErrorMessage('您尚未选课。');
-        }
-      }
-      if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-    }
+    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
     course.information = await syzoj.utils.markdown(course.information);
-    course.running = course.isRunning();
-    course.ended = course.isEnded();
 
-    let contestIDs = await course.getContests();
-    let contests = await contestIDs.mapAsync(async id => await Contest.findById(id));
+    let lessonIDs = await course.getLessons();
+    let lessons = await lessonIDs.mapAsync(async id => await Contest.findById(id));
 
     res.render('course', {
       course: course,
-      isSuperowner: isSuperowner,
+      hasOwnership: hasOwnership,
       isSupervisior: isSupervisior,
-      contests: contests
+      lessons: lessons
     });
   } catch (e) {
     syzoj.log(e);
@@ -157,12 +180,14 @@ app.get('/course/:id/edit', async (req, res) => {
 
     if (!course) {
       // if course does not exist, only system administrators can create one
-      if (!curUser || !curUser.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!curUser || !curUser.is_admin) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
       course = await Course.create();
       course.id = 0;
     } else {
       // if course exists, both system administrators and course owner can edit it.
-      if (!curUser || !(await course.isSuperowner(curUser) || curUser.id === course.owner_id)) {
+      if (!curUser || !await course.hasOwnership(curUser)) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
       await course.loadRelationships();
@@ -197,11 +222,13 @@ app.post('/course/:id/edit', async (req, res) => {
 
     if (!course) {
       // if course does not exist, only system administrators can create one
-      if (!curUser || !curUser.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!curUser || !curUser.is_admin) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
       course = await Course.create();
     } else {
       // if course exists, both system administrators and course owner can edit it.
-      if (!curUser || !(await course.isSuperowner(curUser) || curUser.id === course.owner_id)) {
+      if (!curUser || !await course.hasOwnership(curUser)) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
       await course.loadRelationships();
@@ -211,16 +238,13 @@ app.post('/course/:id/edit', async (req, res) => {
     course.title = req.body.title;
     course.subtitle = req.body.subtitle;
     course.information = req.body.information;
-    if (req.body.start_time) course.start_time = syzoj.utils.parseDate(req.body.start_time);
-    if (req.body.end_time) course.end_time = syzoj.utils.parseDate(req.body.end_time);
-    course.contests = '';
-    course.participants = '';
-    // only system administrators can set course owner
+    if (!course.lessons) course.lessons = '';
+    // only system administrators can set course owner and admins
     if (curUser.is_admin) {
       course.owner_id = parseInt(req.body.owner);
+      if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
+      course.admins = req.body.admins.join('|');
     }
-    if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
-    course.admins = req.body.admins.join('|');
     course.is_public = (req.body.is_public === 'on');
 
     await course.save();
@@ -234,7 +258,7 @@ app.post('/course/:id/edit', async (req, res) => {
   }
 });
 
-app.get('/course/:id/contest/:cid', async (req, res) => {
+app.get('/course/:id/lesson/:lid', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -245,32 +269,19 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
 
     const isSupervisior = await course.isSupervisior(curUser);
 
-    if (!isSupervisior) {
-      if (course.parent_id) {
-        if (!curUser) throw new ErrorMessage('请先登录。',
-          { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
-        if (!course.participants.split('|').includes(curUser.id.toString())) {
-          throw new ErrorMessage('您尚未选课。');
-        }
-      }
-      if (!course.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
-    }
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
-    let contestIDs = await course.getContests();
+    let lessonIDs = await course.getLessons();
 
-    let cid = parseInt(req.params.cid);
-    if (cid < 1 || cid > contestIDs.length) throw new ErrorMessage('无此课节。');
+    let lid = parseInt(req.params.lid);
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
-    let contestID = contestIDs[cid - 1];
+    let contestID = lessonIDs[lid - 1];
     let contest = await Contest.findById(contestID);
     await contest.loadRelationships();
 
-    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('课节未公开，请耐心等待 (´∀ `)');
-
     contest.subtitle = await syzoj.utils.markdown(contest.subtitle);
     contest.information = await syzoj.utils.markdown(contest.information);
-    contest.running = contest.isRunning();
-    contest.ended = contest.isEnded();
 
     let problemIDs = await contest.getProblems();
     let problems = await problemIDs.mapAsync(async id => await Problem.findById(id));
@@ -296,7 +307,7 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
             }
             problem.judge_id = player.score_details[problem.problem.id].judge_id;
           }
-        } else if (contest.type === 'ioi') {
+        } else {
           if (player.score_details[problem.problem.id]) {
             let judge_state = await JudgeState.findById(player.score_details[problem.problem.id].judge_id);
             problem.status = judge_state.status;
@@ -305,41 +316,26 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
             let multiplier = contest.ranklist.ranking_params[problem.problem.id] || 1.0;
             problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
           }
-        } else if (contest.type === 'acm') {
-          if (player.score_details[problem.problem.id]) {
-            problem.status = {
-              accepted: player.score_details[problem.problem.id].accepted,
-              unacceptedCount: player.score_details[problem.problem.id].unacceptedCount
-            };
-            problem.judge_id = player.score_details[problem.problem.id].judge_id;
-          } else {
-            problem.status = null;
-          }
         }
       }
     }
 
     let hasStatistics = false;
-    if ((!contest.hide_statistics) || (contest.ended) || (isSupervisior)) {
+    if (contest.type === 'ioi' || contest.ended) {
       hasStatistics = true;
 
       await contest.loadRelationships();
       let players = await contest.ranklist.getPlayers();
       for (let problem of problems) {
         problem.statistics = { attempt: 0, accepted: 0 };
-
-        if (contest.type === 'ioi' || contest.type === 'noi') {
-          problem.statistics.partially = 0;
-        }
-
+        problem.statistics.partially = 0;
         for (let player of players) {
           if (player.score_details[problem.problem.id]) {
             problem.statistics.attempt++;
-            if ((contest.type === 'acm' && player.score_details[problem.problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.problem.id].score === 100)) {
+            if (player.score_details[problem.problem.id].score === 100) {
               problem.statistics.accepted++;
             }
-
-            if ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.problem.id].score > 0) {
+            if (player.score_details[problem.problem.id].score > 0) {
               problem.statistics.partially++;
             }
           }
@@ -347,7 +343,7 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
       }
     }
 
-    res.render('course_contest', {
+    res.render('course_lesson', {
       contest: contest,
       problems: problems,
       hasStatistics: hasStatistics,
@@ -361,7 +357,7 @@ app.get('/course/:id/contest/:cid', async (req, res) => {
   }
 });
 
-app.get('/course/:id/contest/:cid/edit', async (req, res) => {
+app.get('/course/:id/lesson/:lid/edit', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -370,23 +366,20 @@ app.get('/course/:id/contest/:cid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    if (!curUser || !(await course.isSuperowner(curUser) || curUser.id !== course.owner_id)) {
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
       throw new ErrorMessage('您没有权限进行此操作。');
     }
-    await course.loadRelationships();
 
-    let contestIDs = await course.getContests();
+    let lessonIDs = await course.getLessons();
 
-    let cid = parseInt(req.params.cid);
-    if (cid < 0 || cid > contestIDs.length) throw new ErrorMessage('无此课节。');
+    let lid = parseInt(req.params.lid);
+    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
-    let contestID = (cid > 0 ? contestIDs[cid - 1] : 0);
+    let contestID = (lid > 0 ? lessonIDs[lid - 1] : 0);
     let contest = await Contest.findById(contestID);
 
     if (!contest) {
-      if (!await course.isSuperowner(curUser)) {
-        throw new ErrorMessage('您没有权限进行此操作。');
-      }
       contest = await Contest.create();
       contest.id = 0;
     } else {
@@ -398,9 +391,9 @@ app.get('/course/:id/contest/:cid/edit', async (req, res) => {
       problems = await contest.problems.split('|').mapAsync(async id => await Problem.findById(id));
     }
 
-    res.render('course_contest_edit', {
+    res.render('course_lesson_edit', {
       course: course,
-      cid: cid,
+      lid: lid,
       contest: contest,
       problems: problems
     });
@@ -412,7 +405,7 @@ app.get('/course/:id/contest/:cid/edit', async (req, res) => {
   }
 });
 
-app.post('/course/:id/contest/:cid/edit', async (req, res) => {
+app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -421,28 +414,24 @@ app.post('/course/:id/contest/:cid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    if (!curUser || !(await course.isSuperowner(curUser) || curUser.id !== course.owner_id)) {
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
       throw new ErrorMessage('您没有权限进行此操作。');
     }
-    await course.loadRelationships();
 
-    let contestIDs = await course.getContests();
+    let lessonIDs = await course.getLessons();
 
-    let cid = parseInt(req.params.cid);
-    if (cid < 0 || cid > contestIDs.length) throw new ErrorMessage('无此课节。');
+    let lid = parseInt(req.params.lid);
+    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
-    let contestID = (cid > 0 ? contestIDs[cid - 1] : 0);
+    let contestID = (lid > 0 ? lessonIDs[lid - 1] : 0);
     let contest = await Contest.findById(contestID);
 
     if (!contest) {
-      if (!await course.isSuperowner(curUser)) {
-        throw new ErrorMessage('您没有权限进行此操作。');
-      }
-
       contest = await Contest.create();
       ranklist = await ContestRanklist.create();
 
-      if (!['noi', 'ioi', 'acm'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
+      if (!['ioi', 'noi'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
       contest.type = req.body.type;
     } else {
       await contest.loadRelationships();
@@ -461,23 +450,20 @@ app.post('/course/:id/contest/:cid/edit', async (req, res) => {
     contest.title = req.body.title;
     contest.subtitle = req.body.subtitle;
     contest.information = req.body.information;
-    if (req.body.start_time) contest.start_time = syzoj.utils.parseDate(req.body.start_time);
-    if (req.body.end_time) contest.end_time = syzoj.utils.parseDate(req.body.end_time);
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     contest.problems = req.body.problems.join('|');
-    contest.hide_statistics = (req.body.hide_statistics === 'on');
     contest.is_public = (req.body.is_public === 'on');
 
     await contest.save();
 
-    if (!cid) {
-      cid = contestIDs.length + 1;
-      course.contests += (cid > 1 ? "|" : "") + contest.id;
+    if (!lid) {
+      lid = lessonIDs.length + 1;
+      course.lessons += (lid > 1 ? "|" : "") + contest.id;
 
       await course.save();
     }
 
-    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'contest', cid]));
+    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'lesson', lid]));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -486,18 +472,7 @@ app.post('/course/:id/contest/:cid/edit', async (req, res) => {
   }
 });
 
-app.get('/course/:id/problems', async (req, res) => {
-  try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
-  } catch (e) {
-    syzoj.log(e);
-    res.render('error', {
-      err: e
-    });
-  }
-});
-
-app.get('/course/:id/records', async (req, res) => {
+app.get('/course/:id/batches', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -506,37 +481,31 @@ app.get('/course/:id/records', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    if (course.parent_id) res.redirect(syzoj.utils.makeUrl(['course', course.parent_id, 'records']));
-
     const isSupervisior = await course.isSupervisior(curUser);
 
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
 
-    let query = Course.createQueryBuilder();
-    if (!course.parent_id) {
-      query.andWhere('parent_id = :parent_id', { parent_id: course.id });
-    } else {
-      query.andWhere('false');
-    }
+    let query = Batch.createQueryBuilder();
+    query.andWhere('course_id = :course_id', { course_id: courseID });
 
     let paginate = syzoj.utils.paginate(
-      await Course.countForPagination(query), req.query.page, syzoj.config.page.course);
-    let records = await Course.queryPage(paginate, query, {
+      await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
+    let batches = await Batch.queryPage(paginate, query, {
       start_time: 'DESC'
     });
 
-    await records.forEachAsync(async x => {
+    await batches.forEachAsync(async x => {
       x.running = x.isRunning();
       x.ended = x.isEnded();
-      x.teacher = await User.findById(x.owner_id);
+      x.teacher = await User.findById(await x.getTeacher());
     });
 
-    res.render('course_records', {
+    res.render('course_batches', {
       course: course,
       isSupervisior: isSupervisior,
-      records: records,
+      batches: batches,
       paginate: paginate
     });
   } catch (e) {
@@ -547,7 +516,18 @@ app.get('/course/:id/records', async (req, res) => {
   }
 });
 
-app.get('/course/:id/apply', async (req, res) => {
+app.get('/course/:id/batch/:bid/edit', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/problems', async (req, res) => {
   try {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {

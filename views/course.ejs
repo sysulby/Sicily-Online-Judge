@@ -10,41 +10,24 @@
 <div class="padding">
   <h1><%= course.title %></h1>
   <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
-  <% let unveiled = (isSupervisior || course.running || course.ended); %>
-  <% if (course.start_time && course.end_time) { %>
-    <% let start = syzoj.utils.formatDate(course.start_time), end = syzoj.utils.formatDate(course.end_time); %>
-    <% if (course.running && start.split(' ')[0] === end.split(' ')[0]) {
-      start = start.split(' ')[1]; end = end.split(' ')[1];
-    } %>
-    <div class="ui pointing below left label"><%= start %></div>
-    <div class="ui pointing below right label"><%= end %></div>
-    <% let timePercentage = Math.floor(Math.min(1, (syzoj.utils.getCurrentDate() - course.start_time) / (course.end_time - course.start_time)) * 100); %>
-    <div id="timer-progress" class="ui tiny indicating progress<% if (timePercentage == 100) { %> success<% } %>" data-percent="<%= timePercentage %>">
-      <div class="bar" style="width: <%= timePercentage %>%;"></div>
-    </div>
-  <% } %>
   <div class="ui grid">
-  <% if (isSupervisior) { %>
     <div class="row">
       <div class="column">
         <div class="ui buttons">
           <% if (isSupervisior) { %>
-            <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">课程题库</a>
+          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'batches']) %>">开课记录</a>
+          <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">课程题库</a>
+          <% } else { %>
+          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'batches']) %>">报名选课</a>
           <% } %>
-          <% if (!course.parent_id && isSupervisior) { %>
-            <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'records']) %>">开课记录</a>
-          <% } %>
-          <% if (isSuperowner) { %>
-            <a class="ui small orange button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', 0, 'edit']) %>">新建课节</a>
-          <% } %>
-          <% if (isSuperowner || user.id === course.owner_id) { %>
-            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">编辑课程</a>
+          <% if (hasOwnership) { %>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">编辑课程</a>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', 0, 'edit']) %>">新建课节</a>
           <% } %>
         </div>
       </div>
     </div>
-  <% } %>
-  <% if (course.information) { %>
+    <% if (course.information) { %>
     <div class="row">
       <div class="column">
         <h4 class="ui top attached block header">课程介绍</h4>
@@ -53,56 +36,45 @@
         </div>
       </div>
     </div>
-  <% } %>
-  <% if (unveiled) { %>
+    <% } %>
     <div class="row">
       <div class="column">
-         <table class="ui selectable celled table">
-            <thead>
-              <tr>
-                <th class="one wide" style="text-align: center">#</th>
-                <th>课节</th>
-                <% if (user) { %>
-                  <th class="one wide" style="text-align: center">状态</th>
-                <% } %>
-                <% if (isSuperowner) { %>
-                  <th class="two wide" style="text-align: center">操作</th>
-                <% } %>
-              </tr>
-            </thead>
-            <tbody>
-              <%
-              let i = 0;
-              for (let contest of contests) {
-                i++;
-              %>
-              <tr>
-                <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
-                <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i]) %>"><%= syzoj.utils.removeTitleTag(contest.title) %></a></td>
-                <% if (user) { %>
-                  <td class="center aligned" style="white-space: nowrap; "></td>
-                <% } %>
-                <% if (isSuperowner) { %>
-                  <td class="center aligned" style="white-space: nowrap; "><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'contest', i, 'edit']) %>">E↑↓×</a></td>
-                <% } %>
-              </tr>
-            <% } %>
-            </tbody>
+        <table class="ui selectable celled table">
+          <thead>
+            <tr>
+              <th class="one wide" style="text-align: center">#</th>
+              <th>课节</th>
+              <% if (isSupervisior) { %>
+              <th class="one wide" style="text-align: center">进度</th>
+              <% } %>
+              <% if (hasOwnership) { %>
+              <th class="two wide" style="text-align: center">操作</th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <%
+            let i = 0;
+            for (let lesson of lessons) {
+              i++;
+            %>
+            <tr>
+              <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
+              <% if (isSupervisior) { %>
+              <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
+              <td class="center aligned" style="white-space: nowrap; ">TODO</td>
+              <% } else { %>
+              <td><%= syzoj.utils.removeTitleTag(lesson.title) %></td>
+              <% } %>
+              <% if (hasOwnership) { %>
+              <td class="center aligned" style="white-space: nowrap; "><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i, 'edit']) %>">E↑↓×</a></td>
+              <% } %>
+            </tr>
+          <% } %>
+          </tbody>
         </table>
       </div>
     </div>
-  <% } %>
   </div>
 </div>
-
-<script>
-$(function () {
-  setInterval(function () {
-    $('#timer-progress').progress({
-      value: Date.now() / 1000 - <%= course.start_time %>,
-      total: <%= course.end_time - course.start_time %>
-    });
-  }, 5000);
-});
-</script>
 <% include footer %>
