@@ -31,6 +31,7 @@ app.get('/courses', async (req, res) => {
 
     let allBatches = await Batch.queryAll(Batch.createQueryBuilder());
 
+    // [TODO]: divide my batch into batches as teacher or batches as admin
     let myBatches = await allBatches.filterAsync(async x => {
       if (await x.isSupervisior(curUser)) return true;
       return x.is_public && x.participants.split('|').includes(curUser.id.toString());
@@ -62,6 +63,7 @@ app.get('/courses', async (req, res) => {
       await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
 
     let activeBatches = await Batch.queryPage(paginate, query, {
+      is_public: 'ASC',
       start_time: 'DESC'
     });
 
@@ -118,6 +120,7 @@ app.get('/courses/archived', async (req, res) => {
       await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
 
     let archivedBatches = await Batch.queryPage(paginate, query, {
+      is_public: 'ASC',
       start_time: 'DESC'
     });
 
@@ -226,6 +229,7 @@ app.post('/course/:id/edit', async (req, res) => {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
       course = await Course.create();
+      course.lessons = '';
     } else {
       // if course exists, both system administrators and course owner can edit it.
       if (!curUser || !await course.hasOwnership(curUser)) {
@@ -238,14 +242,13 @@ app.post('/course/:id/edit', async (req, res) => {
     course.title = req.body.title;
     course.subtitle = req.body.subtitle;
     course.information = req.body.information;
-    if (!course.lessons) course.lessons = '';
-    // only system administrators can set course owner and admins
+    // only system administrators can set course owner and admins and set public
     if (curUser.is_admin) {
       course.owner_id = parseInt(req.body.owner);
       if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
       course.admins = req.body.admins.join('|');
+      course.is_public = (req.body.is_public === 'on');
     }
-    course.is_public = (req.body.is_public === 'on');
 
     await course.save();
 
@@ -347,6 +350,7 @@ app.get('/course/:id/lesson/:lid', async (req, res) => {
       contest: contest,
       problems: problems,
       hasStatistics: hasStatistics,
+      // [TODO]: isSupervisior always true???
       isSupervisior: isSupervisior
     });
   } catch (e) {
@@ -452,6 +456,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
     contest.information = req.body.information;
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     contest.problems = req.body.problems.join('|');
+    // [TODO]: update logic about is_public
     contest.is_public = (req.body.is_public === 'on');
 
     await contest.save();
@@ -483,6 +488,7 @@ app.get('/course/:id/batches', async (req, res) => {
 
     const isSupervisior = await course.isSupervisior(curUser);
 
+    // [TODO]: should course admins can watch all related batches???
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
@@ -493,6 +499,7 @@ app.get('/course/:id/batches', async (req, res) => {
     let paginate = syzoj.utils.paginate(
       await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
     let batches = await Batch.queryPage(paginate, query, {
+      is_public: 'ASC',
       start_time: 'DESC'
     });
 
@@ -516,8 +523,187 @@ app.get('/course/:id/batches', async (req, res) => {
   }
 });
 
+app.get('/course/:id/batch/:bid', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    let batchID = parseInt(req.params.bid);
+    let batch = await Batch.findById(batchID);
+
+    if (!batch) throw new ErrorMessage('无此课程。');
+    if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isSupervisior = await batch.isSupervisior(curUser);
+
+    if (!isSupervisior) {
+      if (!batch.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+      if (!curUser) throw new ErrorMessage('请先登录。',
+        { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      // [TODO]: batch register
+      if (!batch.participants.split('|').includes(curUser.id.toString())) {
+        throw new ErrorMessage('您尚未选课。');
+      }
+    }
+
+    batch.information = await syzoj.utils.markdown(batch.information);
+    batch.running = batch.isRunning();
+    batch.ended = batch.isEnded();
+
+    let lessonIDs = await batch.getLessons();
+    let lessons = await lessonIDs.mapAsync(async id => await Contest.findById(id));
+
+    res.render('course_batch', {
+      course: course,
+      batch: batch,
+      isCourseOwner: isCourseOwner,
+      isSupervisior: isSupervisior,
+      lessons: lessons
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
 app.get('/course/:id/batch/:bid/edit', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    let batchID = parseInt(req.params.bid);
+    let batch = await Batch.findById(batchID);
+
+    if (!batch) {
+      // if batch does not exist, only course supervisior can create one
+      if (!curUser || !await course.isSupervisior(curUser)) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+      batch = await Batch.create();
+      batch.id = 0;
+    } else {
+      if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+      // if batch exists, both system administrators and batch owner can edit it.
+      if (!curUser || !await batch.hasOwnership(curUser)) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+      await batch.loadRelationships();
+    }
+
+    let owner = curUser;
+    if (batch.owner_id) owner = await User.findById(batch.owner_id);
+    let admins = [];
+    if (batch.admins) {
+      admins = await batch.admins.split('|').mapAsync(async id => await User.findById(id));
+    }
+
+    res.render('course_batch_edit', {
+      course: course,
+      batch: batch,
+      owner: owner,
+      admins: admins
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/batch/:bid/edit', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    let batchID = parseInt(req.params.bid);
+    let batch = await Batch.findById(batchID);
+
+    if (!batch) {
+      // if batch does not exist, only course supervisior can create one
+      if (!curUser || !await course.isSupervisior(curUser)) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+      batch = await Batch.create();
+      batch.course_id = course.id;
+      // [TODO]: auto create lessons
+      batch.lessons = '';
+      batch.participants = '';
+      batch.owner_id = parseInt(req.body.owner);
+      batch.admins = '';
+      batch.is_public = 0;
+    } else {
+      if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+      // if batch exists, both system administrators and batch owner can edit it.
+      if (!curUser || !await batch.hasOwnership(curUser)) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+      await batch.loadRelationships();
+    }
+
+    if (!req.body.title.trim()) throw new ErrorMessage('班级名不能为空。');
+    batch.title = req.body.title;
+    batch.information = req.body.information;
+    batch.start_time = syzoj.utils.parseDate(req.body.start_time);
+    batch.end_time = syzoj.utils.parseDate(req.body.end_time);
+    // [TODO]: who can set batch owner???
+    if (curUser.is_admin) {
+      batch.owner_id = parseInt(req.body.owner);
+    }
+    if (await course.hasOwnership(curUser)) {
+      if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
+      batch.admins = req.body.admins.join('|');
+    }
+    if (curUser.is_admin) {
+      batch.is_public = (req.body.is_public === 'on');
+    }
+
+    await batch.save();
+
+    res.redirect(syzoj.utils.makeUrl(['course', batch.course_id, 'batch', batch.id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/batch/:bid/lesson/:lid/edit', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    let batchID = parseInt(req.params.bid);
+    let batch = await Batch.findById(batchID);
+
+    if (!batch) throw new ErrorMessage('无此课程。');
+    if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
+      throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {
     syzoj.log(e);

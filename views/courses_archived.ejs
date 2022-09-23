@@ -1,7 +1,7 @@
-<% this.title = '归档课程' %>
+<% this.title = '结课记录' %>
 <% include header %>
 <div class="padding">
-  <h2 class="ui header">归档课程</h2>
+  <h2 class="ui header">结课记录</h2>
   <% if (archived_batches.length) { %>
   <form class="ui mini form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
@@ -14,7 +14,7 @@
   <table class="ui very basic center aligned table">
     <thead>
       <tr>
-        <th>课程名称</th>
+        <th>班级名称</th>
         <th>开始时间</th>
         <th>结束时间</th>
         <th>任课教师</th>
@@ -27,12 +27,12 @@
       %>
       <tr>
         <% if (!batch.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
+          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
         <% } else { %>
           <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>
         <% } %>
 
-        <td><a href="<%= syzoj.utils.makeUrl(['batch', batch.id]) %>"><%= batch.title %> <%- tag %></a></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['course', batch.course_id, 'batch', batch.id]) %>"><%= batch.title %> <%- tag %></a></td>
         <td><%= syzoj.utils.formatDate(batch.start_time, 'L') %></td>
         <td><%= syzoj.utils.formatDate(batch.end_time, 'L') %></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', batch.teacher.id]) %>"><%= batch.teacher.username %></a></td>
@@ -46,7 +46,7 @@
   <div class="ui placeholder segment">
     <div class="ui icon header">
       <i class="book icon" style="margin-bottom: 20px; "></i>
-      暂无归档课程
+      暂无结课记录
     </div>
     <a href="<%= syzoj.utils.makeUrl(['courses']) %>" class="ui primary labeled icon button">
       <i class="ui icon arrow left"></i>

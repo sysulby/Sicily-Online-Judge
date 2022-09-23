@@ -17,9 +17,6 @@ export default class Batch extends Model {
   title: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  subtitle: string;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
   information: string;
 
   @TypeORM.Column({ nullable: true, type: "integer" })

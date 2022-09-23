@@ -2,20 +2,20 @@
 <% include header %>
 <% if (has_batch) { %>
 <div class="padding">
-  <h2 class="ui header">我的课程</h2>
+  <h2 class="ui header">我的班级</h2>
   <% if (active_batches.length) { %>
   <form class="ui mini form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
         <i class="ui icon archive"></i>
-        归档课程
+        结课记录
       </a>
    </div>
   </form>
   <table class="ui very basic center aligned table">
     <thead>
       <tr>
-        <th>课程名称</th>
+        <th>班级名称</th>
         <th>开始时间</th>
         <th>结束时间</th>
         <th>任课教师</th>
@@ -28,13 +28,13 @@
       %>
       <tr>
         <% if (!batch.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
-        <% } else if (!batch.running) { %>
-          <% tag = '<span class="ui header"><div class="ui mini red label">未开始</div></span>' %>
-        <% } else { %>
+          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
+        <% } else if (batch.running) { %>
           <% tag = '<span class="ui header"><div class="ui mini green label">进行中</div></span>' %>
+        <% } else { %>
+          <% tag = '<span class="ui header"><div class="ui mini red label">未开始</div></span>' %>
         <% } %>
-        <td><a href="<%= syzoj.utils.makeUrl(['batch', batch.id]) %>"><%= batch.title %> <%- tag %></a></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['course', batch.course_id, 'batch', batch.id]) %>"><%= batch.title %> <%- tag %></a></td>
         <td><%= syzoj.utils.formatDate(batch.start_time, 'L') %></td>
         <td><%= syzoj.utils.formatDate(batch.end_time, 'L') %></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', batch.teacher.id]) %>"><%= batch.teacher.username %></a></td>
@@ -54,7 +54,7 @@
     </div>
     <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui primary labeled icon button">
       <i class="ui icon archive"></i>
-      查看归档课程
+      查看结课记录
     </a>
   </div>
   <% } %>
@@ -88,7 +88,7 @@
       %>
       <tr>
         <% if (!course.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
+          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
         <% } %>
         <td><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>"><%= course.title %> <%- tag %></a></td>
         <td class="font-content"><%- course.subtitle %></td>

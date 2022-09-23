@@ -1,4 +1,4 @@
-<% this.title = course.title + ' - 课程' %>
+<% this.title = course.title + ' - 开班记录' %>
 <style>
 .ui.label.pointing.below.left::before { left: 12%; }
 .ui.label.pointing.below.right::before { left: 88%; }
@@ -19,13 +19,13 @@
       </div>
     </div>
   </div>
-  <h2 class="ui header">开课记录</h2>
+  <h2 class="ui header">开班记录</h2>
   <% if (batches.length) { %>
   <form class="ui mini form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'batch', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
         <i class="ui icon plus"></i>
-        开课申请
+        开班申请
       </a>
    </div>
   </form>
@@ -45,7 +45,7 @@
       %>
       <tr>
         <% if (!batch.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
+          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
         <% } else if (batch.ended) { %>
           <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>
         <% } else if (batch.running) { %>
@@ -54,7 +54,7 @@
           <% tag = '<span class="ui header"><div class="ui mini red label">未开始</div></span>' %>
         <% } %>
 
-        <td><a href="<%= syzoj.utils.makeUrl(['batch', batch.id]) %>"><%= batch.title %> <%- tag %></a></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['course', batch.course_id, 'batch', batch.id]) %>"><%= batch.title %> <%- tag %></a></td>
         <td><%= syzoj.utils.formatDate(batch.start_time, 'L') %></td>
         <td><%= syzoj.utils.formatDate(batch.end_time, 'L') %></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', batch.teacher.id]) %>"><%= batch.teacher.username %></a></td>
@@ -66,12 +66,12 @@
   <div class="ui placeholder segment">
     <div class="ui icon header">
       <i class="book icon" style="margin-bottom: 20px; "></i>
-      尚无开课记录
+      尚无开班记录
     </div>
     <% if (isSupervisior) { %>
     <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'batch', 0, 'edit']) %>" class="ui primary labeled icon button">
       <i class="ui icon plus"></i>
-      开课申请
+      开班申请
     </a>
     <% } %>
   </div>
