@@ -1,24 +1,24 @@
-<% this.title = batch.id ? '班级设置' : '开班申请' %>
+<% this.title = clazz.id ? '班级设置' : '开班申请' %>
 <% include header %>
 <div class="padding">
-  <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'batch', batch.id, 'edit']) %>" method="post">
+  <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'edit']) %>" method="post">
     <div class="ui form">
       <div class="field">
         <label>班级名称</label>
-        <input type="text" name="title" value="<%= batch.title %>">
+        <input type="text" name="title" value="<%= clazz.title %>">
       </div>
       <div class="field">
         <label>班级公告</label>
-        <textarea rows="5" name="information" class="markdown-edit"><%= batch.information %></textarea>
+        <textarea rows="5" name="information" class="markdown-edit"><%= clazz.information %></textarea>
       </div>
       <div class="two fields">
         <div class="field">
           <label>开始时间</label>
-          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(batch.start_time || syzoj.utils.getCurrentDate()) %>">
+          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate()) %>">
         </div>
         <div class="field">
           <label>结束时间</label>
-          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(batch.end_time || syzoj.utils.getCurrentDate()) %>">
+          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate()) %>">
         </div>
       </div>
       <div class="field">
@@ -38,7 +38,7 @@
       <div class="inline field">
         <label class="ui header">公开</label>
         <div class="ui toggle checkbox">
-          <input type="checkbox"<% if (batch.is_public) { %> checked<% } %><% if (!user.is_admin) { %> disabled<% } %> name="is_public">
+          <input type="checkbox"<% if (clazz.is_public) { %> checked<% } %><% if (!user.is_admin) { %> disabled<% } %> name="is_public">
           <label><span style="visibility: hidden; ">　</span></label>
         </div>
       </div>

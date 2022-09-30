@@ -7,7 +7,7 @@ import Course from "./course";
 import User from "./user";
 
 @TypeORM.Entity()
-export default class Batch extends Model {
+export default class Clazz extends Model {
   static cache = true;
 
   @TypeORM.PrimaryGeneratedColumn()

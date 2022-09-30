@@ -1,5 +1,5 @@
 let Course = syzoj.model('course');
-let Batch = syzoj.model('batch');
+let Clazz = syzoj.model('clazz');
 let Contest = syzoj.model('contest');
 let ContestPlayer = syzoj.model('contest_player');
 let ContestRanklist = syzoj.model('contest_ranklist');
@@ -24,58 +24,58 @@ app.get('/courses', async (req, res) => {
     if (!curUser) {
       res.render('courses', {
         courses: courses,
-        has_batch: false
+        has_clazz: false
       });
       return;
     }
 
-    let allBatches = await Batch.queryAll(Batch.createQueryBuilder());
+    let allClazzes = await Clazz.queryAll(Clazz.createQueryBuilder());
 
-    // [TODO]: divide my batch into batches as teacher or batches as admin
-    let myBatches = await allBatches.filterAsync(async x => {
+    // [TODO]: divide my clazz into clazzes as teacher or clazzes as admin
+    let myClazzes = await allClazzes.filterAsync(async x => {
       if (await x.isSupervisior(curUser)) return true;
       return x.is_public && x.participants.split('|').includes(curUser.id.toString());
     });
 
-    if (!myBatches.length) {
+    if (!myClazzes.length) {
       res.render('courses', {
         courses: courses,
-        has_batch: false
+        has_clazz: false
       });
       return;
     }
 
-    let activeIDs = (await myBatches.filterAsync(async x => !x.isEnded())).map(x => x.id);
+    let activeIDs = (await myClazzes.filterAsync(async x => !x.isEnded())).map(x => x.id);
 
     if (!activeIDs.length) {
       res.render('courses', {
         courses: courses,
-        has_batch: true,
-        active_batches: []
+        has_clazz: true,
+        active_clazzes: []
       });
       return;
     }
 
-    let query = Batch.createQueryBuilder();
+    let query = Clazz.createQueryBuilder();
     query.andWhere('id in (:ids)', { ids: activeIDs });
 
     let paginate = syzoj.utils.paginate(
-      await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
+      await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
 
-    let activeBatches = await Batch.queryPage(paginate, query, {
+    let activeClazzes = await Clazz.queryPage(paginate, query, {
       is_public: 'ASC',
       start_time: 'DESC'
     });
 
-    await activeBatches.forEachAsync(async x => {
+    await activeClazzes.forEachAsync(async x => {
       x.running = x.isRunning();
       x.teacher = await User.findById(await x.getTeacher());
     });
 
     res.render('courses', {
       courses: courses,
-      has_batch: true,
-      active_batches: activeBatches,
+      has_clazz: true,
+      active_clazzes: activeClazzes,
       paginate: paginate
     });
   } catch (e) {
@@ -92,44 +92,44 @@ app.get('/courses/archived', async (req, res) => {
 
     if (!curUser) {
       res.render('courses_archived', {
-        archived_batches: []
+        archived_clazzes: []
       });
       return;
     }
 
-    let allBatches = await Batch.queryAll(Batch.createQueryBuilder());
+    let allClazzes = await Clazz.queryAll(Clazz.createQueryBuilder());
 
-    let myBatches = await allBatches.filterAsync(async x => {
+    let myClazzes = await allClazzes.filterAsync(async x => {
       if (await x.isSupervisior(curUser)) return true;
       return x.is_public && x.participants.split('|').includes(curUser.id.toString());
     });
 
-    let archivedIDs = (await myBatches.filterAsync(async x => x.isEnded())).map(x => x.id);
+    let archivedIDs = (await myClazzes.filterAsync(async x => x.isEnded())).map(x => x.id);
 
     if (!archivedIDs.length) {
       res.render('courses_archived', {
-        archived_batches: []
+        archived_clazzes: []
       });
       return;
     }
 
-    let query = Batch.createQueryBuilder();
+    let query = Clazz.createQueryBuilder();
     query.andWhere('id in (:ids)', { ids: archivedIDs });
 
     let paginate = syzoj.utils.paginate(
-      await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
+      await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
 
-    let archivedBatches = await Batch.queryPage(paginate, query, {
+    let archivedClazzes = await Clazz.queryPage(paginate, query, {
       is_public: 'ASC',
       start_time: 'DESC'
     });
 
-    await archivedBatches.forEachAsync(async x => {
+    await archivedClazzes.forEachAsync(async x => {
       x.teacher = await User.findById(await x.getTeacher());
     });
 
     res.render('courses_archived', {
-      archived_batches: archivedBatches,
+      archived_clazzes: archivedClazzes,
       paginate: paginate
     });
   } catch (e) {
@@ -477,7 +477,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
   }
 });
 
-app.get('/course/:id/batches', async (req, res) => {
+app.get('/course/:id/classes', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -488,31 +488,31 @@ app.get('/course/:id/batches', async (req, res) => {
 
     const isSupervisior = await course.isSupervisior(curUser);
 
-    // [TODO]: should course admins can watch all related batches???
+    // [TODO]: should course admins can watch all related clazzes???
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
 
-    let query = Batch.createQueryBuilder();
+    let query = Clazz.createQueryBuilder();
     query.andWhere('course_id = :course_id', { course_id: courseID });
 
     let paginate = syzoj.utils.paginate(
-      await Batch.countForPagination(query), req.query.page, syzoj.config.page.course);
-    let batches = await Batch.queryPage(paginate, query, {
+      await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
+    let clazzes = await Clazz.queryPage(paginate, query, {
       is_public: 'ASC',
       start_time: 'DESC'
     });
 
-    await batches.forEachAsync(async x => {
+    await clazzes.forEachAsync(async x => {
       x.running = x.isRunning();
       x.ended = x.isEnded();
       x.teacher = await User.findById(await x.getTeacher());
     });
 
-    res.render('course_batches', {
+    res.render('course_classes', {
       course: course,
       isSupervisior: isSupervisior,
-      batches: batches,
+      clazzes: clazzes,
       paginate: paginate
     });
   } catch (e) {
@@ -523,7 +523,7 @@ app.get('/course/:id/batches', async (req, res) => {
   }
 });
 
-app.get('/course/:id/batch/:bid', async (req, res) => {
+app.get('/course/:id/class/:cid', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -532,35 +532,35 @@ app.get('/course/:id/batch/:bid', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let batchID = parseInt(req.params.bid);
-    let batch = await Batch.findById(batchID);
+    let clazzID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(clazzID);
 
-    if (!batch) throw new ErrorMessage('无此课程。');
-    if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+    if (!clazz) throw new ErrorMessage('无此课程。');
+    if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
 
     const isCourseOwner = await course.hasOwnership(curUser);
-    const isSupervisior = await batch.isSupervisior(curUser);
+    const isSupervisior = await clazz.isSupervisior(curUser);
 
     if (!isSupervisior) {
-      if (!batch.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+      if (!clazz.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
       if (!curUser) throw new ErrorMessage('请先登录。',
         { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
-      // [TODO]: batch register
-      if (!batch.participants.split('|').includes(curUser.id.toString())) {
+      // [TODO]: clazz register
+      if (!clazz.participants.split('|').includes(curUser.id.toString())) {
         throw new ErrorMessage('您尚未选课。');
       }
     }
 
-    batch.information = await syzoj.utils.markdown(batch.information);
-    batch.running = batch.isRunning();
-    batch.ended = batch.isEnded();
+    clazz.information = await syzoj.utils.markdown(clazz.information);
+    clazz.running = clazz.isRunning();
+    clazz.ended = clazz.isEnded();
 
-    let lessonIDs = await batch.getLessons();
+    let lessonIDs = await clazz.getLessons();
     let lessons = await lessonIDs.mapAsync(async id => await Contest.findById(id));
 
-    res.render('course_batch', {
+    res.render('course_class', {
       course: course,
-      batch: batch,
+      clazz: clazz,
       isCourseOwner: isCourseOwner,
       isSupervisior: isSupervisior,
       lessons: lessons
@@ -573,7 +573,7 @@ app.get('/course/:id/batch/:bid', async (req, res) => {
   }
 });
 
-app.get('/course/:id/batch/:bid/edit', async (req, res) => {
+app.get('/course/:id/class/:cid/edit', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -582,35 +582,35 @@ app.get('/course/:id/batch/:bid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let batchID = parseInt(req.params.bid);
-    let batch = await Batch.findById(batchID);
+    let clazzID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(clazzID);
 
-    if (!batch) {
-      // if batch does not exist, only course supervisior can create one
+    if (!clazz) {
+      // if clazz does not exist, only course supervisior can create one
       if (!curUser || !await course.isSupervisior(curUser)) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
-      batch = await Batch.create();
-      batch.id = 0;
+      clazz = await Clazz.create();
+      clazz.id = 0;
     } else {
-      if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
-      // if batch exists, both system administrators and batch owner can edit it.
-      if (!curUser || !await batch.hasOwnership(curUser)) {
+      if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+      // if clazz exists, both system administrators and clazz owner can edit it.
+      if (!curUser || !await clazz.hasOwnership(curUser)) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
-      await batch.loadRelationships();
+      await clazz.loadRelationships();
     }
 
     let owner = curUser;
-    if (batch.owner_id) owner = await User.findById(batch.owner_id);
+    if (clazz.owner_id) owner = await User.findById(clazz.owner_id);
     let admins = [];
-    if (batch.admins) {
-      admins = await batch.admins.split('|').mapAsync(async id => await User.findById(id));
+    if (clazz.admins) {
+      admins = await clazz.admins.split('|').mapAsync(async id => await User.findById(id));
     }
 
-    res.render('course_batch_edit', {
+    res.render('course_class_edit', {
       course: course,
-      batch: batch,
+      clazz: clazz,
       owner: owner,
       admins: admins
     });
@@ -622,7 +622,7 @@ app.get('/course/:id/batch/:bid/edit', async (req, res) => {
   }
 });
 
-app.post('/course/:id/batch/:bid/edit', async (req, res) => {
+app.post('/course/:id/class/:cid/edit', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -631,51 +631,51 @@ app.post('/course/:id/batch/:bid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let batchID = parseInt(req.params.bid);
-    let batch = await Batch.findById(batchID);
+    let clazzID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(clazzID);
 
-    if (!batch) {
-      // if batch does not exist, only course supervisior can create one
+    if (!clazz) {
+      // if clazz does not exist, only course supervisior can create one
       if (!curUser || !await course.isSupervisior(curUser)) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
-      batch = await Batch.create();
-      batch.course_id = course.id;
+      clazz = await Clazz.create();
+      clazz.course_id = course.id;
       // [TODO]: auto create lessons
-      batch.lessons = '';
-      batch.participants = '';
-      batch.owner_id = parseInt(req.body.owner);
-      batch.admins = '';
-      batch.is_public = 0;
+      clazz.lessons = '';
+      clazz.participants = '';
+      clazz.owner_id = parseInt(req.body.owner);
+      clazz.admins = '';
+      clazz.is_public = 0;
     } else {
-      if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
-      // if batch exists, both system administrators and batch owner can edit it.
-      if (!curUser || !await batch.hasOwnership(curUser)) {
+      if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+      // if clazz exists, both system administrators and clazz owner can edit it.
+      if (!curUser || !await clazz.hasOwnership(curUser)) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
-      await batch.loadRelationships();
+      await clazz.loadRelationships();
     }
 
     if (!req.body.title.trim()) throw new ErrorMessage('班级名不能为空。');
-    batch.title = req.body.title;
-    batch.information = req.body.information;
-    batch.start_time = syzoj.utils.parseDate(req.body.start_time);
-    batch.end_time = syzoj.utils.parseDate(req.body.end_time);
-    // [TODO]: who can set batch owner???
+    clazz.title = req.body.title;
+    clazz.information = req.body.information;
+    clazz.start_time = syzoj.utils.parseDate(req.body.start_time);
+    clazz.end_time = syzoj.utils.parseDate(req.body.end_time);
+    // [TODO]: who can set clazz owner???
     if (curUser.is_admin) {
-      batch.owner_id = parseInt(req.body.owner);
+      clazz.owner_id = parseInt(req.body.owner);
     }
     if (await course.hasOwnership(curUser)) {
       if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
-      batch.admins = req.body.admins.join('|');
+      clazz.admins = req.body.admins.join('|');
     }
     if (curUser.is_admin) {
-      batch.is_public = (req.body.is_public === 'on');
+      clazz.is_public = (req.body.is_public === 'on');
     }
 
-    await batch.save();
+    await clazz.save();
 
-    res.redirect(syzoj.utils.makeUrl(['course', batch.course_id, 'batch', batch.id]));
+    res.redirect(syzoj.utils.makeUrl(['course', clazz.course_id, 'class', clazz.id]));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -684,7 +684,7 @@ app.post('/course/:id/batch/:bid/edit', async (req, res) => {
   }
 });
 
-app.get('/course/:id/batch/:bid/lesson/:lid/edit', async (req, res) => {
+app.get('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
@@ -693,11 +693,11 @@ app.get('/course/:id/batch/:bid/lesson/:lid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let batchID = parseInt(req.params.bid);
-    let batch = await Batch.findById(batchID);
+    let clazzID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(clazzID);
 
-    if (!batch) throw new ErrorMessage('无此课程。');
-    if (batch.course_id !== course.id) throw new ErrorMessage('错误的课程。');
+    if (!clazz) throw new ErrorMessage('无此课程。');
+    if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
 
     // both system administrators and course owner can edit it.
     if (!curUser || !await course.hasOwnership(curUser)) {
