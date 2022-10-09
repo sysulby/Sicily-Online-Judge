@@ -1,9 +1,9 @@
 <% this.title = '课程' %>
 <% include header %>
-<% if (has_clazz) { %>
+<% if (has_class) { %>
 <div class="padding">
   <h2 class="ui header">我的班级</h2>
-  <% if (active_clazzes.length) { %>
+  <% if (active_classes.length) { %>
   <form class="ui mini form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
@@ -23,13 +23,11 @@
     </thead>
     <tbody>
       <%
-      for (let clazz of active_clazzes) {
+      for (let clazz of active_classes) {
         let tag = '';
       %>
       <tr>
-        <% if (!clazz.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
-        <% } else if (clazz.running) { %>
+        <% if (clazz.running) { %>
           <% tag = '<span class="ui header"><div class="ui mini green label">进行中</div></span>' %>
         <% } else { %>
           <% tag = '<span class="ui header"><div class="ui mini red label">未开始</div></span>' %>
@@ -47,7 +45,7 @@
     <% include page %>
   </div>
   <% } else { %>
-  <div class="ui placeholder segment">
+  <div style="margin-bottom: 30px; " class="ui placeholder segment">
     <div class="ui icon header">
       <i class="book icon" style="margin-bottom: 20px; "></i>
       暂无可用课程
@@ -79,6 +77,9 @@
         <th>课程名称</th>
         <th>课程简介</th>
         <th>主管教师</th>
+        <% if (user) { %>
+        <th>状态</th>
+        <% } %>
       </tr>
     </thead>
     <tbody>
@@ -88,11 +89,14 @@
       %>
       <tr>
         <% if (!course.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
+          <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
         <% } %>
         <td><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>"><%= course.title %> <%- tag %></a></td>
         <td class="font-content"><%- course.subtitle %></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', course.owner.id]) %>"><%= course.owner.username %></a></td>
+        <% if (user) { %>
+        <td><% if (course.notice) { %><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>"><i class="exclamation triangle yellow icon"></i></a><% } %></td>
+        <% } %>
       </tr>
       <% } %>
     </tbody>

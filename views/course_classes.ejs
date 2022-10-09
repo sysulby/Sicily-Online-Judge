@@ -20,7 +20,7 @@
     </div>
   </div>
   <h2 class="ui header">开班记录</h2>
-  <% if (clazzes.length) { %>
+  <% if (classes.length) { %>
   <form class="ui mini form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
@@ -40,12 +40,16 @@
     </thead>
     <tbody>
       <%
-      for (let clazz of clazzes) {
+      for (let clazz of classes) {
         let tag = '';
       %>
       <tr>
         <% if (!clazz.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
+          <% if (!clazz.teachers.trim()) { %>
+            <% tag='<span class="ui header"><div class="ui mini yellow label">待审核</div></span>' %>
+          <% } else { %>
+            <% tag='<span class="ui header"><div class="ui mini yellow label">待确认</div></span>' %>
+          <% } %>
         <% } else if (clazz.ended) { %>
           <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>
         <% } else if (clazz.running) { %>

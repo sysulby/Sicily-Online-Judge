@@ -11,10 +11,7 @@ app.get('/courses', async (req, res) => {
     const curUser = res.locals.user;
 
     let allCourses = await Course.queryAll(Course.createQueryBuilder());
-
-    let courses = await allCourses.filterAsync(async x => {
-      return x.is_public || await x.isSupervisior(curUser);
-    });
+    let courses = await allCourses.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
 
     await courses.forEachAsync(async x => {
       x.subtitle = await syzoj.utils.markdown(x.subtitle);
@@ -24,58 +21,59 @@ app.get('/courses', async (req, res) => {
     if (!curUser) {
       res.render('courses', {
         courses: courses,
-        has_clazz: false
+        has_class: false
       });
       return;
     }
 
-    let allClazzes = await Clazz.queryAll(Clazz.createQueryBuilder());
-
-    // [TODO]: divide my clazz into clazzes as teacher or clazzes as admin
-    let myClazzes = await allClazzes.filterAsync(async x => {
-      if (await x.isSupervisior(curUser)) return true;
-      return x.is_public && x.participants.split('|').includes(curUser.id.toString());
+    await courses.forEachAsync(async x => {
+      if (await x.hasOwnership(curUser)) {
+        let query = Clazz.createQueryBuilder().andWhere('is_public = 0');
+        query.andWhere('course_id = :course_id', { course_id: x.id });
+        if (!curUser.is_admin) query.andWhere('teachers = \'\'');
+        x.notice = await Clazz.countQuery(query);
+      }
     });
 
-    if (!myClazzes.length) {
+    let publicClasses = await Clazz.queryAll(Clazz.createQueryBuilder().andWhere('is_public = 1'));
+    let myClasses = await publicClasses.filterAsync(async x => await x.isParticipant(curUser));
+
+    if (!myClasses.length) {
       res.render('courses', {
         courses: courses,
-        has_clazz: false
+        has_class: false
       });
       return;
     }
 
-    let activeIDs = (await myClazzes.filterAsync(async x => !x.isEnded())).map(x => x.id);
+    let myActiveClassIDs = myClasses.filter(x => !x.isEnded()).map(x => x.id);
 
-    if (!activeIDs.length) {
+    if (!myActiveClassIDs.length) {
       res.render('courses', {
         courses: courses,
-        has_clazz: true,
-        active_clazzes: []
+        has_class: true,
+        active_classes: []
       });
       return;
     }
 
-    let query = Clazz.createQueryBuilder();
-    query.andWhere('id in (:ids)', { ids: activeIDs });
-
+    let query = Clazz.createQueryBuilder().andWhere('id in (:ids)', { ids: myActiveClassIDs });
     let paginate = syzoj.utils.paginate(
       await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
 
-    let activeClazzes = await Clazz.queryPage(paginate, query, {
-      is_public: 'ASC',
+    let activeClasses = await Clazz.queryPage(paginate, query, {
       start_time: 'DESC'
     });
 
-    await activeClazzes.forEachAsync(async x => {
+    await activeClasses.forEachAsync(async x => {
       x.running = x.isRunning();
-      x.teacher = await User.findById(await x.getTeacher());
+      x.teacher = await User.findById(await x.getMainTeacher());
     });
 
     res.render('courses', {
       courses: courses,
-      has_clazz: true,
-      active_clazzes: activeClazzes,
+      has_class: true,
+      active_classes: activeClasses,
       paginate: paginate
     });
   } catch (e) {
@@ -90,46 +88,34 @@ app.get('/courses/archived', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
-    if (!curUser) {
+    if (!curUser) throw new ErrorMessage('请先登录。',
+      { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+
+    let publicClasses = await Clazz.queryAll(Clazz.createQueryBuilder().andWhere('is_public = 1'));
+    let myClasses = await publicClasses.filterAsync(async x => await x.isParticipant(curUser));
+    let myArchivedClassIDs = myClasses.filter(x => x.isEnded()).map(x => x.id);
+
+    if (!myArchivedClassIDs.length) {
       res.render('courses_archived', {
-        archived_clazzes: []
+        archived_classes: []
       });
       return;
     }
 
-    let allClazzes = await Clazz.queryAll(Clazz.createQueryBuilder());
-
-    let myClazzes = await allClazzes.filterAsync(async x => {
-      if (await x.isSupervisior(curUser)) return true;
-      return x.is_public && x.participants.split('|').includes(curUser.id.toString());
-    });
-
-    let archivedIDs = (await myClazzes.filterAsync(async x => x.isEnded())).map(x => x.id);
-
-    if (!archivedIDs.length) {
-      res.render('courses_archived', {
-        archived_clazzes: []
-      });
-      return;
-    }
-
-    let query = Clazz.createQueryBuilder();
-    query.andWhere('id in (:ids)', { ids: archivedIDs });
-
+    let query = Clazz.createQueryBuilder().andWhere('id in (:ids)', { ids: myArchivedClassIDs });
     let paginate = syzoj.utils.paginate(
       await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
 
-    let archivedClazzes = await Clazz.queryPage(paginate, query, {
-      is_public: 'ASC',
+    let archivedClasses = await Clazz.queryPage(paginate, query, {
       start_time: 'DESC'
     });
 
-    await archivedClazzes.forEachAsync(async x => {
-      x.teacher = await User.findById(await x.getTeacher());
+    await archivedClasses.forEachAsync(async x => {
+      x.teacher = await User.findById(await x.getMainTeacher());
     });
 
     res.render('courses_archived', {
-      archived_clazzes: archivedClazzes,
+      archived_classes: archivedClasses,
       paginate: paginate
     });
   } catch (e) {
@@ -152,7 +138,7 @@ app.get('/course/:id', async (req, res) => {
     const hasOwnership = await course.hasOwnership(curUser);
     const isSupervisior = await course.isSupervisior(curUser);
 
-    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程主页施工中，请稍后再试。');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
     course.information = await syzoj.utils.markdown(course.information);
@@ -253,6 +239,28 @@ app.post('/course/:id/edit', async (req, res) => {
     await course.save();
 
     res.redirect(syzoj.utils.makeUrl(['course', course.id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/delete', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/problems', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -435,8 +443,8 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
       contest = await Contest.create();
       ranklist = await ContestRanklist.create();
 
-      if (!['ioi', 'noi'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
-      contest.type = req.body.type;
+      contest.holder_id = curUser.id;
+      contest.admins = '';
     } else {
       await contest.loadRelationships();
       ranklist = contest.ranklist;
@@ -456,6 +464,9 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
     contest.information = req.body.information;
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     contest.problems = req.body.problems.join('|');
+    if (!['ioi', 'noi'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
+    contest.type = req.body.type;
+    contest.hide_statistics = (contest.type === 'noi');
     // [TODO]: update logic about is_public
     contest.is_public = (req.body.is_public === 'on');
 
@@ -477,6 +488,39 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
   }
 });
 
+app.post('/course/:id/lesson/:lid/move_up', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/lesson/:lid/move_down', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/lesson/:lid/delete', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
 app.get('/course/:id/classes', async (req, res) => {
   try {
     const curUser = res.locals.user;
@@ -488,7 +532,7 @@ app.get('/course/:id/classes', async (req, res) => {
 
     const isSupervisior = await course.isSupervisior(curUser);
 
-    // [TODO]: should course admins can watch all related clazzes???
+    // [TODO]: should course admins can watch all related classes???
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
@@ -498,21 +542,21 @@ app.get('/course/:id/classes', async (req, res) => {
 
     let paginate = syzoj.utils.paginate(
       await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
-    let clazzes = await Clazz.queryPage(paginate, query, {
+    let classes = await Clazz.queryPage(paginate, query, {
       is_public: 'ASC',
       start_time: 'DESC'
     });
 
-    await clazzes.forEachAsync(async x => {
+    await classes.forEachAsync(async x => {
       x.running = x.isRunning();
       x.ended = x.isEnded();
-      x.teacher = await User.findById(await x.getTeacher());
+      x.teacher = await User.findById(await x.getMainTeacher());
     });
 
     res.render('course_classes', {
       course: course,
       isSupervisior: isSupervisior,
-      clazzes: clazzes,
+      classes: classes,
       paginate: paginate
     });
   } catch (e) {
@@ -532,8 +576,8 @@ app.get('/course/:id/class/:cid', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let clazzID = parseInt(req.params.cid);
-    let clazz = await Clazz.findById(clazzID);
+    let classID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(classID);
 
     if (!clazz) throw new ErrorMessage('无此课程。');
     if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
@@ -542,11 +586,11 @@ app.get('/course/:id/class/:cid', async (req, res) => {
     const isSupervisior = await clazz.isSupervisior(curUser);
 
     if (!isSupervisior) {
-      if (!clazz.is_public) throw new ErrorMessage('课程未公开，请耐心等待 (´∀ `)');
+      if (!clazz.is_public) throw new ErrorMessage('课程主页施工中，请稍后再试。');
       if (!curUser) throw new ErrorMessage('请先登录。',
         { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
       // [TODO]: clazz register
-      if (!clazz.participants.split('|').includes(curUser.id.toString())) {
+      if (!clazz.students.split('|').includes(curUser.id.toString())) {
         throw new ErrorMessage('您尚未选课。');
       }
     }
@@ -582,8 +626,8 @@ app.get('/course/:id/class/:cid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let clazzID = parseInt(req.params.cid);
-    let clazz = await Clazz.findById(clazzID);
+    let classID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(classID);
 
     if (!clazz) {
       // if clazz does not exist, only course supervisior can create one
@@ -603,16 +647,16 @@ app.get('/course/:id/class/:cid/edit', async (req, res) => {
 
     let owner = curUser;
     if (clazz.owner_id) owner = await User.findById(clazz.owner_id);
-    let admins = [];
-    if (clazz.admins) {
-      admins = await clazz.admins.split('|').mapAsync(async id => await User.findById(id));
+    let teachers = [];
+    if (clazz.teachers) {
+      teachers = await clazz.teachers.split('|').mapAsync(async id => await User.findById(id));
     }
 
     res.render('course_class_edit', {
       course: course,
       clazz: clazz,
       owner: owner,
-      admins: admins
+      teachers: teachers
     });
   } catch (e) {
     syzoj.log(e);
@@ -631,8 +675,8 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let clazzID = parseInt(req.params.cid);
-    let clazz = await Clazz.findById(clazzID);
+    let classID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(classID);
 
     if (!clazz) {
       // if clazz does not exist, only course supervisior can create one
@@ -643,9 +687,9 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
       clazz.course_id = course.id;
       // [TODO]: auto create lessons
       clazz.lessons = '';
-      clazz.participants = '';
+      clazz.students = '';
       clazz.owner_id = parseInt(req.body.owner);
-      clazz.admins = '';
+      clazz.teachers = '';
       clazz.is_public = 0;
     } else {
       if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
@@ -666,8 +710,8 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
       clazz.owner_id = parseInt(req.body.owner);
     }
     if (await course.hasOwnership(curUser)) {
-      if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
-      clazz.admins = req.body.admins.join('|');
+      if (!Array.isArray(req.body.teachers)) req.body.teachers = [req.body.teachers];
+      clazz.teachers = req.body.teachers.join('|');
     }
     if (curUser.is_admin) {
       clazz.is_public = (req.body.is_public === 'on');
@@ -676,6 +720,39 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
     await clazz.save();
 
     res.redirect(syzoj.utils.makeUrl(['course', clazz.course_id, 'class', clazz.id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/class/:cid/approval', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/class/:cid/delete', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/class/:cid/lesson/:lid', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -693,8 +770,8 @@ app.get('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    let clazzID = parseInt(req.params.cid);
-    let clazz = await Clazz.findById(clazzID);
+    let classID = parseInt(req.params.cid);
+    let clazz = await Clazz.findById(classID);
 
     if (!clazz) throw new ErrorMessage('无此课程。');
     if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
@@ -713,7 +790,40 @@ app.get('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
   }
 });
 
-app.get('/course/:id/problems', async (req, res) => {
+app.post('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/class/:cid/lesson/:lid/move_up', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/class/:cid/lesson/:lid/move_down', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/class/:cid/lesson/:lid/delete', async (req, res) => {
   try {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {

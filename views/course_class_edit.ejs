@@ -14,11 +14,11 @@
       <div class="two fields">
         <div class="field">
           <label>开始时间</label>
-          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate()) %>">
+          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate(true), 'L') %>">
         </div>
         <div class="field">
           <label>结束时间</label>
-          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate()) %>">
+          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate(true), 'L') %>">
         </div>
       </div>
       <div class="field">
@@ -29,9 +29,9 @@
       </div>
       <div class="field">
         <label>教师与助教</label>
-        <select class="ui fluid search dropdown" multiple="" id="search_admins"<% if (!user.is_admin && user.id !== course.owner_id) { %> disabled<% } %> name="admins">
-        <% for (let admin of admins) { %>
-          <option value="<%= admin.id %>" selected><%= admin.username %></option>
+        <select class="ui fluid search dropdown" multiple="" id="search_teachers"<% if (!user.is_admin && user.id !== course.owner_id) { %> disabled<% } %> name="teachers">
+        <% for (let teacher of teachers) { %>
+          <option value="<%= teacher.id %>" selected><%= teacher.username %></option>
         <% } %>
         </select>
       </div>
@@ -55,13 +55,13 @@ $(function () {
         cache: false
       }
     });
-  $('#search_admins')
+  $('#search_teachers')
     .dropdown({
       debug: true,
       apiSettings: {
         url: '/api/v2/search/users/{query}',
         onResponse: function (response) {
-          var a = $('#search_admins').val().map(function (x) { return parseInt(x) });
+          var a = $('#search_teachers').val().map(function (x) { return parseInt(x) });
           if (response.results) {
             response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
           }

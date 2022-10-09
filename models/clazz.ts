@@ -33,14 +33,14 @@ export default class Clazz extends Model {
   lessons: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  participants: string;
+  students: string;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
   owner_id: number;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  admins: string;
+  teachers: string;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
@@ -65,12 +65,20 @@ export default class Clazz extends Model {
   }
 
   async isSupervisior(user) {
-    return await this.hasOwnership(user) || (user && this.admins.split('|').includes(user.id.toString()));
+    return await this.hasOwnership(user) || (user && this.teachers.split('|').includes(user.id.toString()));
   }
 
-  async getTeacher() {
-    if (!this.admins) return this.owner_id;
-    return this.admins.split('|')[0];
+  async isParticipant(user) {
+    return user && (
+      user.id === this.owner_id ||
+      this.teachers.split('|').includes(user.id.toString()) ||
+      this.students.split('|').includes(user.id.toString())
+    );
+  }
+
+  async getMainTeacher() {
+    if (!this.teachers) return this.owner_id;
+    return this.teachers.split('|')[0];
   }
 
   async getLessons() {

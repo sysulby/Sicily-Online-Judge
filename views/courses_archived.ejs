@@ -2,7 +2,7 @@
 <% include header %>
 <div class="padding">
   <h2 class="ui header">结课记录</h2>
-  <% if (archived_clazzes.length) { %>
+  <% if (archived_classes.length) { %>
   <form class="ui mini form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['courses']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
@@ -22,16 +22,10 @@
     </thead>
     <tbody>
       <%
-      for (let clazz of archived_clazzes) {
-        let tag = '';
+      for (let clazz of archived_classes) {
+        let tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>';
       %>
       <tr>
-        <% if (!clazz.is_public) { %>
-          <% tag = '<span class="ui header"><div class="ui mini yellow label">未公开</div></span>' %>
-        <% } else { %>
-          <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>
-        <% } %>
-
         <td><a href="<%= syzoj.utils.makeUrl(['course', clazz.course_id, 'class', clazz.id]) %>"><%= clazz.title %> <%- tag %></a></td>
         <td><%= syzoj.utils.formatDate(clazz.start_time, 'L') %></td>
         <td><%= syzoj.utils.formatDate(clazz.end_time, 'L') %></td>
