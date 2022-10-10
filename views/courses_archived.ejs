@@ -1,9 +1,9 @@
 <% this.title = '结课记录' %>
 <% include header %>
 <div class="padding">
-  <h2 class="ui header">结课记录</h2>
+  <h2 class="ui header" style="margin-bottom: 30px;">结课记录</h2>
   <% if (archived_classes.length) { %>
-  <form class="ui mini form">
+  <form class="ui mini form" style="margin-top: -30px;">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['courses']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
         <i class="ui icon arrow left"></i>

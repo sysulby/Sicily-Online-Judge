@@ -65,6 +65,10 @@
           <input disabled="disabled" type="checkbox" <% if (edited_user.is_admin) { %> checked<% } %>>
           <label>全站管理员</label>
         </div>
+        <div class="ui toggle <% if (!allowedManagePrivilege) { %>disabled <% } %>checkbox checkbox_privilege" data-name="manage_class">
+          <input <% if (!allowedManagePrivilege) { %>disabled="disabled" <% } %>type="checkbox"<% if (edited_user.privileges.includes('manage_class')) { %> checked<% } %>>
+          <label>管理班级</label>
+        </div>
         <div class="ui toggle <% if (!allowedManagePrivilege) { %>disabled <% } %>checkbox checkbox_privilege" data-name="manage_problem" style="margin-right: 20px; ">
           <input <% if (!allowedManagePrivilege) { %>disabled="disabled" <% } %>type="checkbox"<% if (edited_user.privileges.includes('manage_problem')) { %> checked<% } %>>
           <label>管理题目</label>

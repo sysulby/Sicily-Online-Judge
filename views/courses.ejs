@@ -2,9 +2,9 @@
 <% include header %>
 <% if (has_class) { %>
 <div class="padding">
-  <h2 class="ui header">我的班级</h2>
+  <h2 class="ui header" style="margin-bottom: 30px;">我的班级</h2>
   <% if (active_classes.length) { %>
-  <form class="ui mini form">
+  <form class="ui mini form" style="margin-top: -30px;">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
         <i class="ui icon archive"></i>
@@ -59,10 +59,10 @@
 </div>
 <% } %>
 <div class="padding">
-  <h2 class="ui header">课程体系</h2>
+  <h2 class="ui header" style="margin-bottom: 30px;">课程体系</h2>
   <% if (courses.length) { %>
   <% if (user && user.is_admin) { %>
-  <form class="ui mini form">
+  <form class="ui mini form" style="margin-top: -30px;">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <a href="<%= syzoj.utils.makeUrl(['course', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
         <i class="ui icon plus"></i>

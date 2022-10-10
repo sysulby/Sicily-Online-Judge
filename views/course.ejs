@@ -14,16 +14,14 @@
     <div class="row">
       <div class="column">
         <div class="ui buttons">
+          <% let entranceInfo = (isSupervisior || allowedManageClass? '开班记录': '报名选班'); %>
+          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>"><%- entranceInfo %></a>
           <% if (isSupervisior) { %>
-          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>">开班记录</a>
           <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">课程题库</a>
-          <% } else { %>
-          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>">报名选课</a>
           <% } %>
         </div>
         <div class="ui buttons right floated">
           <% if (hasOwnership) { %>
-          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', 0, 'edit']) %>">新建课节</a>
           <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">课程设置</a>
           <% } %>
           <% if (user && user.is_admin) { %>
@@ -64,13 +62,24 @@
     <% } %>
     <div class="row">
       <div class="column">
-        <table class="ui selectable celled table">
+        <h2 class="ui header" style="margin-bottom: 30px;">课节列表</h2>
+        <% if (hasOwnership) { %>
+        <form class="ui mini form" style="margin-top: -30px;">
+          <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
+            <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
+              <i class="ui icon plus"></i>
+              新建课节
+            </a>
+         </div>
+        </form>
+        <% } %>
+        <table class="ui very basic table">
           <thead>
             <tr>
               <th class="one wide" style="text-align: center">#</th>
               <th>课节</th>
-              <% if (isSupervisior) { %>
-              <th class="one wide" style="text-align: center">状态</th>
+              <% if (user) { %>
+              <th class="two wide" style="text-align: center">状态</th>
               <% } %>
               <% if (hasOwnership) { %>
               <th class="two wide" style="text-align: center">操作</th>
@@ -87,9 +96,11 @@
               <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
               <% if (isSupervisior) { %>
               <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
-              <td class="center aligned" style="white-space: nowrap; ">TODO</td>
               <% } else { %>
               <td><%= syzoj.utils.removeTitleTag(lesson.title) %></td>
+              <% } %>
+              <% if (user) { %>
+              <td class="center aligned" style="white-space: nowrap; ">TODO</td>
               <% } %>
               <% if (hasOwnership) { %>
               <td class="center aligned" style="white-space: nowrap; ">
@@ -112,7 +123,7 @@
                     </a>
                   </div>
                 </div>
-                <div class="ui small basic icon buttons">
+                <div class="ui mini basic icon buttons">
                   <a class="ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i, 'edit']) %>"><i class="edit icon"></i></a>
                   <% if (i == 1) { %>
                   <a class="ui disabled button"><i class="arrow up icon"></i></button>

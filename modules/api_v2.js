@@ -43,6 +43,7 @@ app.get('/api/v2/search/problems/:keyword*?', async (req, res) => {
     let keyword = req.params.keyword || '';
     let problems = await Problem.find({
       where: {
+        course_id: null,
         title: TypeORM.Like(`%${req.params.keyword}%`)
       },
       order: {
@@ -91,6 +92,53 @@ app.get('/api/v2/search/tags/:keyword*?', async (req, res) => {
     let result = tags.slice(0, syzoj.config.page.edit_problem_tag_list);
 
     result = result.map(x => ({ name: x.name, value: x.id }));
+    res.send({ success: true, results: result });
+  } catch (e) {
+    syzoj.log(e);
+    res.send({ success: false });
+  }
+});
+
+app.get('/api/v2/search/course/:id/problems/:keyword*?', async (req, res) => {
+  try {
+    let Course = syzoj.model('course');
+
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course || !await course.isSupervisior(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let Problem = syzoj.model('problem');
+
+    let keyword = req.params.keyword || '';
+    let problems = await Problem.find({
+      where: {
+        course_id: course.id,
+        title: TypeORM.Like(`%${req.params.keyword}%`)
+      },
+      order: {
+        id: 'ASC'
+      }
+    });
+
+    let result = [];
+
+    let id = parseInt(keyword);
+    if (id) {
+      let problemById = await Problem.findById(parseInt(keyword));
+      if (problemById && problemById.course_id && problemById.course_id === course.id) {
+        result.push(problemById);
+      }
+    }
+    await problems.forEachAsync(async problem => {
+      if (result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id) {
+        result.push(problem);
+      }
+    });
+
+    result = result.map(x => ({ name: `#${x.id}. ${x.title}`, value: x.id, url: syzoj.utils.makeUrl(['course', course.id, 'problem', x.id]) }));
     res.send({ success: true, results: result });
   } catch (e) {
     syzoj.log(e);

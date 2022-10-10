@@ -25,20 +25,15 @@
     <div class="column">
       <div class="ui buttons">
         <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>">课程主页</a>
+        <% if (isSupervisior) { %>
+          <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'problems']) %>">课程题库</a>
+        <% } %>
       </div>
       <div class="ui buttons right floated">
-        <% if (isCourseOwner) { %>
-        <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', 0, 'edit']) %>">新建课节</a>
-          <% if (!clazz.public && !clazz.teachers.trim()) { %>
-          <a class="ui small yellow button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'edit']) %>">班级设置</a>
-          <% } else { %>
-          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'edit']) %>">班级设置</a>
-          <% } %>
-        <% } else if (user.id === clazz.owner_id) { %>
-        <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'edit']) %>">班级设置</a>
+        <% if (isCourseOwner || user.id === clazz.owner_id) { %>
+        <a class="ui small<% if (isCourseOwner && !clazz.public && !clazz.teachers.trim()) { %> yellow<% } %> button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'edit']) %>">班级设置</a>
         <% } %>
-        <% if (user.is_admin) { %>
-        <% if (!clazz.is_public && clazz.teachers.trim()) { %>
+        <% if (user.is_admin && !clazz.is_public && clazz.teachers.trim()) { %>
         <div class="ui basic modal" id="modal-approval-clazz">
           <div class="ui icon header">
             <i class="exclamation circle icon"></i>
@@ -61,6 +56,7 @@
         </div>
         <div class="small ui yellow button" onclick="$('#modal-approval-clazz').modal('show')">开班确认</div>
         <% } %>
+        <% if (user.is_admin) { %>
         <div class="ui basic modal" id="modal-delete-clazz">
           <div class="ui icon header">
             <i class="trash icon"></i>
@@ -99,71 +95,82 @@
   <% if (unveiled) { %>
     <div class="row">
       <div class="column">
-         <table class="ui selectable celled table">
-            <thead>
-              <tr>
-                <th class="one wide" style="text-align: center">#</th>
-                <th>课节</th>
-                <% if (user) { %>
-                  <th class="one wide" style="text-align: center">状态</th>
-                <% } %>
-                <% if (isCourseOwner) { %>
-                  <th class="two wide" style="text-align: center">操作</th>
-                <% } %>
-              </tr>
-            </thead>
-            <tbody>
-              <%
-              let i = 0;
-              for (let lesson of lessons) {
-                i++;
-              %>
-              <tr>
-                <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
-                <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
-                <% if (user) { %>
-                  <td class="center aligned" style="white-space: nowrap; ">TODO</td>
-                <% } %>
-                <% if (isCourseOwner) { %>
-                  <td class="center aligned" style="white-space: nowrap; ">
-                    <div class="ui basic modal" id="modal-delete-lesson">
-                      <div class="ui icon header">
-                        <i class="trash alternate icon"></i>
-                        <p style="margin-top: 15px; ">删除课节</p>
-                      </div>
-                      <div class="content" style="text-align: center; ">
-                        <p>确认删除此课节吗？</p>
-                      </div>
-                      <div class="actions">
-                        <div class="ui red basic cancel inverted button">
-                          <i class="remove icon"></i>
-                          否
-                        </div>
-                        <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'delete']) %>">
-                          <i class="checkmark icon"></i>
-                          是
-                        </a>
-                      </div>
+        <h2 class="ui header" style="margin-bottom: 30px;">课节列表</h2>
+        <% if (isCourseOwner) { %>
+        <form class="ui mini form" style="margin-top: -30px;">
+          <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
+            <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
+              <i class="ui icon plus"></i>
+              新建课节
+            </a>
+         </div>
+        </form>
+        <% } %>
+        <table class="ui very basic table">
+          <thead>
+            <tr>
+              <th class="one wide" style="text-align: center">#</th>
+              <th>课节</th>
+              <th class="three wide" style="text-align: center">开始时间</th>
+              <th class="three wide" style="text-align: center">结束时间</th>
+              <th class="two wide" style="text-align: center">状态</th>
+              <% if (isCourseOwner) { %>
+                <th class="two wide" style="text-align: center">操作</th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <%
+            let i = 0;
+            for (let lesson of lessons) {
+              i++;
+            %>
+            <tr>
+              <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
+              <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
+              <td class="center aligned" style="white-space: nowrap; "><%= syzoj.utils.formatDate(lesson.start_time) %></td>
+              <td class="center aligned" style="white-space: nowrap; "><%= syzoj.utils.formatDate(lesson.end_time) %></td>
+              <td class="center aligned" style="white-space: nowrap; ">TODO</td>
+              <% if (isCourseOwner) { %>
+                <td class="center aligned" style="white-space: nowrap; ">
+                  <div class="ui basic modal" id="modal-delete-lesson">
+                    <div class="ui icon header">
+                      <i class="trash alternate icon"></i>
+                      <p style="margin-top: 15px; ">删除课节</p>
                     </div>
-                    <div class="ui small basic icon buttons">
-                      <a class="ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'edit']) %>"><i class="edit icon"></i></a>
-                      <% if (i == 1) { %>
-                      <a class="ui disabled button"><i class="arrow up icon"></i></button>
-                      <% } else { %>
-                      <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'move_up']) %>"><i class="arrow up icon"></i></a>
-                      <% } %>
-                      <% if (i == lessons.length) { %>
-                      <a class="ui disabled button"><i class="arrow down icon"></i></button>
-                      <% } else { %>
-                      <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'move_down']) %>"><i class="arrow down icon"></i></a>
-                      <% } %>
-                      <a class="ui button" onclick="$('#modal-delete-lesson').modal('show')"><i class="trash alternate icon"></i></a>
+                    <div class="content" style="text-align: center; ">
+                      <p>确认删除此课节吗？</p>
                     </div>
-                  </td>
-                <% } %>
-              </tr>
-            <% } %>
-            </tbody>
+                    <div class="actions">
+                      <div class="ui red basic cancel inverted button">
+                        <i class="remove icon"></i>
+                        否
+                      </div>
+                      <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'delete']) %>">
+                        <i class="checkmark icon"></i>
+                        是
+                      </a>
+                    </div>
+                  </div>
+                  <div class="ui mini basic icon buttons">
+                    <a class="ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'edit']) %>"><i class="edit icon"></i></a>
+                    <% if (i == 1) { %>
+                    <a class="ui disabled button"><i class="arrow up icon"></i></button>
+                    <% } else { %>
+                    <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'move_up']) %>"><i class="arrow up icon"></i></a>
+                    <% } %>
+                    <% if (i == lessons.length) { %>
+                    <a class="ui disabled button"><i class="arrow down icon"></i></button>
+                    <% } else { %>
+                    <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'move_down']) %>"><i class="arrow down icon"></i></a>
+                    <% } %>
+                    <a class="ui button" onclick="$('#modal-delete-lesson').modal('show')"><i class="trash alternate icon"></i></a>
+                  </div>
+                </td>
+              <% } %>
+            </tr>
+          <% } %>
+          </tbody>
         </table>
       </div>
     </div>

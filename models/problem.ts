@@ -3,6 +3,7 @@ import Model from "./common";
 
 declare var syzoj, ErrorMessage: any;
 
+import Course from "./course";
 import User from "./user";
 import File from "./file";
 import JudgeState from "./judge_state";
@@ -48,6 +49,10 @@ export default class Problem extends Model {
 
   @TypeORM.Column({ nullable: true, type: "varchar", length: 80 })
   title: string;
+
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  course_id: number;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
@@ -113,11 +118,13 @@ export default class Problem extends Model {
   })
   type: ProblemType;
 
+  course?: Course;
   user?: User;
   publicizer?: User;
   additional_file?: File;
 
   async loadRelationships() {
+    this.course = await Course.findById(this.course_id);
     this.user = await User.findById(this.user_id);
     this.publicizer = await User.findById(this.publicizer_id);
     this.additional_file = await File.findById(this.additional_file_id);

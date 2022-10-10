@@ -4,6 +4,7 @@ let Contest = syzoj.model('contest');
 let ContestPlayer = syzoj.model('contest_player');
 let ContestRanklist = syzoj.model('contest_ranklist');
 let Problem = syzoj.model('problem');
+let ProblemTag = syzoj.model('problem_tag');
 let User = syzoj.model('user');
 
 app.get('/courses', async (req, res) => {
@@ -138,7 +139,9 @@ app.get('/course/:id', async (req, res) => {
     const hasOwnership = await course.hasOwnership(curUser);
     const isSupervisior = await course.isSupervisior(curUser);
 
-    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程主页施工中，请稍后再试。');
+    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程主页维护中，请稍后再试。');
+
+    const allowedManageClass = (curUser && await curUser.hasPrivilege('manage_class'));
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
     course.information = await syzoj.utils.markdown(course.information);
@@ -150,6 +153,7 @@ app.get('/course/:id', async (req, res) => {
       course: course,
       hasOwnership: hasOwnership,
       isSupervisior: isSupervisior,
+      allowedManageClass: allowedManageClass,
       lessons: lessons
     });
   } catch (e) {
@@ -260,7 +264,187 @@ app.post('/course/:id/delete', async (req, res) => {
 
 app.get('/course/:id/problems', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    const sort = req.query.sort || syzoj.config.sorting.problem.field;
+    const order = req.query.order || syzoj.config.sorting.problem.order;
+    if (!['id', 'title', 'rating', 'ac_num', 'submit_num', 'ac_rate', 'publicize_time'].includes(sort) || !['asc', 'desc'].includes(order)) {
+      throw new ErrorMessage('错误的排序参数。');
+    }
+
+    let query = Problem.createQueryBuilder().where('course_id = :course_id', { course_id: course.id});
+
+    if (sort === 'ac_rate') {
+      query.orderBy('ac_num / submit_num', order.toUpperCase());
+    } else {
+      query.orderBy(sort, order.toUpperCase());
+    }
+
+    let paginate = syzoj.utils.paginate(await Problem.countForPagination(query), req.query.page, syzoj.config.page.problem);
+    let problems = await Problem.queryPage(paginate, query);
+
+    await problems.forEachAsync(async problem => {
+      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.tags = await problem.getTags();
+    });
+
+    res.render('course_problems', {
+      course: course,
+      problems: problems,
+      paginate: paginate,
+      curSort: sort,
+      curOrder: order === 'asc'
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/problems/search', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let id = parseInt(req.query.keyword) || 0;
+    const sort = req.query.sort || syzoj.config.sorting.problem.field;
+    const order = req.query.order || syzoj.config.sorting.problem.order;
+    if (!['id', 'title', 'rating', 'ac_num', 'submit_num', 'ac_rate'].includes(sort) || !['asc', 'desc'].includes(order)) {
+      throw new ErrorMessage('错误的排序参数。');
+    }
+
+    syzoj.log(course.id);
+
+    let query = Problem.createQueryBuilder().where('course_id = :course_id', { course_id: course.id});
+    query.andWhere(new TypeORM.Brackets(qb => {
+      qb.where('title LIKE :title', { title: `%${req.query.keyword}%` })
+        .orWhere('id = :id', { id: id })
+    }));
+
+    query.orderBy('id = ' + id.toString(), 'DESC');
+    if (sort === 'ac_rate') {
+      query.addOrderBy('ac_num / submit_num', order.toUpperCase());
+    } else {
+      query.addOrderBy(sort, order.toUpperCase());
+    }
+
+    let paginate = syzoj.utils.paginate(await Problem.countForPagination(query), req.query.page, syzoj.config.page.problem);
+    let problems = await Problem.queryPage(paginate, query);
+
+    await problems.forEachAsync(async problem => {
+      problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
+      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.tags = await problem.getTags();
+    });
+
+    res.render('course_problems', {
+      course: course,
+      problems: problems,
+      paginate: paginate,
+      curSort: sort,
+      curOrder: order === 'asc'
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/problems/tag/:tagIDs', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let tagIDs = Array.from(new Set(req.params.tagIDs.split(',').map(x => parseInt(x))));
+    let tags = await tagIDs.mapAsync(async tagID => ProblemTag.findById(tagID));
+    const sort = req.query.sort || syzoj.config.sorting.problem.field;
+    const order = req.query.order || syzoj.config.sorting.problem.order;
+    if (!['id', 'title', 'rating', 'ac_num', 'submit_num', 'ac_rate'].includes(sort) || !['asc', 'desc'].includes(order)) {
+      throw new ErrorMessage('错误的排序参数。');
+    }
+    let sortVal;
+    if (sort === 'ac_rate') {
+      sortVal = '`problem`.`ac_num` / `problem`.`submit_num`';
+    } else {
+      sortVal = '`problem`.`' + sort + '`';
+    }
+
+    // Validate the tagIDs
+    for (let tag of tags) {
+      if (!tag) {
+        return res.redirect(syzoj.utils.makeUrl(['problems']));
+      }
+    }
+
+    let sql = 'SELECT `id` FROM `problem` WHERE\n';
+    for (let tagID of tagIDs) {
+      if (tagID !== tagIDs[0]) {
+        sql += 'AND\n';
+      }
+
+      sql += '`problem`.`id` IN (SELECT `problem_id` FROM `problem_tag_map` WHERE `tag_id` = ' + tagID + ') ';
+    }
+
+    sql += 'AND `problem`.`course_id` = ' + course.id + ' ';
+    if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
+      if (res.locals.user) {
+        sql += 'AND (`problem`.`is_public` = 1 OR `problem`.`user_id` = ' + res.locals.user.id + ')';
+      } else {
+        sql += 'AND (`problem`.`is_public` = 1)';
+      }
+    }
+
+    let paginate = syzoj.utils.paginate(await Problem.countQuery(sql), req.query.page, syzoj.config.page.problem);
+    let problems = await Problem.query(sql + ` ORDER BY ${sortVal} ${order} ` + paginate.toSQL());
+
+    problems = await problems.mapAsync(async problem => {
+      // query() returns plain objects.
+      problem = await Problem.findById(problem.id);
+
+      problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
+      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.tags = await problem.getTags();
+
+      return problem;
+    });
+
+    res.render('course_problems', {
+      course: course,
+      problems: problems,
+      tags: tags,
+      paginate: paginate,
+      curSort: sort,
+      curOrder: order === 'asc'
+    });
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -542,6 +726,7 @@ app.get('/course/:id/classes', async (req, res) => {
 
     let paginate = syzoj.utils.paginate(
       await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
+    // [TODO]: none teacher class first if un-public?
     let classes = await Clazz.queryPage(paginate, query, {
       is_public: 'ASC',
       start_time: 'DESC'
@@ -586,7 +771,7 @@ app.get('/course/:id/class/:cid', async (req, res) => {
     const isSupervisior = await clazz.isSupervisior(curUser);
 
     if (!isSupervisior) {
-      if (!clazz.is_public) throw new ErrorMessage('课程主页施工中，请稍后再试。');
+      if (!clazz.is_public) throw new ErrorMessage('课程主页维护中，请稍后再试。');
       if (!curUser) throw new ErrorMessage('请先登录。',
         { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
       // [TODO]: clazz register
