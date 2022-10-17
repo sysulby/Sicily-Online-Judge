@@ -186,6 +186,10 @@ app.post('/contest/:id/register', async (req, res) => {
     const curUser = res.locals.user;
     if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
 
+    if (!curUser.information || !curUser.information.trim()) {
+      throw new ErrorMessage('请在\"设置\"页面的\"个性签名\"中备注姓名。', { '设置': syzoj.utils.makeUrl(['user', curUser.id, 'edit'], { 'url': req.originalUrl }) });
+    }
+
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
     if (!contest) throw new ErrorMessage('无此比赛。');
@@ -374,7 +378,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
     let players_id = [];
     for (let i = 1; i <= contest.ranklist.ranklist.player_num; i++) players_id.push(contest.ranklist.ranklist[i]);
 
-    let ranklist = await players_id.mapAsync(async player_id => {
+    let ranklist = (await players_id.mapAsync(async player_id => {
       let player = await ContestPlayer.findById(player_id);
 
       if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
@@ -398,7 +402,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
         user: user,
         player: player
       };
-    });
+    })).filter(x => x.user);
 
     let problems_id = await contest.getProblems();
     let problems = await problems_id.mapAsync(async id => await Problem.findById(id));

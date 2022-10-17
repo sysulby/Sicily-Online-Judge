@@ -38,6 +38,12 @@
                                     <input type="email" id="email" size="30" maxlength="30">
                                 </td>
                             </tr>
+                            <tr>
+                                <td width="130" height="20" align="right">邀请码 &nbsp;</td>
+                                <td width="220" align="left">&nbsp;
+                                    <input type="text" id="cipher" size="30" maxlength="10">
+                                </td>
+                            </tr>
                             <tr align="center">
                                 <td height="20" colspan="2" align="center">
                                     <input type="submit" name="addsub" size="20">
@@ -94,6 +100,7 @@ function submit() {
           username: $("#user_name").val(),
           password: password,
           email: $("#email").val(),
+          cipher: $("#cipher").val(),
           prevUrl: <%- serializejs(req.query.url || '/') %>
         },
         success: function(data) {
@@ -103,14 +110,20 @@ function submit() {
                     show_error("服务器未收到数据");
                     break;
                 case 2005:
+                    show_error("错误的邀请码");
+                    break;
                 case 2002:
                     show_error("用户名需要大于 3 个字符小于 16 个字符，仅允许字母数字和下划线");
                     break;
                 case 2007:
+                    show_error("图灵员工请联系管理员申请账号");
+                    break;
                 case 2003:
                     show_error("密码不得为空");
                     break;
                 case 2004:
+                    show_error("请输入邀请码");
+                    break;
                 case 2006:
                     show_error("请输入正确的邮箱");
                     break;

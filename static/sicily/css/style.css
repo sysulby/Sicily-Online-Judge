@@ -103,31 +103,31 @@
 }
 
 .score_2 {
-    color: #ff6200;
+    color: #ff4b00;
 }
 
 .score_3 {
-    color: #ffa900;
+    color: #ff6200;
 }
 
 .score_4 {
-    color: #ffd800;
+    color: #ff6200;
 }
 
 .score_5 {
-    color: #c8ff00;
+    color: #ffa900;
 }
 
 .score_6 {
-    color: #a5ff00;
+    color: #ffa900;
 }
 
 .score_7 {
-    color: #52ff00;
+    color: #34d034;
 }
 
 .score_8 {
-    color: #41f741;
+    color: #34d034;
 }
 
 .score_9 {
@@ -139,7 +139,7 @@
 }
 
 .score {
-    text-shadow: 0 0 0.1px;
+    text-shadow: 0 0 0.2px;
 }
 
 .rating_up {

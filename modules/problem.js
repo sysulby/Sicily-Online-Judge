@@ -763,6 +763,9 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
         code = req.body.code;
       }
 
+      let lastState = await problem.getJudgeState(res.locals.user, false);
+      if (lastState && code === lastState.code) throw new ErrorMessage('请勿重复提交。');
+
       judge_state = await JudgeState.create({
         submit_time: parseInt((new Date()).getTime() / 1000),
         status: 'Unknown',

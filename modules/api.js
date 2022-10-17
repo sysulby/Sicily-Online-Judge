@@ -1,5 +1,6 @@
 let User = syzoj.model('user');
 let Problem = syzoj.model('problem');
+let Cipher = syzoj.model('cipher');
 let File = syzoj.model('file');
 const Email = require('../libs/email');
 const jwt = require('jsonwebtoken');
@@ -63,6 +64,29 @@ app.post('/api/forget', async (req, res) => {
   }
 });
 
+app.post('/api/get_cipher', async (req, res) => {
+  try {
+    res.setHeader('Content-Type', 'application/json');
+    let curUser = res.locals.user;
+
+    if (!curUser || curUser.email.substring(curUser.email.indexOf('@') + 1) !== 'turingedu.cn') throw 1001;
+
+    cipher = await Cipher.create({
+      token: Math.floor(Math.random() * 1000000).toString(),
+      expire_time: parseInt((new Date()).getTime() / 1000) + 3600 * 24
+    });
+    await cipher.save();
+
+    res.send({
+      error_code: 1,
+      token: cipher.token
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.send(JSON.stringify({ error_code: e }));
+  }
+});
+
 // Sign up
 app.post('/api/sign_up', async (req, res) => {
   try {
@@ -76,8 +100,9 @@ app.post('/api/sign_up', async (req, res) => {
     // Because the salt is "syzoj2_xxx" and the "syzoj2_xxx" 's md5 is"59cb..."
     // the empty password 's md5 will equal "59cb.."
     let syzoj2_xxx_md5 = '59cb65ba6f9ad18de0dcd12d5ae11bd2';
-    if (req.body.password === syzoj2_xxx_md5) throw 2007;
+    if (req.body.password === syzoj2_xxx_md5) throw 2003;
     if (!(req.body.email = req.body.email.trim())) throw 2006;
+    if (req.body.email.substring(req.body.email.indexOf('@') + 1) === 'turingedu.cn') throw 2007;
     if (!syzoj.utils.isValidUsername(req.body.username)) throw 2002;
 
     if (syzoj.config.register_mail) {
@@ -107,6 +132,13 @@ app.post('/api/sign_up', async (req, res) => {
 
       res.send(JSON.stringify({ error_code: 2 }));
     } else {
+      if (!(req.body.cipher = req.body.cipher.trim())) throw 2004;
+      let cipher = await Cipher.findOne({ where: { token: req.body.cipher } });
+      if (!cipher) throw 2005;
+      let expired = cipher.isExpired();
+      await cipher.destroy();
+      if (expired) throw 2005;
+
       user = await User.create({
         username: req.body.username,
         password: req.body.password,

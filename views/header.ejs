@@ -206,8 +206,12 @@
             <li><a href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>">设定</a></li>
           <% } %>
           <li><a href="/discussion/global">讨论</a></li>
+          <% if (user && user.email.substring(user.email.indexOf('@') + 1) === 'turingedu.cn') { %>
+            <% include cipher %>
+            <li onclick="get_cipher();return false;"><a href="#">获取邀请码</a></li>
+          <% } %>
           <% if (user && user.is_admin) { %>
-            <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a>
+            <li><a href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>">管理</a></li>
           <% } %>
         <% } %>
       </ul>

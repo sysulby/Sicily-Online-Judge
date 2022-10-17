@@ -51,7 +51,7 @@ app.get('/submissions', async (req, res) => {
       if (course) {
         let contests_id = await course.getContests();
         if (!cid || cid < 1 || cid > contests_id.length) {
-          query.andWhere('type = 0');
+          if (!curUser || !curUser.is_admin) query.andWhere('type = 0');
         } else {
           let contestId = contests_id[cid - 1];
           contest = await Contest.findById(contestId);
@@ -65,7 +65,7 @@ app.get('/submissions', async (req, res) => {
           }
         }
       } else {
-        query.andWhere('type = 0');
+        if (!curUser || !curUser.is_admin) query.andWhere('type = 0');
       }
     } else {
       const contestId = Number(req.query.contest);
@@ -151,6 +151,8 @@ app.get('/submissions', async (req, res) => {
     await judge_state.forEachAsync(async obj => {
       await obj.loadRelationships();
     });
+
+    judge_state = judge_state.filter(x => x.user);
 
     res.render('submissions', {
       items: judge_state.map(x => ({
