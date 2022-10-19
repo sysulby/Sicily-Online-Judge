@@ -56,7 +56,7 @@ export default class Clazz extends Model {
   async isCourseOwner(user) {
     if (!user) return false;
     if (user.is_admin) return true;
-    this.course = await Course.findById(this.course_id);
+    if (!this.course) this.course = await Course.findById(this.course_id);
     return await this.course.hasOwnership(user);
   }
 

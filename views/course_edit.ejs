@@ -22,9 +22,9 @@
         </select>
       </div>
       <div class="field">
-        <label>课程管理员</label>
-        <select class="ui fluid search dropdown" multiple="" id="search_admins"<% if (!user.is_admin) { %> disabled<% } %> name="admins">
-        <% for (let admin of admins) { %>
+        <label>课程组成员</label>
+        <select class="ui fluid search dropdown" multiple="" id="search_teachers"<% if (!user.is_admin) { %> disabled<% } %> name="teachers">
+        <% for (let admin of teachers) { %>
           <option value="<%= admin.id %>" selected><%= admin.username %></option>
         <% } %>
         </select>
@@ -49,13 +49,13 @@ $(function () {
         cache: false
       }
     });
-  $('#search_admins')
+  $('#search_teachers')
     .dropdown({
       debug: true,
       apiSettings: {
         url: '/api/v2/search/users/{query}',
         onResponse: function (response) {
-          var a = $('#search_admins').val().map(function (x) { return parseInt(x) });
+          var a = $('#search_teachers').val().map(function (x) { return parseInt(x) });
           if (response.results) {
             response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
           }

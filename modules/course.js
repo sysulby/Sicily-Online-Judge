@@ -21,8 +21,7 @@ app.get('/courses', async (req, res) => {
 
     if (!curUser) {
       res.render('courses', {
-        courses: courses,
-        has_class: false
+        courses: courses
       });
       return;
     }
@@ -38,21 +37,11 @@ app.get('/courses', async (req, res) => {
 
     let publicClasses = await Clazz.queryAll(Clazz.createQueryBuilder().andWhere('is_public = 1'));
     let myClasses = await publicClasses.filterAsync(async x => await x.isParticipant(curUser));
-
-    if (!myClasses.length) {
-      res.render('courses', {
-        courses: courses,
-        has_class: false
-      });
-      return;
-    }
-
     let myActiveClassIDs = myClasses.filter(x => !x.isEnded()).map(x => x.id);
 
     if (!myActiveClassIDs.length) {
       res.render('courses', {
         courses: courses,
-        has_class: true,
         active_classes: []
       });
       return;
@@ -73,7 +62,6 @@ app.get('/courses', async (req, res) => {
 
     res.render('courses', {
       courses: courses,
-      has_class: true,
       active_classes: activeClasses,
       paginate: paginate
     });
@@ -188,15 +176,15 @@ app.get('/course/:id/edit', async (req, res) => {
 
     let owner = curUser;
     if (course.owner_id) owner = await User.findById(course.owner_id);
-    let admins = [];
-    if (course.admins) {
-      admins = await course.admins.split('|').mapAsync(async id => await User.findById(id));
+    let teachers = [];
+    if (course.teachers) {
+      teachers = await course.teachers.split('|').mapAsync(async id => await User.findById(id));
     }
 
     res.render('course_edit', {
       course: course,
       owner: owner,
-      admins: admins
+      teachers: teachers
     });
   } catch (e) {
     syzoj.log(e);
@@ -232,11 +220,11 @@ app.post('/course/:id/edit', async (req, res) => {
     course.title = req.body.title;
     course.subtitle = req.body.subtitle;
     course.information = req.body.information;
-    // only system administrators can set course owner and admins and set public
+    // only system administrators can set course owner and teachers and set public
     if (curUser.is_admin) {
       course.owner_id = parseInt(req.body.owner);
-      if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
-      course.admins = req.body.admins.join('|');
+      if (!Array.isArray(req.body.teachers)) req.body.teachers = [req.body.teachers];
+      course.teachers = req.body.teachers.join('|');
       course.is_public = (req.body.is_public === 'on');
     }
 
@@ -281,7 +269,7 @@ app.get('/course/:id/problems', async (req, res) => {
       throw new ErrorMessage('错误的排序参数。');
     }
 
-    let query = Problem.createQueryBuilder().where('course_id = :course_id', { course_id: course.id});
+    let query = Problem.createQueryBuilder().where('course_id = :course_id', { course_id: course.id });
 
     if (sort === 'ac_rate') {
       query.orderBy('ac_num / submit_num', order.toUpperCase());
@@ -293,7 +281,7 @@ app.get('/course/:id/problems', async (req, res) => {
     let problems = await Problem.queryPage(paginate, query);
 
     await problems.forEachAsync(async problem => {
-      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.judge_state = await problem.getJudgeState(curUser, true);
       problem.tags = await problem.getTags();
     });
 
@@ -334,7 +322,7 @@ app.get('/course/:id/problems/search', async (req, res) => {
 
     syzoj.log(course.id);
 
-    let query = Problem.createQueryBuilder().where('course_id = :course_id', { course_id: course.id});
+    let query = Problem.createQueryBuilder().where('course_id = :course_id', { course_id: course.id });
     query.andWhere(new TypeORM.Brackets(qb => {
       qb.where('title LIKE :title', { title: `%${req.query.keyword}%` })
         .orWhere('id = :id', { id: id })
@@ -351,8 +339,7 @@ app.get('/course/:id/problems/search', async (req, res) => {
     let problems = await Problem.queryPage(paginate, query);
 
     await problems.forEachAsync(async problem => {
-      problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
-      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.judge_state = await problem.getJudgeState(curUser, true);
       problem.tags = await problem.getTags();
     });
 
@@ -405,22 +392,9 @@ app.get('/course/:id/problems/tag/:tagIDs', async (req, res) => {
       }
     }
 
-    let sql = 'SELECT `id` FROM `problem` WHERE\n';
+    let sql = 'SELECT `id` FROM `problem` WHERE\n`problem`.`course_id` = ' + course.id;
     for (let tagID of tagIDs) {
-      if (tagID !== tagIDs[0]) {
-        sql += 'AND\n';
-      }
-
-      sql += '`problem`.`id` IN (SELECT `problem_id` FROM `problem_tag_map` WHERE `tag_id` = ' + tagID + ') ';
-    }
-
-    sql += 'AND `problem`.`course_id` = ' + course.id + ' ';
-    if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
-      if (res.locals.user) {
-        sql += 'AND (`problem`.`is_public` = 1 OR `problem`.`user_id` = ' + res.locals.user.id + ')';
-      } else {
-        sql += 'AND (`problem`.`is_public` = 1)';
-      }
+      sql += ' AND\n`problem`.`id` IN (SELECT `problem_id` FROM `problem_tag_map` WHERE `tag_id` = ' + tagID + ')';
     }
 
     let paginate = syzoj.utils.paginate(await Problem.countQuery(sql), req.query.page, syzoj.config.page.problem);
@@ -430,8 +404,7 @@ app.get('/course/:id/problems/tag/:tagIDs', async (req, res) => {
       // query() returns plain objects.
       problem = await Problem.findById(problem.id);
 
-      problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
-      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.judge_state = await problem.getJudgeState(curUser, true);
       problem.tags = await problem.getTags();
 
       return problem;
@@ -628,7 +601,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
       ranklist = await ContestRanklist.create();
 
       contest.holder_id = curUser.id;
-      contest.admins = '';
+      contest.teachers = '';
     } else {
       await contest.loadRelationships();
       ranklist = contest.ranklist;
@@ -716,7 +689,7 @@ app.get('/course/:id/classes', async (req, res) => {
 
     const isSupervisior = await course.isSupervisior(curUser);
 
-    // [TODO]: should course admins can watch all related classes???
+    // [TODO]: should course teachers can watch all related classes???
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
@@ -870,7 +843,6 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
       }
       clazz = await Clazz.create();
       clazz.course_id = course.id;
-      // [TODO]: auto create lessons
       clazz.lessons = '';
       clazz.students = '';
       clazz.owner_id = parseInt(req.body.owner);
@@ -915,6 +887,7 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
 
 app.post('/course/:id/class/:cid/approval', async (req, res) => {
   try {
+    // [TODO]: auto create lessons when approved
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {
     syzoj.log(e);

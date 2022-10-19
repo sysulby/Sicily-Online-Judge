@@ -25,9 +25,9 @@ app.get('/problems', async (req, res) => {
     if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
       if (res.locals.user) {
         query.andWhere(new TypeORM.Brackets(qb => {
-          qb.where('is_public = 1')
-            .orWhere('user_id = :user_id', { user_id: res.locals.user.id })
-        }));
+               qb.where('is_public = 1')
+                 .orWhere('user_id = :user_id', { user_id: res.locals.user.id })
+             }));
       } else {
         query.andWhere('is_public = 1');
       }
@@ -76,7 +76,7 @@ app.get('/problems/search', async (req, res) => {
     if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
       if (res.locals.user) {
         query.andWhere(new TypeORM.Brackets(qb => {
-             qb.where('is_public = 1')
+               qb.where('is_public = 1')
                  .orWhere('user_id = :user_id', { user_id: res.locals.user.id })
              }))
              .andWhere(new TypeORM.Brackets(qb => {
@@ -151,16 +151,15 @@ app.get('/problems/tag/:tagIDs', async (req, res) => {
       }
     }
 
-    let sql = 'SELECT `id` FROM `problem` WHERE\n';
+    let sql = 'SELECT `id` FROM `problem` WHERE\n`problem`.`course_id` is NULL AND\n';
     for (let tagID of tagIDs) {
       if (tagID !== tagIDs[0]) {
-        sql += 'AND\n';
+        sql += ' AND\n';
       }
 
-      sql += '`problem`.`id` IN (SELECT `problem_id` FROM `problem_tag_map` WHERE `tag_id` = ' + tagID + ') ';
+      sql += '`problem`.`id` IN (SELECT `problem_id` FROM `problem_tag_map` WHERE `tag_id` = ' + tagID + ')';
     }
 
-    sql += 'AND `problem`.`course_id` is NULL ';
     if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
       if (res.locals.user) {
         sql += 'AND (`problem`.`is_public` = 1 OR `problem`.`user_id` = ' + res.locals.user.id + ')';
@@ -293,6 +292,7 @@ app.get('/problem/:id/edit', async (req, res) => {
       problem.tags = [];
       problem.new = true;
     } else {
+      if (problem.course_id) throw new ErrorMessage('无此题目。');
       if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
       problem.tags = await problem.getTags();
@@ -335,6 +335,7 @@ app.post('/problem/:id/edit', async (req, res) => {
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
+      if (problem.course_id) throw new ErrorMessage('无此题目。');
       if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
 
@@ -395,6 +396,7 @@ app.get('/problem/:id/import', async (req, res) => {
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
+      if (problem.course_id) throw new ErrorMessage('无此题目。');
       if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     }
@@ -436,6 +438,7 @@ app.post('/problem/:id/import', async (req, res) => {
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
+      if (problem.course_id) throw new ErrorMessage('无此题目。');
       if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     }
@@ -517,6 +520,7 @@ app.get('/problem/:id/upload', async (req, res) => {
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
+      if (problem.course_id) throw new ErrorMessage('无此题目。');
       if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     }
@@ -558,6 +562,7 @@ app.post('/problem/:id/upload', app.multer.fields([{ name: 'testdata', maxCount:
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
+      if (problem.course_id) throw new ErrorMessage('无此题目。');
       if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     }

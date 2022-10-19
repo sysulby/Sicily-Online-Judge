@@ -46,33 +46,6 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
         <% } %>
       </div>
       <div class="nine wide right aligned column">
-        <div class="ui toggle checkbox" id="show_tag">
-          <style id="show_tag_style"></style>
-          <script data-cfasync="false">
-          if (localStorage.getItem('show_tag') === '1') {
-            document.write('<input type="checkbox" checked>');
-            document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
-          } else {
-            document.write('<input type="checkbox">');
-            document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
-          }
-          </script>
-
-          <script>
-          $(function () {
-            $('#show_tag').checkbox('setting', 'onChange', function () {
-              let checked = $('#show_tag').checkbox('is checked');
-              localStorage.setItem('show_tag', checked ? '1' : '0');
-              if (checked) {
-                document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
-              } else {
-                document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
-              }
-            });
-          });
-          </script>
-          <label>显示分类标签</label>
-        </div>
         <div style="margin-left: 10px; display: inline-block; ">
           <div style="margin-left: 10px; " class="ui mini buttons">
             <div class="ui labeled icon mini dropdown button" id="add_problem_dropdown"><i class="plus icon"></i> 添加题目
@@ -123,7 +96,7 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
               <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]) %>"><%= problem.title %>
                 <% if (!problem.is_public) { %><span class="ui header"><span class="ui tiny red label">未公开</span></span><% } %>
               </a>
-              <div class="show_tag_controled" style="float: right; ">
+              <div style="float: right; ">
                 <%
                 if (problem.tags) {
                   for (let tag of problem.tags) {
