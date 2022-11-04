@@ -40,9 +40,9 @@
         <% if (!clazz.is_public) { %>
           <% if (!clazz.teachers.trim()) { %>
             <% if (isCourseOwner) { %>
-              <% tag='<span class="ui header"><div class="ui mini yellow label">待审核</div></span>' %>
+              <% tag='<span class="ui header"><div class="ui mini yellow label">新申请</div></span>' %>
             <% } else { %>
-              <% tag='<span class="ui header"><div class="ui mini disabled yellow label">待审核</div></span>' %>
+              <% tag='<span class="ui header"><div class="ui mini disabled yellow label">新申请</div></span>' %>
             <% } %>
           <% } else { %>
             <% if (user.is_admin) { %>

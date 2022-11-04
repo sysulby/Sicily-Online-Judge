@@ -876,11 +876,9 @@ app.get('/course/:id/classes', async (req, res) => {
 
     let paginate = syzoj.utils.paginate(
       await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
-    // [TODO]: none teacher class first if un-public?
-    let classes = await Clazz.queryPage(paginate, query, {
-      is_public: 'ASC',
-      start_time: 'DESC'
-    });
+    query.orderBy('(CASE WHEN is_public THEN 2 ELSE CAST(teachers != \'\' AS SIGNED INTEGER) END)');
+    query.addOrderBy('start_time', 'DESC');
+    let classes = await Clazz.queryPage(paginate, query);
 
     await classes.forEachAsync(async x => {
       x.running = x.isRunning();

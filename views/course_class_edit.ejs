@@ -50,6 +50,7 @@ $(function () {
   $('#search_owner')
     .dropdown({
       debug: true,
+      saveRemoteData: false,
       apiSettings: {
         url: '/api/v2/search/users/{query}',
         cache: false
@@ -58,6 +59,7 @@ $(function () {
   $('#search_teachers')
     .dropdown({
       debug: true,
+      saveRemoteData: false,
       apiSettings: {
         url: '/api/v2/search/users/{query}',
         onResponse: function (response) {
