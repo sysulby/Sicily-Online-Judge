@@ -14,7 +14,7 @@
           <% } %>
         </div>
         <div class="ui buttons right floated">
-          <% if (hasOwnership) { %>
+          <% if (isCourseOwner) { %>
           <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>">课程设置</a>
           <% } %>
           <% if (user && user.is_admin) { %>
@@ -56,7 +56,7 @@
     <div class="row">
       <div class="column">
         <h2 class="ui header" style="margin-bottom: 30px;">课节列表</h2>
-        <% if (hasOwnership) { %>
+        <% if (isCourseOwner) { %>
         <form class="ui mini form" style="margin-top: -30px;">
           <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
             <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
@@ -66,16 +66,16 @@
          </div>
         </form>
         <% } %>
-        <table class="ui very basic table">
+        <table class="ui very basic center aligned table">
           <thead>
             <tr>
-              <th class="one wide" style="text-align: center">#</th>
-              <th>课节</th>
               <% if (user) { %>
-              <th class="two wide" style="text-align: center">状态</th>
+              <th class="one wide">状态</th>
               <% } %>
-              <% if (hasOwnership) { %>
-              <th class="two wide" style="text-align: center">操作</th>
+              <th class="one wide">#</th>
+              <th class="left aligned">课节</th>
+              <% if (isCourseOwner) { %>
+              <th class="two wide">操作</th>
               <% } %>
             </tr>
           </thead>
@@ -86,17 +86,17 @@
               i++;
             %>
             <tr>
-              <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
-              <% if (isSupervisior) { %>
-              <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
-              <% } else { %>
-              <td><%= syzoj.utils.removeTitleTag(lesson.title) %></td>
-              <% } %>
               <% if (user) { %>
-              <td class="center aligned" style="white-space: nowrap; ">TODO</td>
+              <td></td>
               <% } %>
-              <% if (hasOwnership) { %>
-              <td class="center aligned" style="white-space: nowrap; ">
+              <td><b><%= i %></b></td>
+              <% if (isSupervisior) { %>
+              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
+              <% } else { %>
+              <td class="left aligned"><%= syzoj.utils.removeTitleTag(lesson.title) %></td>
+              <% } %>
+              <% if (isCourseOwner) { %>
+              <td>
                 <div class="ui basic modal" id="modal-delete-lesson">
                   <div class="ui icon header">
                     <i class="trash alternate icon"></i>

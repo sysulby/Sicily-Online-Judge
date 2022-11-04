@@ -39,9 +39,17 @@
       <tr>
         <% if (!clazz.is_public) { %>
           <% if (!clazz.teachers.trim()) { %>
-            <% tag='<span class="ui header"><div class="ui mini yellow label">待审核</div></span>' %>
+            <% if (isCourseOwner) { %>
+              <% tag='<span class="ui header"><div class="ui mini yellow label">待审核</div></span>' %>
+            <% } else { %>
+              <% tag='<span class="ui header"><div class="ui mini disabled yellow label">待审核</div></span>' %>
+            <% } %>
           <% } else { %>
-            <% tag='<span class="ui header"><div class="ui mini yellow label">待确认</div></span>' %>
+            <% if (user.is_admin) { %>
+              <% tag='<span class="ui header"><div class="ui mini yellow label">待确认</div></span>' %>
+            <% } else { %>
+              <% tag='<span class="ui header"><div class="ui mini disabled yellow label">待确认</div></span>' %>
+            <% } %>
           <% } %>
         <% } else if (clazz.ended) { %>
           <% tag = '<span class="ui header"><div class="ui mini grey label">已结束</div></span>' %>

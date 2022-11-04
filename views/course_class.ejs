@@ -105,16 +105,16 @@
          </div>
         </form>
         <% } %>
-        <table class="ui very basic table">
+        <table class="ui very basic center aligned table">
           <thead>
             <tr>
-              <th class="one wide" style="text-align: center">#</th>
-              <th>课节</th>
-              <th class="three wide" style="text-align: center">开始时间</th>
-              <th class="three wide" style="text-align: center">结束时间</th>
-              <th class="two wide" style="text-align: center">状态</th>
+              <th class="one wide">状态</th>
+              <th class="one wide">#</th>
+              <th class="left aligned">课节</th>
+              <th class="three wide">开始时间</th>
+              <th class="three wide">结束时间</th>
               <% if (isCourseOwner) { %>
-                <th class="two wide" style="text-align: center">操作</th>
+                <th class="two wide">操作</th>
               <% } %>
             </tr>
           </thead>
@@ -125,13 +125,13 @@
               i++;
             %>
             <tr>
-              <td class="center aligned" style="white-space: nowrap; "><b><%= i %></b></td>
-              <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
-              <td class="center aligned" style="white-space: nowrap; "><%= syzoj.utils.formatDate(lesson.start_time) %></td>
-              <td class="center aligned" style="white-space: nowrap; "><%= syzoj.utils.formatDate(lesson.end_time) %></td>
-              <td class="center aligned" style="white-space: nowrap; ">TODO</td>
+              <td></td>
+              <td><b><%= i %></b></td>
+              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
+              <td><%= syzoj.utils.formatDate(lesson.start_time) %></td>
+              <td><%= syzoj.utils.formatDate(lesson.end_time) %></td>
               <% if (isCourseOwner) { %>
-                <td class="center aligned" style="white-space: nowrap; ">
+                <td>
                   <div class="ui basic modal" id="modal-delete-lesson">
                     <div class="ui icon header">
                       <i class="trash alternate icon"></i>

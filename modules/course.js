@@ -6,6 +6,7 @@ let ContestRanklist = syzoj.model('contest_ranklist');
 let Problem = syzoj.model('problem');
 let ProblemTag = syzoj.model('problem_tag');
 let User = syzoj.model('user');
+let Article = syzoj.model('article');
 
 app.get('/courses', async (req, res) => {
   try {
@@ -124,12 +125,11 @@ app.get('/course/:id', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
-    const hasOwnership = await course.hasOwnership(curUser);
+    const isCourseOwner = await course.hasOwnership(curUser);
     const isSupervisior = await course.isSupervisior(curUser);
+    const allowedManageClass = (curUser && await curUser.hasPrivilege('manage_class'));
 
     if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程主页维护中，请稍后再试。');
-
-    const allowedManageClass = (curUser && await curUser.hasPrivilege('manage_class'));
 
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
     course.information = await syzoj.utils.markdown(course.information);
@@ -139,7 +139,7 @@ app.get('/course/:id', async (req, res) => {
 
     res.render('course', {
       course: course,
-      hasOwnership: hasOwnership,
+      isCourseOwner: isCourseOwner,
       isSupervisior: isSupervisior,
       allowedManageClass: allowedManageClass,
       lessons: lessons
@@ -426,6 +426,181 @@ app.get('/course/:id/problems/tag/:tagIDs', async (req, res) => {
   }
 });
 
+app.get('/course/:id/problem/:pid', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let problemId = parseInt(req.params.pid);
+    let problem = await Problem.findById(problemId);
+
+    if (!problem) throw new ErrorMessage('无此题目。');
+    if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
+
+    problem.allowedEdit = (isCourseOwner || curUser.id === problem.user_id);
+    problem.allowedManage = isCourseOwner;
+
+    await syzoj.utils.markdown(problem, ['description', 'input_format', 'output_format', 'example', 'limit_and_hint']);
+
+    let state = await problem.getJudgeState(res.locals.user, false);
+
+    problem.tags = await problem.getTags();
+    await problem.loadRelationships();
+
+    let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
+
+    let discussionCount = await Article.count({ problem_id: problem.id });
+
+    res.render('course_problem', {
+      course: course,
+      problem: problem,
+      state: state,
+      lastLanguage: res.locals.user ? await res.locals.user.getLastSubmitLanguage() : null,
+      testcases: testcases,
+      discussionCount: discussionCount
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/problem/:pid/edit', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let problemID = parseInt(req.params.pid) || 0;
+    let problem = await Problem.findById(problemID);
+
+    if (!problem) {
+      problem = await Problem.create({
+        time_limit: syzoj.config.default.problem.time_limit,
+        memory_limit: syzoj.config.default.problem.memory_limit,
+        type: 'traditional'
+      });
+      problem.id = problemID;
+      problem.allowedEdit = true;
+      problem.tags = [];
+      problem.new = true;
+    } else {
+      if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
+      problem.allowedEdit = (isCourseOwner || curUser.id === problem.user_id);
+      if (!problem.allowedEdit) throw new ErrorMessage('您没有权限进行此操作。');
+      problem.tags = await problem.getTags();
+    }
+
+    problem.allowedManage = isCourseOwner;
+
+    res.render('course_problem_edit', {
+      problem: problem
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/problem/:pid/edit', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let problemID = parseInt(req.params.pid) || 0;
+    let problem = await Problem.findById(problemID);
+
+    if (!problem) {
+      problem = await Problem.create({
+        time_limit: syzoj.config.default.problem.time_limit,
+        memory_limit: syzoj.config.default.problem.memory_limit,
+        type: 'traditional'
+      });
+
+      if (isCourseOwner) {
+        let customID = parseInt(req.body.pid);
+        if (customID) {
+          if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
+          problem.id = customID;
+        } else if (problemID) problem.id = problemID;
+      }
+
+      problem.course_id = course.id;
+      problem.user_id = res.locals.user.id;
+      problem.publicizer_id = res.locals.user.id;
+    } else {
+      if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
+      if (!isCourseOwner && curUser.id !== problem.user_id) throw new ErrorMessage('您没有权限进行此操作。');
+
+      if (isCourseOwner) {
+        let customID = parseInt(req.body.pid);
+        if (customID && customID !== problemID) {
+          if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
+          await problem.changeID(customID);
+        }
+      }
+    }
+
+    if (!req.body.title.trim()) throw new ErrorMessage('题目名不能为空。');
+    problem.title = req.body.title;
+    problem.description = req.body.description;
+    problem.input_format = req.body.input_format;
+    problem.output_format = req.body.output_format;
+    problem.example = req.body.example;
+    problem.limit_and_hint = req.body.limit_and_hint;
+    problem.is_anonymous = (req.body.is_anonymous === 'on');
+
+    // Save the problem first, to have the `id` allocated
+    await problem.save();
+
+    if (!req.body.tags) {
+      req.body.tags = [];
+    } else if (!Array.isArray(req.body.tags)) {
+      req.body.tags = [req.body.tags];
+    }
+
+    let newTagIDs = await req.body.tags.map(x => parseInt(x)).filterAsync(async x => ProblemTag.findById(x));
+    await problem.setTags(newTagIDs);
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
 app.get('/course/:id/lesson/:lid', async (req, res) => {
   try {
     const curUser = res.locals.user;
@@ -595,6 +770,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
 
     let contestID = (lid > 0 ? lessonIDs[lid - 1] : 0);
     let contest = await Contest.findById(contestID);
+    let ranklist = null;
 
     if (!contest) {
       contest = await Contest.create();
@@ -687,6 +863,7 @@ app.get('/course/:id/classes', async (req, res) => {
 
     if (!course) throw new ErrorMessage('无此课程。');
 
+    const isCourseOwner = await course.hasOwnership(curUser);
     const isSupervisior = await course.isSupervisior(curUser);
 
     // [TODO]: should course teachers can watch all related classes???
@@ -713,6 +890,7 @@ app.get('/course/:id/classes', async (req, res) => {
 
     res.render('course_classes', {
       course: course,
+      isCourseOwner: isCourseOwner,
       isSupervisior: isSupervisior,
       classes: classes,
       paginate: paginate
@@ -737,7 +915,7 @@ app.get('/course/:id/class/:cid', async (req, res) => {
     let classID = parseInt(req.params.cid);
     let clazz = await Clazz.findById(classID);
 
-    if (!clazz) throw new ErrorMessage('无此课程。');
+    if (!clazz) throw new ErrorMessage('无此班级。');
     if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
 
     const isCourseOwner = await course.hasOwnership(curUser);
@@ -931,7 +1109,7 @@ app.get('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
     let classID = parseInt(req.params.cid);
     let clazz = await Clazz.findById(classID);
 
-    if (!clazz) throw new ErrorMessage('无此课程。');
+    if (!clazz) throw new ErrorMessage('无此班级。');
     if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
 
     // both system administrators and course owner can edit it.

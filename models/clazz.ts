@@ -32,15 +32,15 @@ export default class Clazz extends Model {
   @TypeORM.Column({ nullable: true, type: "text" })
   lessons: string;
 
-  @TypeORM.Column({ nullable: true, type: "text" })
-  students: string;
-
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
   owner_id: number;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   teachers: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  students: string;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
