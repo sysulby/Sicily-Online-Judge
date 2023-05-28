@@ -239,6 +239,7 @@ app.post('/course/:id/edit', async (req, res) => {
   }
 });
 
+// [TODO]: add warning
 app.post('/course/:id/delete', async (req, res) => {
   try {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
@@ -388,7 +389,7 @@ app.get('/course/:id/problems/tag/:tagIDs', async (req, res) => {
     // Validate the tagIDs
     for (let tag of tags) {
       if (!tag) {
-        return res.redirect(syzoj.utils.makeUrl(['problems']));
+        return res.redirect(syzoj.utils.makeUrl(['course', course.id, 'problems']));
       }
     }
 
@@ -440,8 +441,8 @@ app.get('/course/:id/problem/:pid', async (req, res) => {
 
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
-    let problemId = parseInt(req.params.pid);
-    let problem = await Problem.findById(problemId);
+    let problemID = parseInt(req.params.pid);
+    let problem = await Problem.findById(problemID);
 
     if (!problem) throw new ErrorMessage('无此题目。');
     if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
@@ -557,7 +558,6 @@ app.post('/course/:id/problem/:pid/edit', async (req, res) => {
 
       problem.course_id = course.id;
       problem.user_id = res.locals.user.id;
-      problem.publicizer_id = res.locals.user.id;
     } else {
       if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
       if (!isCourseOwner && curUser.id !== problem.user_id) throw new ErrorMessage('您没有权限进行此操作。');
@@ -578,7 +578,6 @@ app.post('/course/:id/problem/:pid/edit', async (req, res) => {
     problem.output_format = req.body.output_format;
     problem.example = req.body.example;
     problem.limit_and_hint = req.body.limit_and_hint;
-    problem.is_anonymous = (req.body.is_anonymous === 'on');
 
     // Save the problem first, to have the `id` allocated
     await problem.save();
@@ -591,6 +590,144 @@ app.post('/course/:id/problem/:pid/edit', async (req, res) => {
 
     let newTagIDs = await req.body.tags.map(x => parseInt(x)).filterAsync(async x => ProblemTag.findById(x));
     await problem.setTags(newTagIDs);
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/problem/:pid/manage', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let problemID = parseInt(req.params.pid);
+    let problem = await Problem.findById(problemID);
+
+    if (!problem) throw new ErrorMessage('无此题目。');
+    if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
+    if (!isCourseOwner && curUser.id !== problem.user_id) throw new ErrorMessage('您没有权限进行此操作。');
+
+    await problem.loadRelationships();
+
+    let testdata = await problem.listTestdata();
+    let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
+
+    problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user)
+
+    res.render('course_problem_manage', {
+      course: course,
+      problem: problem,
+      testdata: testdata,
+      testcases: testcases
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/problem/:pid/manage', app.multer.fields([{ name: 'testdata', maxCount: 1 }, { name: 'additional_file', maxCount: 1 }]), async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let problemID = parseInt(req.params.pid);
+    let problem = await Problem.findById(problemID);
+
+    if (!problem) throw new ErrorMessage('无此题目。');
+    if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
+    if (!isCourseOwner && curUser.id !== problem.user_id) throw new ErrorMessage('您没有权限进行此操作。');
+
+    await problem.loadRelationships();
+
+    problem.time_limit = req.body.time_limit;
+    problem.memory_limit = req.body.memory_limit;
+    if (req.body.type === 'traditional') {
+      problem.file_io = req.body.io_method === 'file-io';
+      problem.file_io_input_name = req.body.file_io_input_name;
+      problem.file_io_output_name = req.body.file_io_output_name;
+    }
+
+    if (problem.type === 'submit-answer' && req.body.type !== 'submit-answer' || problem.type !== 'submit-answer' && req.body.type === 'submit-answer') {
+      if (await JudgeState.count({ problem_id: id }) !== 0) {
+        throw new ErrorMessage('已有提交的题目不允许在提交答案和非提交答案之间更改。');
+      }
+    }
+    problem.type = req.body.type;
+
+    let validateMsg = await problem.validate();
+    if (validateMsg) throw new ErrorMessage('无效的题目数据配置。', null, validateMsg);
+
+    if (req.files['testdata']) {
+      await problem.updateTestdata(req.files['testdata'][0].path, await res.locals.user.hasPrivilege('manage_problem'));
+    }
+
+    if (req.files['additional_file']) {
+      await problem.updateFile(req.files['additional_file'][0].path, 'additional_file', await res.locals.user.hasPrivilege('manage_problem'));
+    }
+
+    await problem.save();
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'manage']));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+// [TODO]: add warning
+app.post('/course/:id/problem/:pid/approval', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+
+    if (!isCourseOwner) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let problemID = parseInt(req.params.pid);
+    let problem = await Problem.findById(problemID);
+
+    if (!problem) throw new ErrorMessage('无此题目。');
+    if (problem.course_id !== course.id) throw new ErrorMessage('错误的题目。');
+
+    problem.is_public = true;
+    problem.publicizer_id = res.locals.user.id;
+    problem.publicize_time = new Date();
+    await problem.save();
+
+    // [TODO]: JudgeState update
 
     res.redirect(syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]));
   } catch (e) {
@@ -843,6 +980,7 @@ app.post('/course/:id/lesson/:lid/move_down', async (req, res) => {
   }
 });
 
+// [TODO]: add warning
 app.post('/course/:id/lesson/:lid/delete', async (req, res) => {
   try {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
@@ -1061,6 +1199,7 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
   }
 });
 
+// [TODO]: add warning
 app.post('/course/:id/class/:cid/approval', async (req, res) => {
   try {
     // [TODO]: auto create lessons when approved
@@ -1073,6 +1212,7 @@ app.post('/course/:id/class/:cid/approval', async (req, res) => {
   }
 });
 
+// [TODO]: add warning
 app.post('/course/:id/class/:cid/delete', async (req, res) => {
   try {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
@@ -1157,6 +1297,7 @@ app.post('/course/:id/class/:cid/lesson/:lid/move_down', async (req, res) => {
   }
 });
 
+// [TODO]: add warning
 app.post('/course/:id/class/:cid/lesson/:lid/delete', async (req, res) => {
   try {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');

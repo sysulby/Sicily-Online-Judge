@@ -154,12 +154,12 @@
                   <div class="ui mini basic icon buttons">
                     <a class="ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'edit']) %>"><i class="edit icon"></i></a>
                     <% if (i == 1) { %>
-                    <a class="ui disabled button"><i class="arrow up icon"></i></button>
+                    <a class="ui disabled button"><i class="arrow up icon"></i></a>
                     <% } else { %>
                     <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'move_up']) %>"><i class="arrow up icon"></i></a>
                     <% } %>
                     <% if (i == lessons.length) { %>
-                    <a class="ui disabled button"><i class="arrow down icon"></i></button>
+                    <a class="ui disabled button"><i class="arrow down icon"></i></a>
                     <% } else { %>
                     <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i, 'move_down']) %>"><i class="arrow down icon"></i></a>
                     <% } %>

@@ -31,22 +31,21 @@ if (lesson) {
       <% } %>
     </h1>
   </div>
-  <% if (problem.type !== 'submit-answer') { %>
-    <div class="row" style="margin-top: -15px">
-      <% if (problem.type === 'submit-answer') { %>
-      <span class="ui label">题目类型：答案提交</span>
-      <% } else if (problem.type === 'interaction') { %>
-      <span class="ui label">题目类型：交互</span>
-      <% } else if (problem.file_io) { %>
-      <span class="ui label">题目类型：文件输入输出</span>
-      <% } else { %>
-      <span class="ui label">题目类型：标准输入输出</span>
-      <% } %>
-      <% if (problem.type !== 'interaction') { %>
-      <span class="ui label">评测方式：<%= (testcases && !testcases.error) ? (testcases.spj ? 'Special Judge' : '文本比较') : '无测试数据' %></span>
-      <% } %>
+  <div class="row" style="margin-top: -15px">
+    <span class="ui label">题目类型：<%= { 'submit-answer': '提交答案', 'interaction': '交互', 'traditional': '传统' }[problem.type] %></span>
+    <% if (problem.type !== 'submit-answer') { %>
       <span class="ui label">时间限制：<%= problem.time_limit %> ms</span>
       <span class="ui label">内存限制：<%= problem.memory_limit %> MB</span>
+    <% } %>
+    <% if (problem.type !== 'interaction') { %>
+      <span class="ui label">评测方式：<%= (testcases && !testcases.error) ? (testcases.spj ? 'Special Judge' : '文本比较') : '无测试数据' %></span>
+    <% } %>
+  </div>
+  <% if (problem.type === 'traditional' && problem.file_io) { %>
+    <div class="row" style="margin-top: -23px">
+      <span class="ui label">文件输入输出</span>
+      <span class="ui label">输入文件：<%= problem.file_io_input_name %></span>
+      <span class="ui label">输出文件：<%= problem.file_io_output_name %></span>
     </div>
   <% } %>
   <% if (!lesson) { %>
@@ -79,13 +78,11 @@ if (lesson) {
           <a href="<%= syzoj.utils.makeUrl(['lesson', lesson.id]) %>" class="ui orange button">返回比赛</a>
         <% } else { %>
           <% if (testcases && !testcases.error) { %>
-            <a class="small ui primary button" href="#submit_code">提交</a>
+            <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">返回题库</a>
           <% } %>
           <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['submissions'], { problem_id: problem.id }) %>">提交记录</a>
-          <a class="small ui orange button" href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'statistics', problem.type === 'submit-answer' ? 'shortest' : 'fastest']) %>">统计</a>
-          <a class="small ui yellow button" href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'testdata']) %>">测试数据</a>
           <% if (problem.additional_file) { %>
-            <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'download', 'additional_file']) %>">附加文件</a>
+            <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'download', 'additional_file']) %>">附加文件</a>
           <% } %>
           <a class="small ui brown button" href="<%= syzoj.utils.makeUrl(['discussion', 'problem', problem.id]) %>" style="position: relative; ">
             讨论
@@ -98,14 +95,32 @@ if (lesson) {
       <% if (!lesson) { %>
         <div class="ui buttons right floated">
           <% if (problem.allowedEdit) { %>
-            <a class="small ui button" href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'edit']) %>">编辑</a>
-            <a class="small ui button" href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'manage']) %>">管理</a>
+            <a class="small ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'edit']) %>">编辑题面</a>
+            <a class="small ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'manage']) %>">管理数据</a>
           <% } %>
           <% if (problem.allowedManage) { %>
-            <% if (problem.is_public) {  %>
-              <a class="small ui button" id="dis_public" href-post="<%= syzoj.utils.makeUrl(['problem', problem.id, 'dis_public']) %>">取消公开</a>
-            <% } else { %>
-              <a class="small ui button" id="public" href-post="<%= syzoj.utils.makeUrl(['problem', problem.id, 'public']) %>">公开</a>
+            <% if (!problem.is_public) {  %>
+            <div class="ui basic modal" id="modal-approval-problem">
+              <div class="ui icon header">
+                <i class="exclamation circle icon"></i>
+                <p style="margin-top: 15px; ">审核题目</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>确认通过该题目吗？</p>
+                <b>警告：次操作将导致题目为可见状态。</b>
+              </div>
+              <div class="actions">
+                <div class="ui red basic cancel inverted button">
+                  <i class="remove icon"></i>
+                  否
+                </div>
+                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'approval']) %>">
+                  <i class="checkmark icon"></i>
+                  是
+                </a>
+              </div>
+            </div>
+            <div class="small ui yellow button" onclick="$('#modal-approval-problem').modal('show')">审核通过</div>
             <% } %>
             <div class="ui basic modal" id="modal-delete">
               <div class="ui icon header">
@@ -122,7 +137,7 @@ if (lesson) {
                   <i class="remove icon"></i>
                   否
                 </div>
-                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['problem', problem.id, 'delete']) %>">
+                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'delete']) %>">
                   <i class="checkmark icon"></i>
                   是
                 </a>
@@ -145,33 +160,39 @@ if (lesson) {
   <% if (problem.input_format) { %>
   <div class="row">
     <div class="column">
-        <h4 class="ui top attached block header">输入格式<% if (problem.file_io) { %> (<%= problem.file_io_input_name %>)<% } %></h4>
-        <div class="ui bottom attached segment font-content"><%- problem.input_format %></div>
+      <h4 class="ui top attached block header">输入格式</h4>
+      <div class="ui bottom attached segment font-content">
+        <% if (problem.file_io) { %><p>从文件 <code><%= problem.file_io_input_name %></code> 中读入数据。</p><% } %>
+        <%- problem.input_format %>
+      </div>
     </div>
   </div>
   <% } %>
   <% if (problem.output_format) { %>
     <div class="row">
-        <div class="column">
-          <h4 class="ui top attached block header">输出格式<% if (problem.file_io) { %> (<%= problem.file_io_output_name %>)<% } %></h4>
-          <div class="ui bottom attached segment font-content"><%- problem.output_format %></div>
+      <div class="column">
+        <h4 class="ui top attached block header">输出格式</h4>
+        <div class="ui bottom attached segment font-content">
+          <% if (problem.file_io) { %><p>输出到文件 <code><%= problem.file_io_output_name %></code> 中。</p><% } %>
+          <%- problem.output_format %>
         </div>
+      </div>
     </div>
   <% } %>
   <% if (problem.example) { %>
     <div class="row">
-        <div class="column">
-          <h4 class="ui top attached block header">样例</h4>
-          <div class="ui bottom attached segment font-content"><%- problem.example %></div>
-        </div>
+      <div class="column">
+        <h4 class="ui top attached block header">样例</h4>
+        <div class="ui bottom attached segment font-content"><%- problem.example %></div>
+      </div>
     </div>
   <% } %>
   <% if (problem.limit_and_hint) { %>
     <div class="row">
-        <div class="column">
-          <h4 class="ui top attached block header">数据范围与提示</h4>
-          <div class="ui bottom attached segment font-content"><%- problem.limit_and_hint %></div>
-        </div>
+      <div class="column">
+        <h4 class="ui top attached block header">数据范围与提示</h4>
+        <div class="ui bottom attached segment font-content"><%- problem.limit_and_hint %></div>
+      </div>
     </div>
   <% } %>
   <% if (problem.tags && problem.tags.length && (typeof lesson === 'undefined' || !lesson)) { %>
