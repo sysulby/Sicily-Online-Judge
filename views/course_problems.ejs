@@ -1,4 +1,4 @@
-<% this.title = course.title + ' - 课程题库' %>
+<% this.title =  '课程题库 - ' + course.title %>
 <% include header %>
 <%
 let tagIDs = [];
@@ -12,6 +12,7 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
       <div class="column">
         <div class="ui buttons">
           <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>">返回课程</a>
+          <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'submissions']) %>">提交记录</a>
         </div>
       </div>
     </div>
@@ -95,7 +96,13 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
             <td><b><%= problem.id %></b></td>
             <td class="left aligned">
               <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]) %>"><%= problem.title %>
-                <% if (!problem.is_public) { %><span class="ui header"><span class="ui tiny red label">未公开</span></span><% } %>
+                <% if (!problem.is_public) { %>
+                  <% if (isCourseOwner) { %>
+                    <span class="ui header"><span class="ui tiny yellow label">待审核</span></span>
+                  <% } else { %>
+                    <span class="ui header"><span class="ui tiny disabled label">待审核</span></span>
+                  <% } %>
+                <% } %>
               </a>
               <div style="float: right; ">
                 <%

@@ -25,7 +25,7 @@
       <div class="ui buttons">
         <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>">课程主页</a>
         <% if (isSupervisior) { %>
-          <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'problems']) %>">课程题库</a>
+          <a class="ui small green button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'students']) %>">学员名单</a>
         <% } %>
       </div>
       <div class="ui buttons right floated">

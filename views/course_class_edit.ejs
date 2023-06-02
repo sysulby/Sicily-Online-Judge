@@ -1,4 +1,4 @@
-<% this.title = clazz.id ? '班级设置' : '开班申请' %>
+<% this.title = clazz.id ? '班级设置' : '新建班级' %>
 <% include header %>
 <div class="padding">
   <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'edit']) %>" method="post">

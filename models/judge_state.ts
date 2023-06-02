@@ -6,6 +6,7 @@ declare var syzoj, ErrorMessage: any;
 import User from "./user";
 import Problem from "./problem";
 import Contest from "./contest";
+import Course from "./course";
 
 const Judger = syzoj.lib('judger');
 
@@ -130,6 +131,9 @@ export default class JudgeState extends Model {
       } else {
         return true;
       }
+    } else if (this.type === 2) {
+      let course = await Course.findById(this.type_info);
+      return user && await course.isSupervisior(user);
     }
   }
 

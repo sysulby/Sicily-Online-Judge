@@ -55,7 +55,7 @@ $(function () {
       debug: true,
       saveRemoteData: false,
       apiSettings: {
-        url: '/api/v2/search/problems/{query}',
+        url: '/api/v2/search/course/<%= course.id %>/problems/{query}',
         onResponse: function (response) {
           var a = $('#search_problems').val().map(function (x) { return parseInt(x) });
           if (response.results) {

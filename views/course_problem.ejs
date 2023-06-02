@@ -75,12 +75,11 @@ if (lesson) {
           <% if (problem.additional_file) { %>
             <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['lesson', lesson.id, pid, 'download', 'additional_file']) %>">附加文件</a>
           <% } %>
-          <a href="<%= syzoj.utils.makeUrl(['lesson', lesson.id]) %>" class="ui orange button">返回比赛</a>
         <% } else { %>
           <% if (testcases && !testcases.error) { %>
             <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">返回题库</a>
           <% } %>
-          <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['submissions'], { problem_id: problem.id }) %>">提交记录</a>
+          <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'submissions'], { problem_id: problem.id }) %>">提交记录</a>
           <% if (problem.additional_file) { %>
             <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'download', 'additional_file']) %>">附加文件</a>
           <% } %>
@@ -230,7 +229,7 @@ if (lesson) {
     <div class="row">
         <div class="column">
           <%
-          const formUrl = syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { lesson_id: lesson ? lesson.id : undefined });
+          const formUrl = syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'submit'], { lesson_id: lesson ? lesson.id : undefined });
           %>
           <form action="<%= formUrl %>" method="post" onsubmit="return submit_code()" id="submit_code" enctype="multipart/form-data">
             <% if (problem.type === 'submit-answer') { %>

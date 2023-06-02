@@ -18,6 +18,7 @@
         <th>开始时间</th>
         <th>结束时间</th>
         <th>任课教师</th>
+        <th>班主任</th>
       </tr>
     </thead>
     <tbody>
@@ -30,6 +31,7 @@
         <td><%= syzoj.utils.formatDate(clazz.start_time, 'L') %></td>
         <td><%= syzoj.utils.formatDate(clazz.end_time, 'L') %></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.teacher.id]) %>"><%= clazz.teacher.username %></a></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.owner.id]) %>"><%= clazz.owner.username %></a></td>
       </tr>
       <% } %>
     </tbody>

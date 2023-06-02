@@ -3,6 +3,7 @@ let FormattedCode = syzoj.model('formatted_code');
 let User = syzoj.model('user');
 let Contest = syzoj.model('contest');
 let Problem = syzoj.model('problem');
+let Course = syzoj.model('course');
 
 const jwt = require('jsonwebtoken');
 const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../libs/submissions_process');
@@ -167,6 +168,15 @@ app.get('/submission/:id', async (req, res) => {
       if ((!contest.ended || !contest.is_public) &&
         !(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
         throw new Error("比赛未结束或未公开。");
+      }
+    }
+
+    let course;
+    if (judge.type === 2) {
+      course = await Course.findById(judge.type_info);
+
+      if (!await course.isSupervisior(curUser)) {
+        throw new ErrorMessage(course.id + ' ' + curUser.id + '您没有权限进行此操作。');
       }
     }
 

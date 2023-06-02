@@ -133,6 +133,7 @@ export default class Problem extends Model {
   async isAllowedEditBy(user) {
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
+    if (this.course && await this.course.hasOwnership(user)) return true;
     return this.user_id === user.id;
   }
 
@@ -140,12 +141,14 @@ export default class Problem extends Model {
     if (this.is_public) return true;
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
+    if (this.course && await this.course.isSupervisior(user)) return true;
     return this.user_id === user.id;
   }
 
   async isAllowedManageBy(user) {
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
+    if (this.course && await this.course.hasOwnership(user)) return true;
     return user.is_admin;
   }
 
