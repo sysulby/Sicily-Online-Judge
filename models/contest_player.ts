@@ -20,6 +20,9 @@ export default class ContestPlayer extends Model {
   user_id: number;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
+  register_time: number;
+
+  @TypeORM.Column({ nullable: true, type: "integer" })
   score: number;
 
   @TypeORM.Column({ default: JSON.stringify({}), type: "json" })
@@ -42,7 +45,7 @@ export default class ContestPlayer extends Model {
 
   async updateScore(judge_state) {
     await this.loadRelationships();
-    if (this.contest.type === 'ioi') {
+    if (this.contest.type === 'ioi' || this.contest.type === 'usaco') {
       if (!judge_state.pending) {
         if (!this.score_details[judge_state.problem_id]) {
           this.score_details[judge_state.problem_id] = {
@@ -91,7 +94,7 @@ export default class ContestPlayer extends Model {
         if (this.score != null)
           this.score += this.score_details[x].score;
       }
-    } else if (this.contest.type === 'acm') {
+    } else if (this.contest.type === 'icpc') {
       if (!judge_state.pending) {
         if (!this.score_details[judge_state.problem_id]) {
           this.score_details[judge_state.problem_id] = {
