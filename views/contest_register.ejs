@@ -1,0 +1,32 @@
+<% this.title='比赛注册' %>
+<% include header %>
+<div class="padding">
+  <h1><%= contest.title %></h1>
+  <div style="margin-bottom: 30px;"><%- contest.subtitle %></div>
+  <% if (contest.reg_info) { %>
+  <div class="row">
+    <div class="column">
+      <h4 class="ui top attached block header">注意事项</h4>
+      <div class="ui bottom attached segment font-content">
+        <%- contest.reg_info %>
+      </div>
+    </div>
+  </div>
+  <% } %>
+  <div class="row">
+    <div class="column">
+      <form action="<%= syzoj.utils.makeUrl(['contest', contest.id, 'register']) %>" method="post">
+        <div class="ui form">
+          <% if (hasPassword) { %>
+          <div class="field">
+            <label>比赛密码</label>
+            <input type="text" name="password">
+          </div>
+          <% } %>
+          <div style="text-align: center; "><button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui check icon"></i>参赛</button></div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<% include footer %>

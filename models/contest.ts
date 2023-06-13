@@ -29,6 +29,9 @@ export default class Contest extends Model {
   @TypeORM.Column({ nullable: true, type: "text" })
   subtitle: string;
 
+  @TypeORM.Column({ nullable: true, type: "text" })
+  information: string;
+
   @TypeORM.Column({ nullable: true, type: "integer" })
   start_time: number;
 
@@ -42,27 +45,24 @@ export default class Contest extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   holder_id: number;
 
-  // type: noi, ioi, usaco, icpc
-  @TypeORM.Column({ nullable: true, type: "enum", enum: ContestType })
-  type: ContestType;
-
   @TypeORM.Column({ nullable: true, type: "text" })
-  information: string;
+  admins: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   problems: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  additional_problems: string;
+  extra_problems: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  admins: string;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  register_info: string;
+  reg_info: string;
 
   @TypeORM.Column({ nullable: true, type: "varchar", length: 120 })
   password: string;
+
+  // type: noi, ioi, usaco, icpc
+  @TypeORM.Column({ nullable: true, type: "enum", enum: ContestType })
+  type: ContestType;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
@@ -135,6 +135,9 @@ export default class Contest extends Model {
     let problems = await this.getProblems();
     if (!problems.includes(judge_state.problem_id)) throw new ErrorMessage('当前比赛中无此题目。');
 
+    // Prevent contest admin appear on ranklist.
+    if (await this.isSupervisior(await User.findById(judge_state.user_id))) return;
+
     await syzoj.utils.lock(['Contest::newSubmission', judge_state.user_id], async () => {
       let player = await ContestPlayer.findInContest({
         contest_id: this.id,
@@ -144,12 +147,11 @@ export default class Contest extends Model {
       // Registration is required for all contests.
       if (!player) throw new ErrorMessage('请先注册参赛。');
 
+      // If contest is ended, submitting is still allowed, but ranklist will be frozen.
+      if (this.isEnded(judge_state.submit_time) || (this.type === 'usaco' && judge_state.submit_time > player.reg_time + this.duration)) return;
+
       await player.updateScore(judge_state);
       await player.save();
-
-      // If contest is ended, submitting is still allowed, but ranklist will be frozen.
-      if (this.isEnded(judge_state.submit_time) ||
-        (this.type === 'usaco' && judge_state.submit_time > player.register_time + this.duration)) return;
 
       await this.loadRelationships();
       await this.ranklist.updatePlayer(this, player);

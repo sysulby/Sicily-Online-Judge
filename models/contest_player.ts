@@ -20,7 +20,7 @@ export default class ContestPlayer extends Model {
   user_id: number;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
-  register_time: number;
+  reg_time: number;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
   score: number;

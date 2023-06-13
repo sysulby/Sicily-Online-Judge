@@ -162,11 +162,10 @@ app.get('/submission/:id', async (req, res) => {
     let contest;
     if (judge.type === 1) {
       contest = await Contest.findById(judge.type_info);
-      contest.ended = contest.isEnded();
 
-      if ((!contest.ended || !contest.is_public) &&
-        !(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
-        throw new Error("比赛未结束或未公开。");
+      if (!(curUser && await contest.isSupervisior(curUser))) {
+        res.redirect(syzoj.utils.makeUrl(['contest', 'submission', id]));
+        return;
       }
     }
 

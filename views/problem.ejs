@@ -80,7 +80,7 @@ if (contest) {
           <% if (!contest.ended) { %>
             <a class="small ui primary button" href="#submit_code">提交</a>
           <% } else { %>
-            <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['problem', problem.id]) %>">转到题库</a>
+            <a class="small ui primary button" href="#submit_code">赛后提交</a>
           <% } %>
           <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'submissions'], { problem_id: pid }) %>">提交记录</a>
           <% if (problem.additional_file) { %>
@@ -211,7 +211,7 @@ if (contest) {
   <% } %>
     <% let noSubmit = false; %>
     <%
-    if (typeof contest !== 'undefined' && contest && contest.ended || (!testcases || testcases.error)) {
+    if (!testcases || testcases.error) {
       noSubmit = true;
     }
     %>
@@ -330,7 +330,9 @@ if (contest) {
                 </div>
               </div>
               <div class="ui center aligned vertical segment" style="padding-bottom: 0; ">
-                <button type="submit" class="ui labeled icon button"><i class="ui edit icon"></i>提交</button>
+                <button type="submit" class="ui labeled icon button"><i class="ui edit icon"></i>
+                  <% if (typeof contest !== 'undefined' && contest && contest.ended) { %>赛后<% } %>提交
+                </button>
               </div>
             <% } %>
           </form>
