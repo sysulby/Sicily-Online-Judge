@@ -20,6 +20,7 @@ enum Status {
   OUTPUT_LIMIT_EXCEEDED = "Output Limit Exceeded",
   PARTIALLY_CORRECT = "Partially Correct",
   RUNTIME_ERROR = "Runtime Error",
+  SKIPPED = "Skipped",
   SYSTEM_ERROR = "System Error",
   TIME_LIMIT_EXCEEDED = "Time Limit Exceeded",
   UNKNOWN = "Unknown",
@@ -121,9 +122,10 @@ export default class JudgeState extends Model {
   async isAllowedVisitBy(user) {
     await this.loadRelationships();
 
-    if (user && user.id === this.problem.user_id) return true;
-    else if (this.type === 0) return this.problem.is_public || (user && (await user.hasPrivilege('manage_problem')));
-    else if (this.type === 1) {
+    if (!user) return false;
+    if (user.id === this.user_id) return true;
+    if (this.type === 0) return user.id === this.problem.user_id || await user.hasPrivilege('manage_problem');
+    if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
       if (contest.isRunning()) {
         return user && await contest.isSupervisior(user);
@@ -150,6 +152,26 @@ export default class JudgeState extends Model {
       let contest = await Contest.findById(this.type_info);
       await contest.newSubmission(this);
     }
+  }
+
+  async skip() {
+    await syzoj.utils.lock(['JudgeState::skip', this.id], async () => {
+      await this.loadRelationships();
+
+      this.status = Status.SKIPPED;
+      this.pending = false;
+      this.score = null;
+      if (this.language) {
+        // language is empty if it's a submit-answer problem
+        this.total_time = null;
+        this.max_memory = null;
+      }
+      this.result = {};
+
+      await this.save();
+
+      await this.updateRelatedInfo(false);
+    });
   }
 
   async rejudge() {

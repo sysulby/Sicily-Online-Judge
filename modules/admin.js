@@ -372,6 +372,8 @@ app.post('/admin/rejudge', async (req, res) => {
 
     if (req.body.status) {
       query.andWhere('status = :status', { status: req.body.status });
+    }  else {
+      query.andWhere('status != :status', { status: 'Skipped' });
     }
 
     if (req.body.problem_id) {

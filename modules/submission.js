@@ -12,8 +12,8 @@ const displayConfig = {
   showUsage: true,
   showCode: true,
   showResult: true,
-  showOthers: true,
-  showTestdata: true,
+  showOthers: false,
+  showTestdata: false,
   showDetailResult: true,
   inContest: false,
   showRejudge: false
@@ -95,6 +95,11 @@ app.get('/submissions', async (req, res) => {
         } else {
           throw new ErrorMessage("您没有权限进行此操作。");
         }
+      } else if (curUser) {
+        query.andWhere(new TypeORM.Brackets(qb => {
+               qb.where('is_public = 1')
+                 .orWhere('user_id = :user_id', { user_id: curUser.id })
+             }));
       } else {
         query.andWhere('is_public = true');
       }
@@ -188,6 +193,7 @@ app.get('/submission/:id', async (req, res) => {
       judge.code = await syzoj.utils.highlight(judge.code, syzoj.languages[judge.language].highlight);
     }
 
+    displayConfig.showTestdata = await judge.problem.isAllowedEditBy(res.locals.user);
     displayConfig.showRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
     res.render('submission', {
       info: getSubmissionInfo(judge, displayConfig),
@@ -203,6 +209,29 @@ app.get('/submission/:id', async (req, res) => {
       }, syzoj.config.session_secret) : null,
       displayConfig: displayConfig,
     });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/submission/:id/skip', async (req, res) => {
+  try {
+    let id = parseInt(req.params.id);
+    let judge = await JudgeState.findById(id);
+
+    if (judge.pending && !(res.locals.user && await res.locals.user.hasPrivilege('manage_problem'))) throw new ErrorMessage('无法忽略一个评测中的提交。');
+
+    await judge.loadRelationships();
+
+    let allowedRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
+    if (!allowedRejudge) throw new ErrorMessage('您没有权限进行此操作。');
+
+    await judge.skip();
+
+    res.redirect(syzoj.utils.makeUrl(['submission', id]));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
