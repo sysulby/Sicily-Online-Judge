@@ -3,7 +3,6 @@ import Model from "./common";
 
 declare var syzoj, ErrorMessage: any;
 
-import Course from "./course";
 import User from "./user";
 import File from "./file";
 import JudgeState from "./judge_state";
@@ -11,6 +10,7 @@ import Contest from "./contest";
 import ProblemTag from "./problem_tag";
 import ProblemTagMap from "./problem_tag_map";
 import SubmissionStatistics, { StatisticsType } from "./submission_statistics";
+import Course from "./course";
 
 import * as fs from "fs-extra";
 import * as path from "path";
@@ -52,14 +52,7 @@ export default class Problem extends Model {
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
-  course_id: number;
-
-  @TypeORM.Index()
-  @TypeORM.Column({ nullable: true, type: "integer" })
   user_id: number;
-
-  @TypeORM.Column({ nullable: true, type: "integer" })
-  publicizer_id: number;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_anonymous: boolean;
@@ -85,6 +78,22 @@ export default class Problem extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   memory_limit: number;
 
+  @TypeORM.Column({ nullable: true,
+      type: "enum",
+      enum: ProblemType,
+      default: ProblemType.Traditional
+  })
+  type: ProblemType;
+
+  @TypeORM.Column({ nullable: true, type: "boolean" })
+  file_io: boolean;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  file_io_input_name: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  file_io_output_name: string;
+
   @TypeORM.Column({ nullable: true, type: "integer" })
   additional_file_id: number;
 
@@ -98,69 +107,60 @@ export default class Problem extends Model {
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
 
-  @TypeORM.Column({ nullable: true, type: "boolean" })
-  file_io: boolean;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  file_io_input_name: string;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  file_io_output_name: string;
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  publicizer_id: number;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "datetime" })
   publicize_time: Date;
 
-  @TypeORM.Column({ nullable: true,
-      type: "enum",
-      enum: ProblemType,
-      default: ProblemType.Traditional
-  })
-  type: ProblemType;
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  course_id: number;
 
-  course?: Course;
   user?: User;
-  publicizer?: User;
   additional_file?: File;
+  publicizer?: User;
+  course?: Course;
 
   async loadRelationships() {
-    this.course = await Course.findById(this.course_id);
     this.user = await User.findById(this.user_id);
-    this.publicizer = await User.findById(this.publicizer_id);
     this.additional_file = await File.findById(this.additional_file_id);
+    this.publicizer = await User.findById(this.publicizer_id);
+    this.course = await Course.findById(this.course_id);
   }
 
   async isAllowedEditBy(user) {
     if (!user) return false;
-    if (this.course_id) {
+    if (!this.course_id) {
+      if (await user.hasPrivilege('manage_problem')) return true;
+    } else {
       this.course = await Course.findById(this.course_id);
       if (await this.course.hasOwnership(user)) return true;
-    } else {
-      if (await user.hasPrivilege('manage_problem')) return true;
     }
     return this.user_id === user.id;
   }
 
   async isAllowedUseBy(user) {
-    if (this.course_id) {
-      if (!user) return false;
-      this.course = await Course.findById(this.course_id);
-      if (await this.course.isSupervisior(user)) return true;
-    } else {
+    if (!this.course_id) {
       if (this.is_public) return true;
       if (!user) return false;
       if (await user.hasPrivilege('manage_problem')) return true;
+    } else {
+      if (!user) return false;
+      this.course = await Course.findById(this.course_id);
+      if (await this.course.isSupervisior(user)) return true;
     }
     return this.user_id === user.id;
   }
 
   async isAllowedManageBy(user) {
-    if (this.course_id) {
+    if (!user) return false;
+    if (!this.course_id) {
+      if (await user.hasPrivilege('manage_problem')) return true;
+    } else {
       this.course = await Course.findById(this.course_id);
       if (await this.course.hasOwnership(user)) return true;
-    } else {
-      if (!user) return false;
-      if (await user.hasPrivilege('manage_problem')) return true;
     }
     return user.is_admin;
   }
@@ -246,6 +246,16 @@ export default class Problem extends Model {
       let dir = this.getTestdataPath();
       let list = await fs.readdir(dir);
       return list.includes('spj.js') || list.find(x => x.startsWith('spj_')) !== undefined;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async hasFrameJudge() {
+    try {
+      let dir = this.getTestdataPath();
+      let list = await fs.readdir(dir);
+      return list.includes('frame.js') || list.find(x => x.startsWith('frame_')) !== undefined;
     } catch (e) {
       return false;
     }

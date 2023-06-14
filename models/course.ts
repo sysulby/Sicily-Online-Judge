@@ -19,15 +19,15 @@ export default class Course extends Model {
   @TypeORM.Column({ nullable: true, type: "text" })
   information: string;
 
-  @TypeORM.Column({ nullable: true, type: "text" })
-  lessons: string;
-
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
   owner_id: number;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   teachers: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  lessons: string;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
@@ -43,7 +43,7 @@ export default class Course extends Model {
   }
 
   async isSupervisior(user) {
-    return await this.hasOwnership(user) || (user && this.teachers.split('|').includes(user.id.toString()));
+    return user && (await this.hasOwnership(user) || this.teachers.split('|').includes(user.id.toString()));
   }
 
   async getLessons() {

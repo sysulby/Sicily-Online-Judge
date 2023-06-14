@@ -20,6 +20,7 @@ enum Status {
   NO_TESTDATA = "No Testdata",
   OUTPUT_LIMIT_EXCEEDED = "Output Limit Exceeded",
   PARTIALLY_CORRECT = "Partially Correct",
+  REJECTED = "Rejected",
   RUNTIME_ERROR = "Runtime Error",
   SYSTEM_ERROR = "System Error",
   TIME_LIMIT_EXCEEDED = "Time Limit Exceeded",
@@ -122,15 +123,13 @@ export default class JudgeState extends Model {
   async isAllowedVisitBy(user) {
     await this.loadRelationships();
 
-    if (user && user.id === this.problem.user_id) return true;
-    else if (this.type === 0) return this.problem.is_public || (user && (await user.hasPrivilege('manage_problem')));
-    else if (this.type === 1) {
+    if (user && user.id === this.user_id) return true;
+    if (this.type === 0) {
+      return user && (user.is_admin || await user.hasPrivilege('manage_problem'));
+    }
+    if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
-      if (contest.isRunning()) {
-        return user && await contest.isSupervisior(user);
-      } else {
-        return true;
-      }
+      return user && await contest.isSupervisior(user);
     } else if (this.type === 2) {
       let course = await Course.findById(this.type_info);
       return user && await course.isSupervisior(user);
@@ -185,6 +184,19 @@ export default class JudgeState extends Model {
         console.log("Error while connecting to judge frontend: " + err.toString());
         throw new ErrorMessage("无法开始评测。");
       }
+    });
+  }
+
+  async reject() {
+    await syzoj.utils.lock(['JudgeState::reject', this.id], async () => {
+      await this.loadRelationships();
+
+      this.status = Status.REJECTED;
+      this.score = 0;
+
+      await this.save();
+
+      await this.updateRelatedInfo(false);
     });
   }
 

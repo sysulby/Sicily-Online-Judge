@@ -12,7 +12,8 @@ import Course from "./course";
 enum ContestType {
   NOI = "noi",
   IOI = "ioi",
-  ICPC = "acm"
+  USACO = "usaco",
+  ICPC = "icpc"
 }
 
 @TypeORM.Entity()
@@ -28,42 +29,54 @@ export default class Contest extends Model {
   @TypeORM.Column({ nullable: true, type: "text" })
   subtitle: string;
 
+  @TypeORM.Column({ nullable: true, type: "text" })
+  information: string;
+
   @TypeORM.Column({ nullable: true, type: "integer" })
   start_time: number;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
   end_time: number;
 
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  duration: number;
+
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
   holder_id: number;
 
-  // type: noi, ioi, acm
-  @TypeORM.Column({ nullable: true, type: "enum", enum: ContestType })
-  type: ContestType;
-
   @TypeORM.Column({ nullable: true, type: "text" })
-  information: string;
+  admins: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   problems: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  admins: string;
+  extra_problems: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  reg_info: string;
+
+  @TypeORM.Column({ nullable: true, type: "varchar", length: 120 })
+  password: string;
+
+  // type: noi, ioi, usaco, icpc
+  @TypeORM.Column({ nullable: true, type: "enum", enum: ContestType })
+  type: ContestType;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
   ranklist_id: number;
-
-  @TypeORM.Index()
-  @TypeORM.Column({ nullable: true, type: "integer" })
-  course_id: number;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   hide_statistics: boolean;
+
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  course_id: number;
 
   holder?: User;
   ranklist?: ContestRanklist;
@@ -80,22 +93,22 @@ export default class Contest extends Model {
   }
 
   allowedSeeingOthers() {
-    if (this.type === 'acm') return true;
+    if (this.type === 'icpc') return true;
     else return false;
   }
 
   allowedSeeingScore() { // If not, then the user can only see status
-    if (this.type === 'ioi') return true;
+    if (this.type === 'ioi' || this.type === 'usaco') return true;
     else return false;
   }
 
   allowedSeeingResult() { // If not, then the user can only see compile progress
-    if (this.type === 'ioi' || this.type === 'acm') return true;
+    if (this.type === 'ioi' || this.type === 'usaco' || this.type === 'icpc') return true;
     else return false;
   }
 
   allowedSeeingTestcase() {
-    if (this.type === 'ioi') return true;
+    if (this.type === 'ioi' || this.type === 'usaco') return true;
     return false;
   }
 
@@ -119,11 +132,11 @@ export default class Contest extends Model {
   }
 
   async newSubmission(judge_state) {
-    if (!(judge_state.submit_time >= this.start_time && judge_state.submit_time <= this.end_time)) {
-      return;
-    }
     let problems = await this.getProblems();
     if (!problems.includes(judge_state.problem_id)) throw new ErrorMessage('当前比赛中无此题目。');
+
+    // Prevent contest admin appear on ranklist.
+    if (await this.isSupervisior(await User.findById(judge_state.user_id))) return;
 
     await syzoj.utils.lock(['Contest::newSubmission', judge_state.user_id], async () => {
       let player = await ContestPlayer.findInContest({
@@ -131,13 +144,11 @@ export default class Contest extends Model {
         user_id: judge_state.user_id
       });
 
-      if (!player) {
-        player = await ContestPlayer.create({
-          contest_id: this.id,
-          user_id: judge_state.user_id
-        });
-        await player.save();
-      }
+      // Registration is required for all contests.
+      if (!player) throw new ErrorMessage('请先注册参赛。');
+
+      // If contest is ended, submitting is still allowed, but ranklist will be frozen.
+      if (this.isEnded(judge_state.submit_time) || (this.type === 'usaco' && judge_state.submit_time > player.reg_time + this.duration)) return;
 
       await player.updateScore(judge_state);
       await player.save();
@@ -150,11 +161,11 @@ export default class Contest extends Model {
 
   isRunning(now?) {
     if (!now) now = syzoj.utils.getCurrentDate();
-    return now >= this.start_time && now < this.end_time;
+    return (!this.start_time || this.start_time <= now) && (!this.end_time || now < this.end_time);
   }
 
   isEnded(now?) {
     if (!now) now = syzoj.utils.getCurrentDate();
-    return now >= this.end_time;
+    return this.end_time && this.end_time <= now;
   }
 }

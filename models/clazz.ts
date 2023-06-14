@@ -3,8 +3,8 @@ import Model from "./common";
 
 declare var syzoj: any;
 
-import Course from "./course";
 import User from "./user";
+import Course from "./course";
 
 @TypeORM.Entity()
 export default class Clazz extends Model {
@@ -27,45 +27,45 @@ export default class Clazz extends Model {
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
-  course_id: number;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  lessons: string;
-
-  @TypeORM.Index()
-  @TypeORM.Column({ nullable: true, type: "integer" })
   owner_id: number;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   teachers: string;
 
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  course_id: number;
+
   @TypeORM.Column({ nullable: true, type: "text" })
-  students: string;
+  lessons: string;
 
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
 
-  course?: Course;
+  @TypeORM.Column({ nullable: true, type: "text" })
+  students: string;
+
   owner?: User;
+  course?: Course;
 
   async loadRelationships() {
-    this.course = await Course.findById(this.course_id);
     this.owner = await User.findById(this.owner_id);
+    this.course = await Course.findById(this.course_id);
   }
 
   async isCourseOwner(user) {
     if (!user) return false;
     if (user.is_admin) return true;
-    if (!this.course) this.course = await Course.findById(this.course_id);
+    this.course = await Course.findById(this.course_id);
     return await this.course.hasOwnership(user);
   }
 
   async hasOwnership(user) {
-    return await this.isCourseOwner(user) || (user && user.id === this.owner_id);
+    return user && (user.id === this.owner_id || await this.isCourseOwner(user));
   }
 
   async isSupervisior(user) {
-    return await this.hasOwnership(user) || (user && this.teachers.split('|').includes(user.id.toString()));
+    return user && (this.teachers.split('|').includes(user.id.toString()) || await this.hasOwnership(user));
   }
 
   async isParticipant(user) {

@@ -107,6 +107,10 @@ module.exports = {
   parseDate(s) {
     return parseInt(+new Date(s) / 1000);
   },
+  parseTime(s) {
+    if (s == null) return 0;
+    return parseInt(s.split(':').reduce((ret, x) => 60 * ret + parseInt(x)));
+  },
   getCurrentDate(removeTime) {
     let d = new Date;
     if (removeTime) {
