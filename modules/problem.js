@@ -73,7 +73,7 @@ app.get('/problems/search', async (req, res) => {
     if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
       if (res.locals.user) {
         query.where(new TypeORM.Brackets(qb => {
-             qb.where('is_public = 1')
+               qb.where('is_public = 1')
                  .orWhere('user_id = :user_id', { user_id: res.locals.user.id })
              }))
              .andWhere(new TypeORM.Brackets(qb => {
@@ -242,6 +242,12 @@ app.get('/problem/:id/export', async (req, res) => {
     let problem = await Problem.findById(id);
     if (!problem || !problem.is_public) throw new ErrorMessage('无此题目。');
 
+    if (!await problem.isAllowedEditBy(res.locals.user)) {
+      if (req.query.token == null || req.query.token !== syzoj.config.export_token) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+    }
+
     let obj = {
       title: problem.title,
       description: problem.description,
@@ -276,7 +282,7 @@ app.get('/problem/:id/edit', async (req, res) => {
     let problem = await Problem.findById(id);
 
     if (!problem) {
-      if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
         memory_limit: syzoj.config.default.problem.memory_limit,
@@ -284,15 +290,15 @@ app.get('/problem/:id/edit', async (req, res) => {
       });
       problem.id = id;
       problem.allowedEdit = true;
+      problem.allowedManage = true;
       problem.tags = [];
       problem.new = true;
     } else {
-      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
-      problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
+      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      problem.allowedEdit = true;
+      problem.allowedManage = await problem.isAllowedManageBy(res.locals.user);
       problem.tags = await problem.getTags();
     }
-
-    problem.allowedManage = await problem.isAllowedManageBy(res.locals.user);
 
     res.render('problem_edit', {
       problem: problem
@@ -310,7 +316,7 @@ app.post('/problem/:id/edit', async (req, res) => {
     let id = parseInt(req.params.id) || 0;
     let problem = await Problem.findById(id);
     if (!problem) {
-      if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -318,18 +324,15 @@ app.post('/problem/:id/edit', async (req, res) => {
         type: 'traditional'
       });
 
-      if (await res.locals.user.hasPrivilege('manage_problem')) {
-        let customID = parseInt(req.body.id);
-        if (customID) {
-          if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
-          problem.id = customID;
-        } else if (id) problem.id = id;
-      }
+      let customID = parseInt(req.body.id);
+      if (customID) {
+        if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
+        problem.id = customID;
+      } else if (id) problem.id = id;
 
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
-      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
 
       if (await res.locals.user.hasPrivilege('manage_problem')) {
@@ -377,7 +380,7 @@ app.get('/problem/:id/import', async (req, res) => {
     let problem = await Problem.findById(id);
 
     if (!problem) {
-      if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -389,7 +392,6 @@ app.get('/problem/:id/import', async (req, res) => {
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
-      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     }
 
@@ -411,7 +413,7 @@ app.post('/problem/:id/import', async (req, res) => {
     let id = parseInt(req.params.id) || 0;
     let problem = await Problem.findById(id);
     if (!problem) {
-      if (!res.locals.user) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -430,7 +432,6 @@ app.post('/problem/:id/import', async (req, res) => {
       problem.user_id = res.locals.user.id;
       problem.publicizer_id = res.locals.user.id;
     } else {
-      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
       if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     }
 
@@ -609,6 +610,7 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
     if (problem.type !== 'submit-answer' && !syzoj.config.enabled_languages.includes(req.body.language)) throw new ErrorMessage('不支持该语言。');
     if (!curUser) throw new ErrorMessage('请登录后继续。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': syzoj.utils.makeUrl(['problem', id]) }) });
 
+    let dup = false;
     let judge_state;
     if (problem.type === 'submit-answer') {
       let File = syzoj.model('file'), path;
@@ -630,17 +632,26 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       if (size > syzoj.config.limit.submit_answer) throw new ErrorMessage('答案文件太大。');
 
       if (!file.md5) throw new ErrorMessage('上传答案文件失败。');
-      judge_state = await JudgeState.create({
-        submit_time: parseInt((new Date()).getTime() / 1000),
-        status: 'Unknown',
-        task_id: randomstring.generate(10),
-        code: file.md5,
-        code_length: size,
-        language: null,
-        user_id: curUser.id,
-        problem_id: id,
-        is_public: problem.is_public
-      });
+
+      // The same submission within 10 seconds is considered a duplicate submission.
+      let now = parseInt((new Date()).getTime() / 1000);
+      let state = await problem.getJudgeState(res.locals.user, false);
+      if (state && state.code === file.md5 && now - state.submit_time <= 10) {
+        dep = true;
+        judge_state = state;
+      } else {
+        judge_state = await JudgeState.create({
+          submit_time: now,
+          status: 'Unknown',
+          task_id: randomstring.generate(10),
+          code: file.md5,
+          code_length: size,
+          language: null,
+          user_id: curUser.id,
+          problem_id: id,
+          is_public: problem.is_public
+        });
+      }
     } else {
       let code;
       if (req.files['answer']) {
@@ -651,17 +662,25 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
         code = req.body.code;
       }
 
-      judge_state = await JudgeState.create({
-        submit_time: parseInt((new Date()).getTime() / 1000),
-        status: 'Unknown',
-        task_id: randomstring.generate(10),
-        code: code,
-        code_length: Buffer.from(code).length,
-        language: req.body.language,
-        user_id: curUser.id,
-        problem_id: id,
-        is_public: problem.is_public
-      });
+      // The same submission within 10 seconds is considered a duplicate submission.
+      let now = parseInt((new Date()).getTime() / 1000);
+      let state = await problem.getJudgeState(res.locals.user, false);
+      if (state && state.code === code && now - state.submit_time <= 10) {
+        dep = true;
+        judge_state = state;
+      } else {
+        judge_state = await JudgeState.create({
+          submit_time: now,
+          status: 'Unknown',
+          task_id: randomstring.generate(10),
+          code: code,
+          code_length: Buffer.from(code).length,
+          language: req.body.language,
+          user_id: curUser.id,
+          problem_id: id,
+          is_public: problem.is_public
+        });
+      }
     }
 
     let contest_id = parseInt(req.query.contest_id);
@@ -707,13 +726,16 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       }
     }
 
-    try {
-      await Judger.judge(judge_state, problem, contest_id ? 3 : 2);
-      judge_state.pending = true;
-      judge_state.status = 'Waiting';
-      await judge_state.save();
-    } catch (err) {
-      throw new ErrorMessage(`无法开始评测：${err.toString()}`);
+    // Skip judge duplicate submission.
+    if (!dup) {
+      try {
+        await Judger.judge(judge_state, problem, contest_id ? 3 : 2);
+        judge_state.pending = true;
+        judge_state.status = 'Waiting';
+        await judge_state.save();
+      } catch (err) {
+        throw new ErrorMessage(`无法开始评测：${err.toString()}`);
+      }
     }
 
     if (contest && (!await contest.isSupervisior(curUser))) {
@@ -754,7 +776,7 @@ app.get('/problem/:id/testdata', async (req, res) => {
     let problem = await Problem.findById(id);
 
     if (!problem) throw new ErrorMessage('无此题目。');
-    if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+    if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
 
     let testdata = await problem.listTestdata();
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
@@ -840,6 +862,12 @@ app.get('/problem/:id/testdata/download/:filename?', async (req, res) => {
     if (!problem) throw new ErrorMessage('无此题目。');
     if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     if (typeof req.params.filename === 'string' && (req.params.filename.includes('../'))) throw new ErrorMessage('您没有权限进行此操作。)');
+
+    if (!await problem.isAllowedEditBy(res.locals.user)) {
+      if (req.query.token == null || req.query.token !== syzoj.config.export_token) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+    }
 
     if (!req.params.filename) {
       if (!await syzoj.utils.isFile(problem.getTestdataArchivePath())) {

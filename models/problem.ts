@@ -53,11 +53,15 @@ export default class Problem extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   user_id: number;
 
+  @TypeORM.Column({ nullable: true, type: "boolean" })
+  is_anonymous: boolean;
+
   @TypeORM.Column({ nullable: true, type: "integer" })
   publicizer_id: number;
 
-  @TypeORM.Column({ nullable: true, type: "boolean" })
-  is_anonymous: boolean;
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "datetime" })
+  publicize_time: Date;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   description: string;
@@ -74,11 +78,27 @@ export default class Problem extends Model {
   @TypeORM.Column({ nullable: true, type: "text" })
   limit_and_hint: string;
 
+  @TypeORM.Column({ nullable: true,
+      type: "enum",
+      enum: ProblemType,
+      default: ProblemType.Traditional
+  })
+  type: ProblemType;
+
   @TypeORM.Column({ nullable: true, type: "integer" })
   time_limit: number;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
   memory_limit: number;
+
+  @TypeORM.Column({ nullable: true, type: "boolean" })
+  file_io: boolean;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  file_io_input_name: string;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  file_io_output_name: string;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
   additional_file_id: number;
@@ -93,26 +113,6 @@ export default class Problem extends Model {
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
 
-  @TypeORM.Column({ nullable: true, type: "boolean" })
-  file_io: boolean;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  file_io_input_name: string;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  file_io_output_name: string;
-
-  @TypeORM.Index()
-  @TypeORM.Column({ nullable: true, type: "datetime" })
-  publicize_time: Date;
-
-  @TypeORM.Column({ nullable: true,
-      type: "enum",
-      enum: ProblemType,
-      default: ProblemType.Traditional
-  })
-  type: ProblemType;
-
   user?: User;
   publicizer?: User;
   additional_file?: File;
@@ -123,14 +123,14 @@ export default class Problem extends Model {
     this.additional_file = await File.findById(this.additional_file_id);
   }
 
-  async isAllowedEditBy(user) {
+  async isAllowedUseBy(user) {
+    if (this.is_public) return true;
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
     return this.user_id === user.id;
   }
 
-  async isAllowedUseBy(user) {
-    if (this.is_public) return true;
+  async isAllowedEditBy(user) {
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
     return this.user_id === user.id;
@@ -223,6 +223,16 @@ export default class Problem extends Model {
       let dir = this.getTestdataPath();
       let list = await fs.readdir(dir);
       return list.includes('spj.js') || list.find(x => x.startsWith('spj_')) !== undefined;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async hasFrameJudge() {
+    try {
+      let dir = this.getTestdataPath();
+      let list = await fs.readdir(dir);
+      return list.includes('frame.js') || list.find(x => x.startsWith('frame_')) !== undefined;
     } catch (e) {
       return false;
     }
