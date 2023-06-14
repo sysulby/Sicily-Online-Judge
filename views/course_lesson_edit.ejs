@@ -1,7 +1,15 @@
 <% this.title = lid ? '编辑课节' : '新建课节' %>
 <% include header %>
+<%
+if (typeof clazz === 'undefined') clazz = null;
+%>
 <div class="padding">
+  <h1><% contest.start_time %></h1>
+  <% if (!clazz) { %>
   <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid, 'edit']) %>" method="post">
+  <% } else { %>
+  <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', lid, 'edit']) %>" method="post">
+  <% } %>
     <div class="ui form">
       <div class="field">
         <label>课节名称</label>
@@ -15,6 +23,18 @@
         <label>课节公告</label>
         <textarea rows="5" name="information" class="markdown-edit"><%= contest.information %></textarea>
       </div>
+      <% if (clazz) { %>
+      <div class="two fields">
+        <div class="field">
+            <label>开始时间</label>
+            <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(contest.start_time || syzoj.utils.getCurrentDate()) %>">
+        </div>
+        <div class="field">
+            <label>结束时间</label>
+            <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(contest.end_time || syzoj.utils.getCurrentDate()) %>">
+        </div>
+      </div>
+      <% } %>
       <div class="field">
         <label>题目列表</label>
         <select class="ui fluid search dropdown" multiple="" id="search_problems" name="problems">

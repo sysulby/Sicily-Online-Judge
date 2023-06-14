@@ -18,8 +18,8 @@
         <th>班级名称</th>
         <th>开始时间</th>
         <th>结束时间</th>
-        <th>任课教师</th>
         <th>班主任</th>
+        <th>任课教师</th>
       </tr>
     </thead>
     <tbody>
@@ -30,17 +30,9 @@
       <tr>
         <% if (!clazz.is_public) { %>
           <% if (!clazz.teachers.trim()) { %>
-            <% if (isCourseOwner) { %>
-              <% tag='<span class="ui header"><div class="ui mini yellow label">新申请</div></span>' %>
-            <% } else { %>
-              <% tag='<span class="ui header"><div class="ui mini disabled yellow label">新申请</div></span>' %>
-            <% } %>
+            <% tag='<span class="ui header"><div class="ui mini disabled yellow label">新申请</div></span>' %>
           <% } else { %>
-            <% if (user.is_admin) { %>
-              <% tag='<span class="ui header"><div class="ui mini yellow label">待审核</div></span>' %>
-            <% } else { %>
-              <% tag='<span class="ui header"><div class="ui mini disabled yellow label">待审核</div></span>' %>
-            <% } %>
+            <% tag='<span class="ui header"><div class="ui mini disabled yellow label">待审核</div></span>' %>
           <% } %>
         <% } else if (clazz.running) { %>
           <% tag = '<span class="ui header"><div class="ui mini green label">进行中</div></span>' %>
@@ -50,8 +42,8 @@
         <td><a href="<%= syzoj.utils.makeUrl(['course', clazz.course_id, 'class', clazz.id]) %>"><%= clazz.title %> <%- tag %></a></td>
         <td><%= syzoj.utils.formatDate(clazz.start_time, 'L') %></td>
         <td><%= syzoj.utils.formatDate(clazz.end_time, 'L') %></td>
-        <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.teacher.id]) %>"><%= clazz.teacher.username %></a></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.owner.id]) %>"><%= clazz.owner.username %></a></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.teacher.id]) %>"><%= clazz.teacher.username %></a></td>
       </tr>
       <% } %>
     </tbody>
@@ -92,7 +84,7 @@
       <tr>
         <th>课程名称</th>
         <th>课程简介</th>
-        <th>主管教师</th>
+        <th>课程主管</th>
         <% if (user) { %>
         <th>状态</th>
         <% } %>

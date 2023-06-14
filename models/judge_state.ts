@@ -138,7 +138,7 @@ export default class JudgeState extends Model {
   }
 
   async updateRelatedInfo(newSubmission) {
-    if (this.type === 0) {
+    if (this.type === 0 || this.type === 2) {
       await this.loadRelationships();
 
       const promises = [];

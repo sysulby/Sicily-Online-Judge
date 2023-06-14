@@ -1,8 +1,8 @@
 <% include util %>
 <%
-if (typeof lesson === 'undefined') lesson = null;
-if (lesson) {
-  this.title = this.alpha(pid) + '. ' + syzoj.utils.removeTitleTag(problem.title) + ' - ' + lesson.title;
+if (typeof contest === 'undefined') contest = null;
+if (contest) {
+  this.title = this.alpha(pid) + '. ' + syzoj.utils.removeTitleTag(problem.title) + ' - ' + contest.title;
 } else {
   this.title = problem.title + ' - ' + course.title;
 }
@@ -24,10 +24,16 @@ if (lesson) {
 <div class="ui center aligned grid">
   <div class="row">
     <h1 class="ui header">
-      <% if (lesson) { %>
+      <% if (contest) { %>
         <%= this.alpha(pid) %>. <%= syzoj.utils.removeTitleTag(problem.title) %>
       <% } else { %>
-        #<%= problem.id %>. <%= problem.title %><% if (!problem.is_public) { %><span class="ui tiny red label">未公开</span><% } %>
+        #<%= problem.id %>. <%= problem.title %><% if (!problem.is_public) { %>
+          <% if (problem.allowedManage) { %>
+            <span class="ui header"><span class="ui tiny yellow label">待审核</span></span>
+          <% } else { %>
+            <span class="ui header"><span class="ui tiny disabled yellow label">待审核</span></span>
+          <% } %>
+        <% } %>
       <% } %>
     </h1>
   </div>
@@ -48,7 +54,7 @@ if (lesson) {
       <span class="ui label">输出文件：<%= problem.file_io_output_name %></span>
     </div>
   <% } %>
-  <% if (!lesson) { %>
+  <% if (!contest) { %>
     <div class="row" style="margin-top: -23px">
       <span class="ui label">创建者：
       <a href="<%= syzoj.utils.makeUrl(['user', problem.user_id]) %>"><%= problem.user.username %></a>
@@ -65,20 +71,14 @@ if (lesson) {
   <div class="row">
     <div class="column">
       <div class="ui buttons">
-        <% if (typeof lesson !== 'undefined' && lesson) { %>
-          <% if (!lesson.ended) { %>
-            <a class="small ui primary button" href="#submit_code">提交</a>
-          <% } else { %>
-            <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['problem', problem.id]) %>">转到题库</a>
-          <% } %>
-          <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['lesson', lesson.id, 'submissions'], { problem_id: pid }) %>">提交记录</a>
+        <% if (typeof contest !== 'undefined' && contest) { %>
+          <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid]) %>">返回课节</a>
+          <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'submissions'], { lesson: lid, problem_id: problem.id }) %>">提交记录</a>
           <% if (problem.additional_file) { %>
-            <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['lesson', lesson.id, pid, 'download', 'additional_file']) %>">附加文件</a>
+            <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'download', 'additional_file']) %>">附加文件</a>
           <% } %>
         <% } else { %>
-          <% if (testcases && !testcases.error) { %>
-            <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">返回题库</a>
-          <% } %>
+          <a class="small ui primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">返回题库</a>
           <a class="small ui positive button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'submissions'], { problem_id: problem.id }) %>">提交记录</a>
           <% if (problem.additional_file) { %>
             <a class="small ui teal button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'download', 'additional_file']) %>">附加文件</a>
@@ -91,7 +91,7 @@ if (lesson) {
           </a>
         <% } %>
       </div>
-      <% if (!lesson) { %>
+      <% if (!contest) { %>
         <div class="ui buttons right floated">
           <% if (problem.allowedEdit) { %>
             <a class="small ui button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'edit']) %>">编辑题面</a>
@@ -194,13 +194,13 @@ if (lesson) {
       </div>
     </div>
   <% } %>
-  <% if (problem.tags && problem.tags.length && (typeof lesson === 'undefined' || !lesson)) { %>
+  <% if (problem.tags && problem.tags.length && (typeof contest === 'undefined' || !contest)) { %>
     <div class="row">
       <div class="column">
         <h4 class="ui block header" id="show_tag_title_div" style="margin-bottom: 0; margin-left: -1px; margin-right: -1px; "><a href="#" id="show_tag_button" style="color: #000; ">显示分类标签</a></h4>
         <div class="ui bottom attached segment" style="display: none; " id="show_tag_div">
           <% for (let tag of problem.tags) { %>
-            <a href="<%= syzoj.utils.makeUrl(['problems', 'tag', tag.id]) %>" class="ui medium <%= tag.color %> label">
+            <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems', 'tag', tag.id]) %>" class="ui medium <%= tag.color %> label">
               <%= tag.name %>
             </a>
           <% } %>
@@ -221,7 +221,7 @@ if (lesson) {
   <% } %>
     <% let noSubmit = false; %>
     <%
-    if (typeof lesson !== 'undefined' && lesson && lesson.ended || (!testcases || testcases.error)) {
+    if (typeof contest !== 'undefined' && contest && contest.ended || (!testcases || testcases.error)) {
       noSubmit = true;
     }
     %>
@@ -229,7 +229,7 @@ if (lesson) {
     <div class="row">
         <div class="column">
           <%
-          const formUrl = syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'submit'], { lesson_id: lesson ? lesson.id : undefined });
+          const formUrl = syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id, 'submit'], { lesson: contest ? lid : undefined });
           %>
           <form action="<%= formUrl %>" method="post" onsubmit="return submit_code()" id="submit_code" enctype="multipart/form-data">
             <% if (problem.type === 'submit-answer') { %>

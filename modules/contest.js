@@ -11,8 +11,8 @@ const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../
 app.get('/contests', async (req, res) => {
   try {
     let where;
-    if (res.locals.user && res.locals.user.is_admin) where = {}
-    else where = { is_public: true };
+    if (res.locals.user && res.locals.user.is_admin) where = { course_id: null }
+    else where = { is_public: true, couse_id: null };
 
     let paginate = syzoj.utils.paginate(await Contest.countForPagination(where), req.query.page, syzoj.config.page.contest);
     let contests = await Contest.queryPage(paginate, where, {

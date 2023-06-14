@@ -16,7 +16,7 @@
         <textarea rows="5" name="information" class="markdown-edit"><%= course.information %></textarea>
       </div>
       <div class="field">
-        <label>主管教师</label>
+        <label>课程主管</label>
         <select class="ui fluid search dropdown" id="search_owner"<% if (!user.is_admin) { %> disabled<% } %> name="owner">
           <option value="<%= owner.id %>" selected><%= owner.username %></option>
         </select>

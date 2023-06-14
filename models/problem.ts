@@ -132,23 +132,36 @@ export default class Problem extends Model {
 
   async isAllowedEditBy(user) {
     if (!user) return false;
-    if (await user.hasPrivilege('manage_problem')) return true;
-    if (this.course && await this.course.hasOwnership(user)) return true;
+    if (this.course_id) {
+      this.course = await Course.findById(this.course_id);
+      if (await this.course.hasOwnership(user)) return true;
+    } else {
+      if (await user.hasPrivilege('manage_problem')) return true;
+    }
     return this.user_id === user.id;
   }
 
   async isAllowedUseBy(user) {
-    if (this.is_public) return true;
-    if (!user) return false;
-    if (await user.hasPrivilege('manage_problem')) return true;
-    if (this.course && await this.course.isSupervisior(user)) return true;
+    if (this.course_id) {
+      if (!user) return false;
+      this.course = await Course.findById(this.course_id);
+      if (await this.course.isSupervisior(user)) return true;
+    } else {
+      if (this.is_public) return true;
+      if (!user) return false;
+      if (await user.hasPrivilege('manage_problem')) return true;
+    }
     return this.user_id === user.id;
   }
 
   async isAllowedManageBy(user) {
-    if (!user) return false;
-    if (await user.hasPrivilege('manage_problem')) return true;
-    if (this.course && await this.course.hasOwnership(user)) return true;
+    if (this.course_id) {
+      this.course = await Course.findById(this.course_id);
+      if (await this.course.hasOwnership(user)) return true;
+    } else {
+      if (!user) return false;
+      if (await user.hasPrivilege('manage_problem')) return true;
+    }
     return user.is_admin;
   }
 

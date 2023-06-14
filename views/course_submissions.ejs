@@ -3,13 +3,22 @@
 <% include util %>
 <script src="<%- lib('textfit/2.3.1/textFit.min.js') %>"></script>
 <div class="padding">
+  <% if (!contest) { %>
   <h1><%= course.title %></h1>
   <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
+  <% } else { %>
+  <h1><%= contest.title %></h1>
+  <div style="margin-bottom: 30px;"><%- contest.subtitle %></div>
+  <% } %>
   <div class="ui grid">
     <div class="row">
       <div class="column">
         <div class="ui buttons">
+          <% if (!lid) { %>
           <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">返回题库</a>
+          <% } else { %>
+          <a class="ui small blue button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid]) %>">返回课节</a>
+          <% } %>
         </div>
       </div>
     </div>

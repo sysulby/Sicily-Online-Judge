@@ -1,4 +1,4 @@
-<% this.title = pid ? '编辑题目' : '新建题目' %>
+<% this.title = problem.new ? '新建题目' : '编辑题目' %>
 <% include header %>
 <style type="text/css">
   .problem_header{
@@ -13,7 +13,7 @@
       </div>
       <div class="ui bottom attached tab segment active" data-tab="edit">
         <div class="ui form"><div class="field">
-          <% if (problem.allowedManage) { %>
+          <% if (problem.allowedEdit) { %>
             <label for="pid">
               <% if (problem.new) { %>
                 题目编号

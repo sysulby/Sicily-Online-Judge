@@ -7,6 +7,7 @@ import User from "./user";
 import Problem from "./problem";
 import ContestRanklist from "./contest_ranklist";
 import ContestPlayer from "./contest_player";
+import Course from "./course";
 
 enum ContestType {
   NOI = "noi",
@@ -54,6 +55,10 @@ export default class Contest extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   ranklist_id: number;
 
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  course_id: number;
+
   @TypeORM.Column({ nullable: true, type: "boolean" })
   is_public: boolean;
 
@@ -62,10 +67,12 @@ export default class Contest extends Model {
 
   holder?: User;
   ranklist?: ContestRanklist;
+  course?: Course;
 
   async loadRelationships() {
     this.holder = await User.findById(this.holder_id);
     this.ranklist = await ContestRanklist.findById(this.ranklist_id);
+    this.course = await Course.findById(this.course_id);
   }
 
   async isSupervisior(user) {
