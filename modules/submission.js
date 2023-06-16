@@ -22,12 +22,15 @@ const displayConfig = {
 // s is JudgeState
 app.get('/submissions', async (req, res) => {
   try {
+    // Redirect contest submissions to the specific page.
+    if (req.query.contest) {
+      return res.redirect(syzoj.utils.makeUrl(['submissions', 'contest', req.query.contest]));
+    }
+
     const curUser = res.locals.user;
 
-    let query = JudgeState.createQueryBuilder();
+    let query = JudgeState.createQueryBuilder().where('type = 0');
     let isFiltered = false;
-
-    let inContest = false;
 
     let user = await User.fromName(req.query.submitter || '');
     if (user) {
@@ -36,23 +39,6 @@ app.get('/submissions', async (req, res) => {
     } else if (req.query.submitter) {
       query.andWhere('user_id = :user_id', { user_id: 0 });
       isFiltered = true;
-    }
-
-    if (!req.query.contest) {
-      query.andWhere('type = 0');
-    } else {
-      const contestId = Number(req.query.contest);
-      const contest = await Contest.findById(contestId);
-      contest.ended = contest.isEnded();
-      if ((contest.ended && contest.is_public) || // If the contest is ended and is not hidden
-        (curUser && await contest.isSupervisior(curUser)) // Or if the user have the permission to check
-      ) {
-        query.andWhere('type = 1');
-        query.andWhere('type_info = :type_info', { type_info: contestId });
-        inContest = true;
-      } else {
-        throw new Error("您暂时无权查看此比赛的详细评测信息。");
-      }
     }
 
     let minScore = parseInt(req.query.min_score);
@@ -83,7 +69,7 @@ app.get('/submissions', async (req, res) => {
       isFiltered = true;
     }
 
-    if (!inContest && (!curUser || !await curUser.hasPrivilege('manage_problem'))) {
+    if (!curUser || !await curUser.hasPrivilege('manage_problem')) {
       if (req.query.problem_id) {
         let problem_id = parseInt(req.query.problem_id);
         let problem = await Problem.findById(problem_id);
@@ -167,11 +153,10 @@ app.get('/submission/:id', async (req, res) => {
     let contest;
     if (judge.type === 1) {
       contest = await Contest.findById(judge.type_info);
-      contest.ended = contest.isEnded();
 
-      if ((!contest.ended || !contest.is_public) &&
-        !(await judge.problem.isAllowedEditBy(res.locals.user) || await contest.isSupervisior(curUser))) {
-        throw new Error("比赛未结束或未公开。");
+      // Redirect contest submission to the specific page.
+      if (!await contest.isSupervisior(curUser)) {
+        return res.redirect(syzoj.utils.makeUrl(['contest', 'submission', id]));
       }
     }
 
@@ -208,6 +193,7 @@ app.get('/submission/:id', async (req, res) => {
         displayConfig: displayConfig
       }, syzoj.config.session_secret) : null,
       displayConfig: displayConfig,
+      contest: contest
     });
   } catch (e) {
     syzoj.log(e);

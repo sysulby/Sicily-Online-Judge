@@ -38,7 +38,7 @@ export default class ContestRanklist extends Model {
       players.push(player);
     }
 
-    if (contest.type === 'noi' || contest.type === 'ioi') {
+    if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
       for (let player of players) {
         player.latest = 0;
         player.score = 0;
@@ -49,7 +49,7 @@ export default class ContestRanklist extends Model {
           let judge_state = await JudgeState.findById(player.score_details[i].judge_id);
           if (!judge_state) continue;
 
-          player.latest = Math.max(player.latest, judge_state.submit_time);
+          player.latest = Math.max(player.latest, judge_state.submit_time - (contest.type === 'usaco' ? player.reg_time : contest.start_time));
 
           if (player.score_details[i].score != null) {
             let multiplier = this.ranking_params[i] || 1.0;

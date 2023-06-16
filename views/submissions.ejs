@@ -6,15 +6,13 @@
   <% if (displayConfig.inContest) { %>
     <div class="ui large info message">
       <div class="ui header">比赛 - <%= contest.title %></div>
-      <% if (displayConfig.showOthers) { %>
-        <p>您可以看到其他人的提交。
-      <% } else { %>
+      <% if (!displayConfig.showOthers) { %>
         <p>您只能看到自己的提交。</p>
       <% } %>
     </div>
   <% } %>
 
-  <form action="<%= syzoj.utils.makeUrl(displayConfig.inContest ? ['contest', contest.id, 'submissions'] : ['submissions']) %>" class="ui mini form" method="get" role="form" id="form">
+  <form action="<%= syzoj.utils.makeUrl(displayConfig.inContest ? ['submissions', 'contest', contest.id] : ['submissions']) %>" class="ui mini form" method="get" role="form" id="form">
     <input type="hidden" name="contest" value="<%= form.contest %>" />
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <label style="font-size: 1.2em; margin-right: 1px; ">题目：</label>

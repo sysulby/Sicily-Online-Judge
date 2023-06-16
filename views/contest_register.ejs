@@ -1,0 +1,69 @@
+<% this.title = '注册参赛' %>
+<% include header %>
+<div class="padding">
+  <h1><%= contest.title %></h1>
+  <div style="margin-bottom: 30px;"><%- contest.subtitle %></div>
+  <div class="ui grid">
+    <% if (contest.reg_info) { %>
+    <div class="row">
+      <div class="column">
+        <h4 class="ui top attached block header">参赛须知</h4>
+        <div class="ui bottom attached segment font-content">
+          <%- contest.reg_info %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+    <div class="row">
+      <div class="column">
+        <% if (!reg_open) { %>
+        <div class="ui large info message">
+          <p>注册将在比赛开始前 72 小时开放，请耐心等待。</p>
+        </div>
+        <% } else { %>
+        <form action="<%= syzoj.utils.makeUrl(['contest', contest.id, 'register']) %>" method="post" id="contest_reg">
+          <div class="ui form">
+            <% if (contest.reg_info || hasToken) { %>
+            <div class="field">
+              <label for="token"><% if (hasToken) { %>比赛邀请码<% } else { %>输入 "AGREE" 以继续<% } %></label>
+              <input type="text" name="token">
+            </div>
+            <% } %>
+            <div class="ui basic modal" id="modal-confirm">
+              <div class="ui icon header">
+                <i class="trophy icon"></i>
+                <p style="margin-top: 15px; ">注册参赛</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>确认参加该比赛吗？</p>
+                <b>警告：该操作不可撤销。<% if (contest.type === 'usaco') { %><br>USACO 赛制将在注册完成后开始计时，<br>比赛时长 <%= contest.duration / 60 %> 分钟。<% } %></b>
+              </div>
+              <div class="actions">
+                <div class="ui red basic cancel inverted button">
+                  <i class="remove icon"></i>
+                  否
+                </div>
+                <a class="ui green ok inverted button" id="my_submit">
+                  <i class="checkmark icon"></i>
+                  是
+                </a>
+                <script>
+                $(function () {
+                  $('#my_submit').click(function () {
+                    $('#contest_reg').submit();
+                  });
+                });
+                </script>
+              </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px; ">
+              <div class="ui labeled icon button" onclick="$('#modal-confirm').modal('show')"><i class="ui edit icon"></i>参赛</div>
+            </div>
+          </div>
+        </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<% include footer %>

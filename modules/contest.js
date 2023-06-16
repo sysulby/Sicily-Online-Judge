@@ -10,14 +10,15 @@ const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../
 
 app.get('/contests', async (req, res) => {
   try {
-    let where;
-    if (res.locals.user && res.locals.user.is_admin) where = {}
-    else where = { is_public: true };
+    let query = Contest.createQueryBuilder();
+    if (!res.locals.user || !res.locals.user.is_admin) query.where({ is_public: true });
 
-    let paginate = syzoj.utils.paginate(await Contest.countForPagination(where), req.query.page, syzoj.config.page.contest);
-    let contests = await Contest.queryPage(paginate, where, {
-      start_time: 'DESC'
-    });
+    let paginate = syzoj.utils.paginate(await Contest.countForPagination(query), req.query.page, syzoj.config.page.contest);
+    // Active contests come first, ended contests come second.
+    query.orderBy('(UNIX_TIMESTAMP(CURRENT_TIMESTAMP) >= (CASE WHEN end_time IS NULL THEN 2147483647 ELSE end_time END))');
+    // In case of a tie, contests started later come first.
+    query.addOrderBy('(CASE WHEN start_time IS NULL THEN (CASE WHEN end_time IS NULL THEN 0 ELSE end_time - duration END) ELSE start_time END)', 'DESC');
+    let contests = await Contest.queryPage(paginate, query);
 
     await contests.forEachAsync(async x => x.subtitle = await syzoj.utils.markdown(x.subtitle));
 
@@ -44,9 +45,10 @@ app.get('/contest/:id/edit', async (req, res) => {
 
       contest = await Contest.create();
       contest.id = 0;
+      contest.reg_info = '请遵守考试纪律。';
     } else {
       // if contest exists, both system administrators and contest administrators can edit it.
-      if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.split('|').includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
 
       await contest.loadRelationships();
     }
@@ -85,15 +87,35 @@ app.post('/contest/:id/edit', async (req, res) => {
       ranklist = await ContestRanklist.create();
 
       // Only new contest can be set type
-      if (!['noi', 'ioi', 'acm'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
+      if (!['noi', 'ioi', 'usaco', 'icpc'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
       contest.type = req.body.type;
     } else {
       // if contest exists, both system administrators and contest administrators can edit it.
-      if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.split('|').includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
       
       await contest.loadRelationships();
       ranklist = contest.ranklist;
     }
+
+    if (!req.body.title.trim()) throw new ErrorMessage('比赛名不能为空。');
+    contest.title = req.body.title;
+    contest.subtitle = req.body.subtitle;
+    contest.information = req.body.information;
+    if (req.body.start_time.trim()) contest.start_time = syzoj.utils.parseDate(req.body.start_time);
+    else if (contest.type === 'usaco') contest.start_time = null;
+    else throw new ErrorMessage('请指定比赛开始时间。');
+    if (req.body.end_time.trim()) contest.end_time = syzoj.utils.parseDate(req.body.end_time);
+    else if (contest.type === 'usaco') contest.end_time = null;
+    else throw new ErrorMessage('请指定比赛结束时间。');
+    if (contest.type !== 'usaco') contest.duration = contest.end_time - contest.start_time;
+    else if (req.body.duration.trim()) contest.duration = syzoj.utils.parseTime(req.body.duration);
+    else throw new ErrorMessage('请指定比赛持续时间。');
+    if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
+    if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
+    contest.problems = req.body.problems.join('|');
+    contest.admins = req.body.admins.join('|');
+    contest.reg_info = req.body.reg_info;
+    contest.reg_token = req.body.reg_token;
 
     try {
       ranklist.ranking_params = JSON.parse(req.body.ranking_params);
@@ -103,16 +125,6 @@ app.post('/contest/:id/edit', async (req, res) => {
     await ranklist.save();
     contest.ranklist_id = ranklist.id;
 
-    if (!req.body.title.trim()) throw new ErrorMessage('比赛名不能为空。');
-    contest.title = req.body.title;
-    contest.subtitle = req.body.subtitle;
-    if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
-    if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
-    contest.problems = req.body.problems.join('|');
-    contest.admins = req.body.admins.join('|');
-    contest.information = req.body.information;
-    contest.start_time = syzoj.utils.parseDate(req.body.start_time);
-    contest.end_time = syzoj.utils.parseDate(req.body.end_time);
     contest.is_public = req.body.is_public === 'on';
     contest.hide_statistics = req.body.hide_statistics === 'on';
 
@@ -130,32 +142,42 @@ app.post('/contest/:id/edit', async (req, res) => {
 app.get('/contest/:id', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    let contest_id = parseInt(req.params.id);
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
 
+    let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
     if (!contest) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
     // if contest is non-public, both system administrators and contest administrators can see it.
-    if (!contest.is_public && (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.includes(res.locals.user.id.toString())))) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (!isSupervisior && !player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
+    }
 
     contest.running = contest.isRunning();
     contest.ended = contest.isEnded();
+    contest.unveiled = isSupervisior || contest.running || contest.ended;
     contest.subtitle = await syzoj.utils.markdown(contest.subtitle);
     contest.information = await syzoj.utils.markdown(contest.information);
+    if (contest.type === 'usaco' && !isSupervisior) {
+      if (syzoj.utils.getCurrentDate() >= player.reg_time + contest.duration) contest.running = false;
+      if (contest.unveiled) {
+        // Update contest period to running period for player.
+        if (contest.end_time == null || player.reg_time < contest.end_time) contest.start_time = player.reg_time;
+        if (contest.end_time == null || player.reg_time + contest.duration < contest.end_time) contest.end_time = player.reg_time + contest.duration;
+      }
+    }
 
     let problems_id = await contest.getProblems();
     let problems = await problems_id.mapAsync(async id => await Problem.findById(id));
-
-    let player = null;
-
-    if (res.locals.user) {
-      player = await ContestPlayer.findInContest({
-        contest_id: contest.id,
-        user_id: res.locals.user.id
-      });
-    }
 
     problems = problems.map(x => ({ problem: x, status: null, judge_id: null, statistics: null }));
     if (player) {
@@ -169,7 +191,7 @@ app.get('/contest/:id', async (req, res) => {
             }
             problem.judge_id = player.score_details[problem.problem.id].judge_id;
           }
-        } else if (contest.type === 'ioi') {
+        } else if (contest.type === 'ioi' || contest.type === 'usaco') {
           if (player.score_details[problem.problem.id]) {
             let judge_state = await JudgeState.findById(player.score_details[problem.problem.id].judge_id);
             problem.status = judge_state.status;
@@ -178,7 +200,7 @@ app.get('/contest/:id', async (req, res) => {
             let multiplier = contest.ranklist.ranking_params[problem.problem.id] || 1.0;
             problem.feedback = (judge_state.score * multiplier).toString() + ' / ' + (100 * multiplier).toString();
           }
-        } else if (contest.type === 'acm') {
+        } else if (contest.type === 'icpc') {
           if (player.score_details[problem.problem.id]) {
             problem.status = {
               accepted: player.score_details[problem.problem.id].accepted,
@@ -201,18 +223,19 @@ app.get('/contest/:id', async (req, res) => {
       for (let problem of problems) {
         problem.statistics = { attempt: 0, accepted: 0 };
 
-        if (contest.type === 'ioi' || contest.type === 'noi') {
+        if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
           problem.statistics.partially = 0;
         }
 
         for (let player of players) {
           if (player.score_details[problem.problem.id]) {
             problem.statistics.attempt++;
-            if ((contest.type === 'acm' && player.score_details[problem.problem.id].accepted) || ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.problem.id].score === 100)) {
+            if ((contest.type === 'icpc' && player.score_details[problem.problem.id].accepted) ||
+               ((contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') && player.score_details[problem.problem.id].score === 100)) {
               problem.statistics.accepted++;
             }
 
-            if ((contest.type === 'noi' || contest.type === 'ioi') && player.score_details[problem.problem.id].score > 0) {
+            if ((contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') && player.score_details[problem.problem.id].score > 0) {
               problem.statistics.partially++;
             }
           }
@@ -236,13 +259,26 @@ app.get('/contest/:id', async (req, res) => {
 
 app.get('/contest/:id/ranklist', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    const curUser = res.locals.user;
-
     if (!contest) throw new ErrorMessage('无此比赛。');
+
+    const isSupervisior = await contest.isSupervisior(curUser);
+
     // if contest is non-public, both system administrators and contest administrators can see it.
-    if (!contest.is_public && (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.includes(res.locals.user.id.toString())))) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (!isSupervisior && !player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
+    }
 
     if ([contest.allowedSeeingResult() && contest.allowedSeeingOthers(),
     contest.isEnded(),
@@ -257,7 +293,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
     let ranklist = await players_id.mapAsync(async player_id => {
       let player = await ContestPlayer.findById(player_id);
 
-      if (contest.type === 'noi' || contest.type === 'ioi') {
+      if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
         player.score = 0;
       }
 
@@ -265,7 +301,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
         player.score_details[i].judge_state = await JudgeState.findById(player.score_details[i].judge_id);
 
         /*** XXX: Clumsy duplication, see ContestRanklist::updatePlayer() ***/
-        if (contest.type === 'noi' || contest.type === 'ioi') {
+        if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') {
           let multiplier = (contest.ranklist.ranking_params || {})[i] || 1.0;
           player.score_details[i].weighted_score = player.score_details[i].score == null ? null : Math.round(player.score_details[i].score * multiplier);
           player.score += player.score_details[i].weighted_score;
@@ -299,7 +335,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
 function getDisplayConfig(contest) {
   return {
     showScore: contest.allowedSeeingScore(),
-    showUsage: false,
+    showUsage: contest.allowedSeeingResult(),
     showCode: false,
     showResult: contest.allowedSeeingResult(),
     showOthers: contest.allowedSeeingOthers(),
@@ -310,27 +346,37 @@ function getDisplayConfig(contest) {
   };
 }
 
-app.get('/contest/:id/submissions', async (req, res) => {
+app.get('/submissions/contest/:id', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    // if contest is non-public, both system administrators and contest administrators can see it.
-    if (!contest.is_public && (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.includes(res.locals.user.id.toString())))) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
 
-    if (contest.isEnded()) {
-      res.redirect(syzoj.utils.makeUrl(['submissions'], { contest: contest_id }));
-      return;
+    const isSupervisior = await contest.isSupervisior(curUser);
+
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (!isSupervisior && !player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
     }
 
     const displayConfig = getDisplayConfig(contest);
     let problems_id = await contest.getProblems();
-    const curUser = res.locals.user;
 
     let user = req.query.submitter && await User.fromName(req.query.submitter);
 
     let query = JudgeState.createQueryBuilder();
 
     let isFiltered = false;
+    if (isSupervisior || contest.isEnded()) displayConfig.showOthers = true;
     if (displayConfig.showOthers) {
       if (user) {
         query.andWhere('user_id = :user_id', { user_id: user.id });
@@ -440,11 +486,12 @@ app.get('/contest/:id/submissions', async (req, res) => {
 
 app.get('/contest/submission/:id', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
     const id = parseInt(req.params.id);
     const judge = await JudgeState.findById(id);
     if (!judge) throw new ErrorMessage("提交记录 ID 不正确。");
-    const curUser = res.locals.user;
-    if ((!curUser) || judge.user_id !== curUser.id) throw new ErrorMessage("您没有权限执行此操作。");
 
     if (judge.type !== 1) {
       return res.redirect(syzoj.utils.makeUrl(['submission', id]));
@@ -452,6 +499,12 @@ app.get('/contest/submission/:id', async (req, res) => {
 
     const contest = await Contest.findById(judge.type_info);
     contest.ended = contest.isEnded();
+
+    if (await contest.isSupervisior(curUser)) {
+      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
+    }
+
+    if (judge.user_id !== curUser.id) throw new ErrorMessage("您没有权限执行此操作。");
 
     const displayConfig = getDisplayConfig(contest);
     displayConfig.showCode = true;
@@ -491,10 +544,26 @@ app.get('/contest/submission/:id', async (req, res) => {
 
 app.get('/contest/:id/problem/:pid', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
     if (!contest) throw new ErrorMessage('无此比赛。');
-    const curUser = res.locals.user;
+
+    const isSupervisior = await contest.isSupervisior(curUser);
+
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (!isSupervisior && !player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
+    }
 
     let problems_id = await contest.getProblems();
 
@@ -505,11 +574,8 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
     let problem = await Problem.findById(problem_id);
     await problem.loadRelationships();
 
-    contest.ended = contest.isEnded();
+    contest.ended = (contest.isEnded() || (contest.type === 'usaco' && !isSupervisior && syzoj.utils.getCurrentDate() >= player.reg_time + contest.duration));
     if (!await contest.isSupervisior(curUser) && !(contest.isRunning() || contest.isEnded())) {
-      if (await problem.isAllowedUseBy(res.locals.user)) {
-        return res.redirect(syzoj.utils.makeUrl(['problem', problem_id]));
-      }
       throw new ErrorMessage('比赛尚未开始。');
     }
 
@@ -540,9 +606,26 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
 
 app.get('/contest/:id/:pid/download/additional_file', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
     let id = parseInt(req.params.id);
     let contest = await Contest.findById(id);
     if (!contest) throw new ErrorMessage('无此比赛。');
+
+    const isSupervisior = await contest.isSupervisior(curUser);
+
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (!isSupervisior && !player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
+    }
 
     let problems_id = await contest.getProblems();
 
@@ -568,6 +651,95 @@ app.get('/contest/:id/:pid/download/additional_file', async (req, res) => {
   } catch (e) {
     syzoj.log(e);
     res.status(404);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/contest/:id/register', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let contest_id = parseInt(req.params.id);
+    let contest = await Contest.findById(contest_id);
+    if (!contest) throw new ErrorMessage('无此比赛。');
+
+    const isSupervisior = await contest.isSupervisior(curUser);
+
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (isSupervisior || player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id]));
+    }
+
+    contest.subtitle = await syzoj.utils.markdown(contest.subtitle);
+    contest.reg_info = await syzoj.utils.markdown(contest.reg_info);
+
+    res.render('contest_register', {
+      contest: contest,
+      reg_open: !contest.start_time || syzoj.utils.getCurrentDate() >= contest.start_time - 72 * 3600,
+      hasToken: contest.reg_token && contest.reg_token.trim()
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/contest/:id/register', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let contest_id = parseInt(req.params.id);
+    let contest = await Contest.findById(contest_id);
+    if (!contest) throw new ErrorMessage('无此比赛。');
+
+    const isSupervisior = await contest.isSupervisior(curUser);
+
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    let player = await ContestPlayer.findInContest({
+      contest_id: contest.id,
+      user_id: curUser.id
+    });
+
+    if (isSupervisior || player) {
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id]));
+    }
+
+    if (contest.start_time && syzoj.utils.getCurrentDate() < contest.start_time - 72 * 3600) {
+      throw new ErrorMessage('注册将在比赛开始前 72 小时开放，请耐心等待。');
+    }
+
+    if (contest.reg_token && contest.reg_token.trim()) {
+      if (!req.body.token.trim()) throw new ErrorMessage('请输入邀请码。');
+      if (req.body.token !== contest.reg_token) throw new ErrorMessage('邀请码错误。');
+    } else if (contest.reg_info) {
+      if (!req.body.token.trim() || req.body.token !== 'AGREE') throw new ErrorMessage('请输入 "AGREE" 以继续。');
+    }
+
+    player = await ContestPlayer.create({
+      contest_id: contest.id,
+      user_id: curUser.id,
+      reg_time: Math.max(syzoj.utils.getCurrentDate(), contest.type === 'usaco' && contest.start_time ? contest.start_time : 0)
+    });
+    await player.save();
+
+    res.redirect(syzoj.utils.makeUrl(['contest', contest.id]));
+  } catch (e) {
+    syzoj.log(e);
     res.render('error', {
       err: e
     });
