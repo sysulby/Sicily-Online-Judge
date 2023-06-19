@@ -21,23 +21,13 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
                 <%= tag.name %>
               </a>
           <% } %>
-        <% } else { %>
-          <form action="<%= syzoj.utils.makeUrl(['problems', 'search']) %>" method="get">
-            <div class="ui search" style="width: 280px; height: 28px; margin-top: -5.3px; ">
-              <div class="ui left icon input" style="width: 100%; ">
-                <input class="prompt" style="width: 100%; " type="text" value="<%= req.query.keyword %>" placeholder="ID / 题目名 …" name="keyword">
-                <i class="search icon"></i>
-              </div>
-              <div class="results" style="width: 100%; "></div>
-            </div>
-          </form>
         <% } %>
       </div>
       <div class="nine wide right aligned column">
         <div class="ui toggle checkbox" id="show_tag">
           <style id="show_tag_style"></style>
           <script data-cfasync="false">
-          if (localStorage.getItem('show_tag') === '1') {
+          if (localStorage.getItem('show_tag') !== '0') {
             document.write('<input type="checkbox" checked>');
             document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
           } else {
@@ -68,23 +58,22 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
             <% } %>
             <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'tag', 0, 'edit']) %>" class="ui labeled icon mini green button"><i class="plus icon"></i> 添加标签</a>
           <% } %>
-          <div style="margin-left: 10px; " class="ui mini buttons">
-            <div class="ui labeled icon mini dropdown button" id="add_problem_dropdown"><i class="plus icon"></i> 添加题目
-            <div class="menu">
-              <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit']) %>"><i class="file icon"></i> 新建题目</a>
-              <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'import']) %>"><i class="cloud download icon"></i> 导入题目</a>
+          <% if (allowedManageProblem) { %>
+            <div style="margin-left: 10px; " class="ui mini buttons">
+              <div class="ui labeled icon mini dropdown button" id="add_problem_dropdown"><i class="plus icon"></i> 添加题目
+              <div class="menu">
+                <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit']) %>"><i class="file icon"></i> 新建题目</a>
+                <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'import']) %>"><i class="cloud download icon"></i> 导入题目</a>
+              </div>
+              </div>
             </div>
-            </div>
-          </div>
+          <% } %>
         </div>
       </div>
     </div>
   </div>
 
   <% if (problems.length) { %>
-  <div style="margin-bottom: 30px; ">
-    <% include page %>
-  </div>
   <table class="ui very basic center aligned table">
     <thead>
       <tr>
@@ -172,20 +161,4 @@ $(function () {
   $('#add_problem_dropdown').dropdown();
 });
 </script>
-<script>
-$(function () {
-  $('.ui.search').search({
-    debug: true,
-    saveRemoteData: false,
-    apiSettings: {
-      url: '/api/v2/search/problems/{query}',
-      cache: false
-    },
-    fields: {
-      title: 'name'
-    }
-  });
-});
-</script>
-</div>
 <% include footer %>

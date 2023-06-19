@@ -191,6 +191,7 @@ module.exports = {
           return 0;
         });
 
+        res.frj = list.some(s => s.startsWith('frame'));
         res.spj = list.some(s => s.startsWith('spj_'));
       } else {
         let config = require('js-yaml').load((await fs.readFileAsync(dir + '/data.yml')));
@@ -218,6 +219,7 @@ module.exports = {
 
         res = res.filter(x => x.cases && x.cases.length !== 0);
 
+        res.frj = !!config.frameJudge;
         res.spj = !!config.specialJudge;
       }
 

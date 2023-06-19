@@ -20,8 +20,6 @@ app.get('/contests', async (req, res) => {
     query.addOrderBy('(CASE WHEN start_time IS NULL THEN (CASE WHEN end_time IS NULL THEN 0 ELSE end_time - duration END) ELSE start_time END)', 'DESC');
     let contests = await Contest.queryPage(paginate, query);
 
-    await contests.forEachAsync(async x => x.subtitle = await syzoj.utils.markdown(x.subtitle));
-
     res.render('contests', {
       contests: contests,
       paginate: paginate
@@ -99,7 +97,8 @@ app.post('/contest/:id/edit', async (req, res) => {
 
     if (!req.body.title.trim()) throw new ErrorMessage('比赛名不能为空。');
     contest.title = req.body.title;
-    contest.subtitle = req.body.subtitle;
+    if (req.body.subtitle.trim()) contest.subtitle = req.body.subtitle;
+    else contest.subtitle = contest.type.toUpperCase() + ' 赛制';
     contest.information = req.body.information;
     if (req.body.start_time.trim()) contest.start_time = syzoj.utils.parseDate(req.body.start_time);
     else if (contest.type === 'usaco') contest.start_time = null;

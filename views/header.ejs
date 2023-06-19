@@ -6,7 +6,7 @@
     <meta content="IE=edge" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=1200">
     <title><%= title %> - <%= syzoj.config.title %></title>
-    <link rel="icon" href="https://soj.turingedu.cn/sicily/images/favicon.ico">
+    <link rel="icon" href="/self/favicon.ico">
     <link href="<%- lib('semantic-ui/2.4.1/semantic.min.css') %>" rel="stylesheet">
     <link href="<%- selfLib('syntect-tomorrow.css') %>?20220512" rel="stylesheet">
     <link href="<%- selfLib('style.css') %>?20181212" rel="stylesheet">
@@ -45,9 +45,14 @@
 
     </script>
     <% } %>
+    <style>
+      .ui.block.header {
+        background: #fafafa !important;
+      }
+    </style>
 </head>
-<body style="position: relative; margin-top: 49px; height: calc(100% - 49px); overflow-y: overlay; ">
-    <div class="ui fixed borderless menu" style="position: fixed; height: 49px; ">
+<body style="position: relative; overflow-y: overlay; ">
+    <div class="ui top attached borderless menu" style="height: 90px; background-color: #fafafa; ">
         <div class="ui container">
             <%
             if (syzoj.config.logo.url) {
@@ -56,48 +61,41 @@
             %>
             <a class="header item" href="/"><img src="<%= syzoj.config.logo.url %>" style="width: <%= width %>; height: <%= height %>; "></a>
             <% } else { %>
-            <a class="header item" href="/"><span style="font-family: 'Exo 2'; font-size: 1.5em; font-weight: 600; "><%= syzoj.config.title %></span></a>
+            <a class="header item" href="/"><span style="font-family: 'Exo 2'; font-size: 2em; font-weight: 600; "><%= syzoj.config.title %></span></a>
             <% } %>
-            <a class="item<% if (active === '') { %> active<% } %>" href="/"><i class="home icon"></i> 首页</a>
-            <a class="item<% if (active.startsWith('problem')) { %> active<% } %>" href="/problems"><i class="list icon"></i> 题库</a>
-            <a class="item<% if (active.startsWith('contest')) { %> active<% } %>" href="/contests"><i class="trophy icon"></i> 比赛</a>
-            <a class="item<% if (active.startsWith('submission')) { %> active<% } %>" href="/submissions"><i class="tasks icon"></i> 评测</a>
-            <a class="item<% if (active.startsWith('ranklist')) { %> active<% } %>" href="/ranklist"><i class="signal icon"></i> 排名</a>
-            <a class="item<% if (active.startsWith('discussion') || active.startsWith('article')) { %> active<% } %>" href="/discussion/global"><i class="comments icon"></i> 讨论</a>
-            <a class="item<% if (active.startsWith('help')) { %> active<% } %>" href="/help"><i class="help circle icon"></i> 帮助</a>
-            <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
-              <a id="back_to_contest" class="item" href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>"><i class="arrow left icon"></i> 返回比赛</a>
-            <% } %>
+            <div class="item">
+              <form action="<%= syzoj.utils.makeUrl(['problems', 'search']) %>" method="get">
+                <div class="ui search" id="banner_search" style="width: 100%; ">
+                  <div class="ui left icon input" style="width: 100%; ">
+                    <input class="prompt" style="width: 100%; padding: 0.5em; " type="text" value="<%= req.query.keyword %>" placeholder="ID / 题目名 …" name="keyword">
+                    <i class="search icon"></i>
+                  </div>
+                  <div class="results" style="width: 100%; "></div>
+                </div>
+              </form>
+              <script>
+              $(function () {
+                $('#banner_search').search({
+                  debug: true,
+                  saveRemoteData: false,
+                  apiSettings: {
+                    url: '/api/v2/search/problems/{query}',
+                    cache: false
+                  },
+                  fields: {
+                    title: 'name'
+                  }
+                });
+              });
+              </script>
+            </div>
             <div class="right menu">
               <% if (user) { %>
-              <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" style="color: inherit; ">
+              <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" style="color: #0000ff; font-size: 1.5rem; ">
               <div class="ui simple dropdown item">
-                <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %> <i class="dropdown icon"></i>
+                <i class="small ui black user icon"></i> <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
                 <div class="menu">
                   <a class="item" href="<%= syzoj.utils.makeUrl(['user', user.id, 'edit']) %>"><i class="edit icon"></i>修改资料</a>
-                  <% if (user.is_admin) { %>
-                    <a class="item" href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>"><i class="settings icon"></i>后台管理</a>
-                    <div class="ui basic modal" id="modal-restart">
-                      <div class="ui icon header">
-                        <i class="redo icon"></i>
-                        <p style="margin-top: 15px; ">重启服务</p>
-                      </div>
-                      <div class="content" style="text-align: center; ">
-                        <p>确认重新启动 SYZOJ Web 服务吗？</p>
-                      </div>
-                      <div class="actions">
-                        <div class="ui red basic cancel inverted button">
-                          <i class="remove icon"></i>
-                          否
-                        </div>
-                        <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['admin', 'restart'], { url: req.query['url'] || req.originalUrl }) %>">
-                          <i class="checkmark icon"></i>
-                          是
-                        </a>
-                      </div>
-                    </div>
-                    <a class="item" href="#" onclick="$('#modal-restart').modal('show')"><i class="redo icon"></i>重启服务</a>
-                  <% } %>
                   <a class="item" href-post="<%= syzoj.utils.makeUrl(['logout'], { url: req.originalUrl }) %>"><i class="power icon"></i>注销</a>
                 </div>
               </div>
@@ -113,6 +111,49 @@
                 </div>
                 <% } %>
             </div>
+        </div>
+    </div>
+    <div class="ui bottom attached borderless inverted menu" style="height: 45px; background-color: #337dd4; ">
+        <div class="ui container">
+            <a class="header item" href="/" style="color: white; "><i class="home icon"></i> 首页</a>
+            <a class="header item" href="/problems" style="color: white; "><i class="list icon"></i> 题库</a>
+            <a class="header item" href="/contests" style="color: white; "><i class="trophy icon"></i> 比赛</a>
+            <a class="header item" href="/ranklist" style="color: white; "><i class="signal icon"></i> 排名</a>
+            <a class="header item" href="/submissions" style="color: white; "><i class="tasks icon"></i> 评测</a>
+            <a class="header item" href="/discussion/global" style="color: white; "><i class="comments icon"></i> 讨论</a>
+            <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
+              <a id="back_to_contest" class="header item" href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回比赛</a>
+            <% } %>
+            <% if (user && user.is_admin) { %>
+            <div class="right menu">
+              <div class="ui simple dropdown item" style="color: white; ">
+                <i class="settings icon"></i> <b>管理</b> <i class="dropdown icon"></i>
+                <div class="menu">
+                  <a class="item" href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>"><i class="terminal icon"></i>后台管理</a>
+                  <div class="ui basic modal" id="modal-restart">
+                    <div class="ui icon header">
+                      <i class="redo icon"></i>
+                      <p style="margin-top: 15px; ">重启服务</p>
+                    </div>
+                    <div class="content" style="text-align: center; ">
+                      <p>确认重新启动 SYZOJ Web 服务吗？</p>
+                    </div>
+                    <div class="actions">
+                      <div class="ui red basic cancel inverted button">
+                        <i class="remove icon"></i>
+                        否
+                      </div>
+                      <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['admin', 'restart'], { url: req.query['url'] || req.originalUrl }) %>">
+                        <i class="checkmark icon"></i>
+                        是
+                      </a>
+                    </div>
+                  </div>
+                  <a class="item" href="#" onclick="$('#modal-restart').modal('show')"><i class="redo icon"></i>重启服务</a>
+                </div>
+              </div>
+            </div>
+            <% } %>
         </div>
     </div>
     <div style="margin-top: 28px; ">

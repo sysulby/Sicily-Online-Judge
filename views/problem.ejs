@@ -31,44 +31,34 @@ if (contest) {
         <% } %>
       </h1>
     </div>
-    <% if (problem.type !== 'submit-answer') { %>
-      <div class="row" style="margin-top: -15px">
-          <span class="ui label">内存限制：<%= problem.memory_limit %> MiB</span>
-          <span class="ui label">时间限制：<%= problem.time_limit %> ms</span>
-          <% if (problem.type === 'interaction') { %>
-            <span class="ui label">题目类型：交互</span>
-          <% } else if (problem.file_io) { %>
-            <span class="ui label">输入文件：<%= problem.file_io_input_name %></span>
-            <span class="ui label">输出文件：<%= problem.file_io_output_name %></span>
-          <% } else { %>
-            <span class="ui label">标准输入输出</span>
-          <% } %>
+    <div class="row" style="margin-top: -15px">
+      <% if (problem.type !== 'submit-answer') { %>
+        <span class="ui label">时间限制：<%= problem.time_limit %> ms</span>
+        <span class="ui label">内存限制：<%= problem.memory_limit %> MB</span>
+      <% } %>
+      <span class="ui label">题目类型：<%= (testcases && !testcases.error && testcases.frj) ? 'Frame Judge' : { 'submit-answer': '提交答案', 'interaction': '交互', 'traditional': '传统' }[problem.type] %></span>
+      <% if (problem.type !== 'interaction') { %>
+        <span class="ui label">评测方式：<%= (testcases && !testcases.error) ? (testcases.spj ? 'Special Judge' : '文本比较') : '无测试数据' %></span>
+      <% } %>
+    </div>
+    <% if (problem.type === 'traditional' && problem.file_io) { %>
+      <div class="row" style="margin-top: -23px">
+        <span class="ui label">输入文件：<%= problem.file_io_input_name %></span>
+        <span class="ui label">输出文件：<%= problem.file_io_output_name %></span>
       </div>
     <% } %>
-    <% if (problem.type !== 'interaction') { %>
-      <div class="row" style="margin-top: -<%= problem.type === 'submit-answer' ? 15 : 23 %>px">
-          <span class="ui label">题目类型：<%= { 'submit-answer': '答案提交', 'interaction': '交互', 'traditional': '传统' }[problem.type] %></span>
-          <span class="ui label">评测方式：<%= (testcases && !testcases.error) ? (testcases.spj ? 'Special Judge' : '文本比较') : '无测试数据' %></span>
-      </div>
-    <% } %>
-    <% if (!contest) { %>
+    <% if (!contest && problem.allowedManage) { %>
         <div class="row" style="margin-top: -23px">
             <span class="ui label">上传者：
-            <% if (problem.is_anonymous && !problem.allowedManage) { %>
-              匿名
-            <% } else { %>
               <a href="<%= syzoj.utils.makeUrl(['user', problem.user_id]) %>"><%= problem.user.username %></a>
+            </span>
+            <span class="ui label">公开者：
+            <% if (problem.publicizer) { %>
+              <a href="<%= syzoj.utils.makeUrl(['user', problem.publicizer_id]) %>"><%= problem.publicizer.username %></a>
+            <% } else { %>
+              未知
             <% } %>
             </span>
-            <% if (problem.allowedManage) { %>
-                <span class="ui label">公开者：
-                <% if (problem.publicizer) { %>
-                  <a href="<%= syzoj.utils.makeUrl(['user', problem.publicizer_id]) %>"><%= problem.publicizer.username %></a>
-                <% } else { %>
-                  未知
-                <% } %>
-                </span>
-            <% } %>
         </div>
     <% } %>
 </div>
@@ -156,7 +146,10 @@ if (contest) {
   <div class="row">
     <div class="column">
         <h4 class="ui top attached block header">输入格式</h4>
-        <div class="ui bottom attached segment font-content"><%- problem.input_format %></div>
+        <div class="ui bottom attached segment font-content">
+          <% if (problem.file_io) { %><p>从文件 <code><%= problem.file_io_input_name %></code> 中读入数据。</p><% } %>
+          <%- problem.input_format %>
+        </div>
     </div>
   </div>
   <% } %>
@@ -164,7 +157,10 @@ if (contest) {
     <div class="row">
         <div class="column">
           <h4 class="ui top attached block header">输出格式</h4>
-          <div class="ui bottom attached segment font-content"><%- problem.output_format %></div>
+          <div class="ui bottom attached segment font-content">
+            <% if (problem.file_io) { %><p>输出到文件 <code><%= problem.file_io_output_name %></code> 中。</p><% } %>
+            <%- problem.output_format %>
+          </div>
         </div>
     </div>
   <% } %>
@@ -175,6 +171,25 @@ if (contest) {
           <div class="ui bottom attached segment font-content"><%- problem.example %></div>
         </div>
     </div>
+    <script>
+    $(document).ready(function (){
+        $("pre").parent().prev().append("<a class=\"right floated mini copy-button ui button\">复制</a>");
+        $(".copy-button").click(function() {
+            let text = $(this).parent().next().find("code").text();
+            let $temp = $("<textarea>");
+            $("body").append($temp);
+            $temp.val(text).select();
+            document.execCommand("copy");
+            $temp.remove();
+            $(this).text("复制成功");
+
+            let e = this;
+            setTimeout(function() {
+                    $(e).text("复制");
+                }, 500);
+            });
+    });
+    </script>
   <% } %>
   <% if (problem.limit_and_hint) { %>
     <div class="row">

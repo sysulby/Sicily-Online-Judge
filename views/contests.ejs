@@ -19,7 +19,7 @@
           <th>开始时间</th>
           <th>结束时间</th>
           <th>比赛时长</th>
-          <th>描述</th>
+          <th>赛制</th>
         </tr>
       </thead>
       <tbody>
@@ -41,7 +41,7 @@
           <td><%= contest.start_time ? syzoj.utils.formatDate(contest.start_time) : '-' %></td>
           <td><%= contest.end_time ? syzoj.utils.formatDate(contest.end_time) : '-' %></td>
           <td><%= contest.duration / 60 %> 分钟</td>
-          <td class="font-content"><%- contest.subtitle %></td>
+          <td><%= contest.type.toUpperCase() %></td>
         </tr>
         <% } %>
       </tbody>
