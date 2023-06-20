@@ -47,7 +47,7 @@ app.post('/problems/tag/:id/edit', async (req, res) => {
 
     await tag.save();
 
-    res.redirect(syzoj.utils.makeUrl(['problems', 'tag', tag.id]));
+    res.redirect(syzoj.utils.makeUrl(['problems'], { tags: tag.id }));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {

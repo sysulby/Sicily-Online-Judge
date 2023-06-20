@@ -64,10 +64,10 @@
             <a class="header item" href="/"><span style="font-family: 'Exo 2'; font-size: 2em; font-weight: 600; "><%= syzoj.config.title %></span></a>
             <% } %>
             <div class="item">
-              <form action="<%= syzoj.utils.makeUrl(['problems', 'search']) %>" method="get">
+              <form action="<%= syzoj.utils.makeUrl(['problems']) %>" method="get">
                 <div class="ui search" id="banner_search" style="width: 100%; ">
                   <div class="ui left icon input" style="width: 100%; ">
-                    <input class="prompt" style="width: 100%; padding: 0.5em; " type="text" value="<%= req.query.keyword %>" placeholder="ID / 题目名 …" name="keyword">
+                    <input class="prompt" style="width: 100%; padding: 0.5em; " type="text" placeholder="ID / 题目名 …" name="keyword">
                     <i class="search icon"></i>
                   </div>
                   <div class="results" style="width: 100%; "></div>

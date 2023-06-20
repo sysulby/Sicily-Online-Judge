@@ -8,6 +8,18 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
   <div class="ui grid" style="margin-bottom: 10px; ">
     <div class="row" style="white-space: nowrap; ">
       <div class="seven wide column">
+        <div class="ui mini dropdown button" id="problem_set_dropdown">
+          <i class="file alternate icon"></i> 主题库 <i class="dropdown icon"></i>
+          <div class="menu">
+            <a class="item" href="<%= syzoj.utils.makeUrl(['problems']) %>"><i class="file alternate icon"></i> 主题库</a>
+          </div>
+        </div>
+        <% if (typeof keyword !== 'undefined') { %>
+          <% let url = tagIDs ? syzoj.utils.makeUrl(['problems'], { tags: tagIDs.join(',') }) : syzoj.utils.makeUrl(['problems']); %>
+          <a href="<%= url %>" class="ui tiny grey label">
+            <i class="search alternate icon"></i> <%= keyword %> <i class="delete icon"></i>
+          </a>
+        <% } %>
         <% if (typeof tags !== 'undefined') { %>
           <%
           tags.sort((a, b) => {
@@ -16,9 +28,14 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
           %>
           <% for (let tag of tags) { %>
               <% let tagListRemovedThisTag = tagIDs.filter(x => x != tag.id).sort().join(','); %>
-              <% let url = tagListRemovedThisTag ? syzoj.utils.makeUrl(['problems', 'tag', tagListRemovedThisTag]) : syzoj.utils.makeUrl(['problems']); %>
+              <% let url = syzoj.utils.makeUrl(['problems'],
+                typeof keyword !== 'undefined' && tagListRemovedThisTag ? { keyword: keyword, tags: tagListRemovedThisTag } :
+                typeof keyword !== 'undefined' ? { keyword: keyword } :
+                tagListRemovedThisTag ? { tags: tagListRemovedThisTag } :
+                {}
+              ); %>
               <a href="<%= url %>" class="ui tiny <%= tag.color %> label">
-                <%= tag.name %>
+                <%= tag.name %> <i class="delete icon"></i>
               </a>
           <% } %>
         <% } %>
@@ -49,7 +66,7 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
             });
           });
           </script>
-          <label>显示分类标签</label>
+          <label>显示标签</label>
         </div>
         <div style="margin-left: 10px; display: inline-block; ">
           <% if (allowedManageTag) { %>
@@ -116,7 +133,12 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
                     else tagListToggledThisTag = tagIDs.filter(x => x != tag.id);
                     tagListToggledThisTag = tagListToggledThisTag.sort().join(',');
 
-                    let url = tagListToggledThisTag ? syzoj.utils.makeUrl(['problems', 'tag', tagListToggledThisTag]) : syzoj.utils.makeUrl(['problems']);
+                    let url = syzoj.utils.makeUrl(['problems'],
+                      typeof keyword !== 'undefined' && tagListToggledThisTag ? { keyword: keyword, tags: tagListToggledThisTag } :
+                      typeof keyword !== 'undefined' ? { keyword: keyword } :
+                      tagListToggledThisTag ? { tags: tagListToggledThisTag } :
+                      {}
+                    );
                   %>
                   <span class="ui header">
                     <a href="<%= url %>" class="ui tiny <%= tag.color %> label">
@@ -157,6 +179,9 @@ document.addEventListener('keydown', function (event) {
   else if (event.keyCode === 37) document.getElementById('page_prev').click();
 });
 
+$(function () {
+  $('#problem_set_dropdown').dropdown();
+});
 $(function () {
   $('#add_problem_dropdown').dropdown();
 });

@@ -3,40 +3,38 @@
 <div class="padding">
         <form action="<%= syzoj.utils.makeUrl(['contest', contest.id, 'edit']) %>" method="post">
           <div class="ui form">
-            <div class="two fields">
-              <div class="field six wide column">
+              <div class="field">
                 <label>比赛名称</label>
                 <input type="text" name="title" value="<%= contest.title %>">
               </div>
-              <div class="field ten wide column">
+              <div class="field">
                 <label>比赛描述</label>
                 <input type="text" name="subtitle" class="markdown-edit" value="<%= contest.subtitle %>">
               </div>
-            </div>
             <div class="two fields">
-              <div class="field nine wide column">
+              <div class="field">
                   <label>比赛公告</label>
                   <textarea rows="5" name="information" class="markdown-edit"><%= contest.information %></textarea>
               </div>
-              <div class="field seven wide column">
+              <div class="field">
                   <label>参赛须知</label>
                   <textarea rows="5" name="reg_info" class="markdown-edit"><%= contest.reg_info %></textarea>
               </div>
             </div>
             <div class="four fields">
-              <div class="field three wide column">
+              <div class="three wide field">
                   <label>开始时间</label>
                   <input type="text" name="start_time" value="<%= contest.start_time ? syzoj.utils.formatDate(contest.start_time) : '' %>">
               </div>
-              <div class="field three wide column">
+              <div class="three wide field">
                   <label>结束时间</label>
                   <input type="text" name="end_time" value="<%= contest.end_time ? syzoj.utils.formatDate(contest.end_time) : '' %>">
               </div>
-              <div class="field three wide column">
+              <div class="two wide field">
                   <label>比赛时长</label>
                   <input type="text" name="duration" value="<%= contest.duration ? syzoj.utils.formatTime(contest.duration) : '' %>">
               </div>
-              <div class="field seven wide column">
+              <div class="eight wide field">
                   <label>比赛邀请码</label>
                   <input type="text" name="reg_token" value="<%= contest.reg_token %>">
               </div>

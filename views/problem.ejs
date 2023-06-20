@@ -36,31 +36,62 @@ if (contest) {
         <span class="ui label">时间限制：<%= problem.time_limit %> ms</span>
         <span class="ui label">内存限制：<%= problem.memory_limit %> MB</span>
       <% } %>
-      <span class="ui label">题目类型：<%= (testcases && !testcases.error && testcases.frj) ? 'Frame Judge' : { 'submit-answer': '提交答案', 'interaction': '交互', 'traditional': '传统' }[problem.type] %></span>
+      <span class="ui label">类型：<%= (testcases && !testcases.error && testcases.frj) ? 'Frame Judge' : { 'submit-answer': '提交答案', 'interaction': '交互', 'traditional': '传统' }[problem.type] %></span>
       <% if (problem.type !== 'interaction') { %>
-        <span class="ui label">评测方式：<%= (testcases && !testcases.error) ? (testcases.spj ? 'Special Judge' : '文本比较') : '无测试数据' %></span>
+        <span class="ui label">评测：<%= (testcases && !testcases.error) ? (testcases.spj ? 'Special Judge' : '文本比较') : '无测试数据' %></span>
+      <% } %>
+      <% if (!contest) { %>
+        <span class="ui label">上传者：
+          <% if (problem.is_anonymous && !problem.allowedManage) { %>
+            匿名
+          <% } else { %>
+            <a href="<%= syzoj.utils.makeUrl(['user', problem.user_id]) %>"><%= problem.user.username %></a>
+          <% } %>
+        </span>
+        <% if (problem.allowedManage && problem.publicizer) { %>
+          <span class="ui label">公开者：
+            <a href="<%= syzoj.utils.makeUrl(['user', problem.publicizer_id]) %>"><%= problem.publicizer.username %></a>
+          </span>
+        <% } %>
       <% } %>
     </div>
-    <% if (problem.type === 'traditional' && problem.file_io) { %>
-      <div class="row" style="margin-top: -23px">
+    <div class="row" style="margin-top: -23px">
+      <% if (problem.type === 'traditional' && problem.file_io) { %>
         <span class="ui label">输入文件：<%= problem.file_io_input_name %></span>
         <span class="ui label">输出文件：<%= problem.file_io_output_name %></span>
-      </div>
-    <% } %>
-    <% if (!contest && problem.allowedManage) { %>
-        <div class="row" style="margin-top: -23px">
-            <span class="ui label">上传者：
-              <a href="<%= syzoj.utils.makeUrl(['user', problem.user_id]) %>"><%= problem.user.username %></a>
-            </span>
-            <span class="ui label">公开者：
-            <% if (problem.publicizer) { %>
-              <a href="<%= syzoj.utils.makeUrl(['user', problem.publicizer_id]) %>"><%= problem.publicizer.username %></a>
-            <% } else { %>
-              未知
-            <% } %>
-            </span>
-        </div>
-    <% } %>
+      <% } %>
+      <% if (problem.tags && problem.tags.length && (typeof contest === 'undefined' || !contest)) { %>
+        <span class="ui label button" id="show_tag_button"></span>
+        <% for (let tag of problem.tags) { %>
+          <a href="<%= syzoj.utils.makeUrl(['problems'], { tags: tag.id }) %>" class="ui <%= tag.color %> label show_tag_controled" style="display: none; ">
+            <%= tag.name %>
+          </a>
+        <% } %>
+        <script data-cfasync="false">
+        if (localStorage.getItem('show_tag') !== '0') {
+          $('#show_tag_button').text('隐藏标签');
+          $('.show_tag_controled').css('display', '');
+        } else {
+          $('#show_tag_button').text('显示标签');
+          $('.show_tag_controled').css('display', 'none');
+        }
+        </script>
+        <script>
+        $(function () {
+          $('#show_tag_button').click(function (e) {
+            e.preventDefault();
+            if ($('#show_tag_button').text() === '显示标签') {
+              $('#show_tag_button').text('隐藏标签');
+              $('.show_tag_controled').css('display', '');
+            } else {
+              $('#show_tag_button').text('显示标签');
+              $('.show_tag_controled').css('display', 'none');
+            }
+          })
+        });
+        </script>
+      <% } %>
+    </div>
 </div>
 <div class="ui grid">
   <div class="row">
@@ -198,31 +229,6 @@ if (contest) {
           <div class="ui bottom attached segment font-content"><%- problem.limit_and_hint %></div>
         </div>
     </div>
-  <% } %>
-  <% if (problem.tags && problem.tags.length && (typeof contest === 'undefined' || !contest)) { %>
-    <div class="row">
-      <div class="column">
-        <h4 class="ui block header" id="show_tag_title_div" style="margin-bottom: 0; margin-left: -1px; margin-right: -1px; "><a href="#" id="show_tag_button" style="color: #000; ">显示分类标签</a></h4>
-        <div class="ui bottom attached segment" style="display: none; " id="show_tag_div">
-          <% for (let tag of problem.tags) { %>
-            <a href="<%= syzoj.utils.makeUrl(['problems', 'tag', tag.id]) %>" class="ui medium <%= tag.color %> label">
-              <%= tag.name %>
-            </a>
-          <% } %>
-        </div>
-      </div>
-    </div>
-    <script>
-    $(function () {
-      $('#show_tag_button').click(function (e) {
-        e.preventDefault();
-        $('#show_tag_title_div').addClass('top');
-        $('#show_tag_title_div').addClass('top attached');
-        $('#show_tag_title_div').text('分类标签');
-        $('#show_tag_div').css('display', '');
-      })
-    });
-    </script>
   <% } %>
     <% let noSubmit = false; %>
     <%
