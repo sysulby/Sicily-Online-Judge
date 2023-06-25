@@ -1,32 +1,40 @@
 <% this.title = '编辑题目'; %>
 <% include header %>
+<%
+let set = null;
+if (typeof problemSet !== 'undefined') set = problemSet;
+%>
 <style type="text/css">
   .problem_header{
     text-align: center;
   }
 </style>
 <div class="padding">
-    <form method="post" action="<%= syzoj.utils.makeUrl(['problem', req.params.id, 'edit']) %>">
+    <form method="post" action="<%= syzoj.utils.makeUrl(['problem', req.params.id, 'edit'], set ? { 'set': set.id } : {}) %>">
       <div class="ui top attached tabular menu">
         <a class="item active" data-tab="edit">编辑</a>
         <a class="item" data-tab="preview" id="preview_tab">预览</a>
       </div>
       <div class="ui bottom attached tab segment active" data-tab="edit">
         <div class="ui form"><div class="field">
-          <% if (problem.allowedManage) { %>
-            <label for="id">
-              <% if (problem.new) { %>
-                题目编号
-              <% } else { %>
-                修改题目编号
-              <% } %>
-            </label>
-            <input type="text" id="id" name="id" placeholder="<% if (problem.new) { %>留空则自动延伸<% } else { %>留空则不修改<% } %>" value="<%= problem.id ? problem.id : '' %>">
+          <label for="id">
+            <% if (problem.new) { %>
+              题目编号
+            <% } else { %>
+              修改题目编号
+            <% } %>
+          </label>
+          <input type="text" id="id" name="id" placeholder="<% if (problem.new) { %>留空则自动延伸<% } else { %>留空则不修改<% } %>" value="<%= problem.id ? problem.id : '' %>">
 
-            <div style="margin-top: 15px; "></div>
-          <% } %>
-          <label for="title">题目名称</label>
+          <label style="margin-top: 15px; " for="title">题目名称</label>
           <input class="font-content" type="text" id="title" name="title" value="<%= problem.title %>">
+
+          <label style="margin-top: 15px; ">题单</label>
+          <select class="ui fluid <% if (!problem.allowedManage) { %>disabled<% } %> search dropdown" multiple="" id="search_sets" name="sets">
+            <% for (let set of problem.sets) { %>
+              <option value="<%= set.id %>" selected><%= set.title %></option>
+            <% } %>
+          </select>
 
           <label style="margin-top: 15px; ">标签</label>
           <select class="ui fluid search dropdown" multiple="" id="search_tags" name="tags">
@@ -92,6 +100,26 @@ $(function () {
       render($("#pv-hint"), $("#hint"));
     });
     $('.tabular.menu .item').tab();
+});
+</script>
+<script>
+$(function () {
+  $('#search_sets')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/sets/{query}',
+        onResponse: function (response) {
+          var a = $('#search_sets').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x) { return !a.includes(parseInt(x.value));});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
 });
 </script>
 <script>

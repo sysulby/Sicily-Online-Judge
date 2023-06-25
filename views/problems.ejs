@@ -1,6 +1,8 @@
 <% this.title = '题库' %>
 <% include header %>
 <%
+let set = null;
+if (typeof problemSet !== 'undefined') set = problemSet;
 let tagIDs = [];
 if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
 %>
@@ -9,13 +11,21 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
     <div class="row" style="white-space: nowrap; ">
       <div class="seven wide column">
         <div class="ui mini dropdown button" id="problem_set_dropdown">
-          <i class="file alternate icon"></i> 主题库 <i class="dropdown icon"></i>
+          <i class="file alternate icon"></i> <%= set ? set.title : '主题库' %> <i class="dropdown icon"></i>
           <div class="menu">
-            <a class="item" href="<%= syzoj.utils.makeUrl(['problems']) %>"><i class="file alternate icon"></i> 主题库</a>
+            <a onclick="localStorage.setItem('set', '0')" class="item" href="<%= syzoj.utils.makeUrl(['problems']) %>"><i class="file alternate icon"></i> 主题库</a>
+            <% for (let set of problemSets) { %>
+              <a onclick="localStorage.setItem('set', <%= set.id %>)" class="item" href="<%= syzoj.utils.makeUrl(['problems'], { set: set.id }) %>" title=<%= set.subtitle %> >
+                <i class="file alternate icon"></i> <%= set.title %>
+              </a>
+            <% } %>
           </div>
         </div>
         <% if (typeof keyword !== 'undefined') { %>
-          <% let url = tagIDs ? syzoj.utils.makeUrl(['problems'], { tags: tagIDs.join(',') }) : syzoj.utils.makeUrl(['problems']); %>
+          <% let query = {}; %>
+          <% if (set) query['set'] = set.id; %>
+          <% if (tagIDs) query['tags'] = tagIDs.join(','); %>
+          <% let url = syzoj.utils.makeUrl(['problems'], query); %>
           <a href="<%= url %>" class="ui tiny grey label">
             <i class="search alternate icon"></i> <%= keyword %> <i class="delete icon"></i>
           </a>
@@ -28,12 +38,11 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
           %>
           <% for (let tag of tags) { %>
               <% let tagListRemovedThisTag = tagIDs.filter(x => x != tag.id).sort().join(','); %>
-              <% let url = syzoj.utils.makeUrl(['problems'],
-                typeof keyword !== 'undefined' && tagListRemovedThisTag ? { keyword: keyword, tags: tagListRemovedThisTag } :
-                typeof keyword !== 'undefined' ? { keyword: keyword } :
-                tagListRemovedThisTag ? { tags: tagListRemovedThisTag } :
-                {}
-              ); %>
+              <% let query = {}; %>
+              <% if (set) query['set'] = set.id; %>
+              <% if (typeof keyword !== 'undefined') query['keyword'] = keyword; %>
+              <% if (tagListRemovedThisTag) query['tags'] = tagListRemovedThisTag; %>
+              <% let url = syzoj.utils.makeUrl(['problems'], query); %>
               <a href="<%= url %>" class="ui tiny <%= tag.color %> label">
                 <%= tag.name %> <i class="delete icon"></i>
               </a>
@@ -41,46 +50,27 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
         <% } %>
       </div>
       <div class="nine wide right aligned column">
-        <div class="ui toggle checkbox" id="show_tag">
-          <style id="show_tag_style"></style>
-          <script data-cfasync="false">
-          if (localStorage.getItem('show_tag') !== '0') {
-            document.write('<input type="checkbox" checked>');
-            document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
-          } else {
-            document.write('<input type="checkbox">');
-            document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
-          }
-          </script>
-
-          <script>
-          $(function () {
-            $('#show_tag').checkbox('setting', 'onChange', function () {
-              let checked = $('#show_tag').checkbox('is checked');
-              localStorage.setItem('show_tag', checked ? '1' : '0');
-              if (checked) {
-                document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
-              } else {
-                document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
-              }
-            });
-          });
-          </script>
-          <label>显示标签</label>
-        </div>
         <div style="margin-left: 10px; display: inline-block; ">
+          <% if (allowedManageSet) { %>
+            <% if (set) { %>
+              <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'set', set.id, 'edit']) %>" class="ui labeled icon mini button"><i class="write icon"></i> 编辑题单</a>
+            <% } else { %>
+              <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'set', 0, 'edit']) %>" class="ui labeled icon mini button"><i class="plus icon"></i> 新建题单</a>
+            <% } %>
+          <% } %>
           <% if (allowedManageTag) { %>
             <% if (typeof tags !== 'undefined' && tags.length === 1) { %>
-              <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'tag', tags[0].id, 'edit']) %>" class="ui labeled icon mini blue button"><i class="write icon"></i> 编辑标签</a>
+              <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'tag', tags[0].id, 'edit']) %>" class="ui labeled icon mini button"><i class="write icon"></i> 编辑标签</a>
+            <% } else { %>
+              <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'tag', 0, 'edit']) %>" class="ui labeled icon mini button"><i class="plus icon"></i> 添加标签</a>
             <% } %>
-            <a style="margin-left: 10px; " href="<%= syzoj.utils.makeUrl(['problems', 'tag', 0, 'edit']) %>" class="ui labeled icon mini green button"><i class="plus icon"></i> 添加标签</a>
           <% } %>
           <% if (allowedManageProblem) { %>
             <div style="margin-left: 10px; " class="ui mini buttons">
               <div class="ui labeled icon mini dropdown button" id="add_problem_dropdown"><i class="plus icon"></i> 添加题目
               <div class="menu">
-                <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit']) %>"><i class="file icon"></i> 新建题目</a>
-                <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'import']) %>"><i class="cloud download icon"></i> 导入题目</a>
+                <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'edit'], set ? { 'set': set.id } : {}) %>"><i class="file icon"></i> 新建题目</a>
+                <a class="item" href="<%= syzoj.utils.makeUrl(['problem', 0, 'import'], set ? { 'set': set.id } : {}) %>"><i class="cloud download icon"></i> 导入题目</a>
               </div>
               </div>
             </div>
@@ -98,7 +88,36 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
         <th class="one wide">提交状态</th>
         <% } %>
         <th class="one wide"><%- createSortableTitle('id', '编号', true) %></th>
-        <th class="left aligned"><%- createSortableTitle('title', '题目名称', true) %></th>
+        <th class="left aligned">
+          <%- createSortableTitle('title', '题目名称', true) %>
+          <div class="ui toggle checkbox" id="show_tag" style="float: right; ">
+            <style id="show_tag_style"></style>
+            <script data-cfasync="false">
+            if (localStorage.getItem('show_tag') !== '0') {
+              document.write('<input type="checkbox" checked>');
+              document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
+            } else {
+              document.write('<input type="checkbox">');
+              document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
+            }
+            </script>
+
+            <script>
+            $(function () {
+              $('#show_tag').checkbox('setting', 'onChange', function () {
+                let checked = $('#show_tag').checkbox('is checked');
+                localStorage.setItem('show_tag', checked ? '1' : '0');
+                if (checked) {
+                  document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
+                } else {
+                  document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
+                }
+              });
+            });
+            </script>
+            <label>显示标签</label>
+          </div>
+        </th>
         <th class="one wide"><%- createSortableTitle('ac_num', '通过', false) %></th>
         <th class="one wide"><%- createSortableTitle('submit_num', '提交', false) %></th>
         <th class="one wide">通过率</th>
@@ -106,7 +125,7 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
     </thead>
     <tbody>
     <% for (let problem of problems) { %>
-        <% if (problem.is_public || problem.allowedEdit) { %>
+        <% if (problem.is_public || problem.allowedUse) { %>
         <tr style="height: 44px; ">
             <% if (user) { %>
                 <td>
@@ -133,12 +152,11 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
                     else tagListToggledThisTag = tagIDs.filter(x => x != tag.id);
                     tagListToggledThisTag = tagListToggledThisTag.sort().join(',');
 
-                    let url = syzoj.utils.makeUrl(['problems'],
-                      typeof keyword !== 'undefined' && tagListToggledThisTag ? { keyword: keyword, tags: tagListToggledThisTag } :
-                      typeof keyword !== 'undefined' ? { keyword: keyword } :
-                      tagListToggledThisTag ? { tags: tagListToggledThisTag } :
-                      {}
-                    );
+                    let query = {};
+                    if (set) query['set'] = set.id;
+                    if (typeof keyword !== 'undefined') query['keyword'] = keyword;
+                    if (tagListToggledThisTag) query['tags'] = tagListToggledThisTag;
+                    let url = syzoj.utils.makeUrl(['problems'], query);
                   %>
                   <span class="ui header">
                     <a href="<%= url %>" class="ui tiny <%= tag.color %> label">

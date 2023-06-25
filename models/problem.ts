@@ -7,6 +7,8 @@ import User from "./user";
 import File from "./file";
 import JudgeState from "./judge_state";
 import Contest from "./contest";
+import ProblemSet from "./problem_set";
+import ProblemSetMap from "./problem_set_map";
 import ProblemTag from "./problem_tag";
 import ProblemTagMap from "./problem_tag_map";
 import SubmissionStatistics, { StatisticsType } from "./submission_statistics";
@@ -16,6 +18,10 @@ import * as path from "path";
 import * as util from "util";
 import * as LRUCache from "lru-cache";
 import * as DeepCopy from "deepcopy";
+
+const problemSetCache = new LRUCache<number, number[]>({
+  max: syzoj.config.db.cache_size
+});
 
 const problemTagCache = new LRUCache<number, number[]>({
   max: syzoj.config.db.cache_size
@@ -127,19 +133,26 @@ export default class Problem extends Model {
     if (this.is_public) return true;
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
-    return this.user_id === user.id;
+    let sets = await this.getSets();
+    for (let set of sets) {
+      if (await set.isSupervisior(user)) return true;
+    }
+    return false;
   }
 
   async isAllowedEditBy(user) {
     if (!user) return false;
     if (await user.hasPrivilege('manage_problem')) return true;
-    return this.user_id === user.id;
+    let sets = await this.getSets();
+    for (let set of sets) {
+      if (await set.hasOwnership(user) || (user.id === this.user_id && await set.isSupervisior(user))) return true;
+    }
+    return false;
   }
 
   async isAllowedManageBy(user) {
     if (!user) return false;
-    if (await user.hasPrivilege('manage_problem')) return true;
-    return user.is_admin;
+    return await user.hasPrivilege('manage_problem');
   }
 
   getTestdataPath() {
@@ -477,6 +490,61 @@ export default class Problem extends Model {
     return statistics;
   }
 
+  async getSets() {
+    let setIDs;
+    if (problemSetCache.has(this.id)) {
+      setIDs = problemSetCache.get(this.id);
+    } else {
+      let maps = await ProblemSetMap.find({
+        where: {
+          problem_id: this.id
+        }
+      });
+
+      setIDs = maps.map(x => x.set_id);
+      problemSetCache.set(this.id, setIDs);
+    }
+
+    let res = await (setIDs as any).mapAsync(async setID => {
+      return ProblemSet.findById(setID);
+    });
+
+    res.sort((a, b) => {
+      return a.id < b.id;
+    });
+
+    return res;
+  }
+
+  async setSets(newSetIDs) {
+    let oldSetIDs = (await this.getSets()).map(x => x.id);
+
+    let delSetIDs = oldSetIDs.filter(x => !newSetIDs.includes(x));
+    let addSetIDs = newSetIDs.filter(x => !oldSetIDs.includes(x));
+
+    for (let setID of delSetIDs) {
+      let map = await ProblemSetMap.findOne({
+        where: {
+          problem_id: this.id,
+          set_id: setID
+        }
+      });
+
+      await map.destroy();
+    }
+
+    for (let setID of addSetIDs) {
+      let map = await ProblemSetMap.create({
+        problem_id: this.id,
+        set_id: setID
+      });
+
+      await map.save();
+    }
+
+    problemSetCache.set(this.id, newSetIDs);
+  }
+
   async getTags() {
     let tagIDs;
     if (problemTagCache.has(this.id)) {
@@ -538,6 +606,7 @@ export default class Problem extends Model {
     id = parseInt(id);
     await entityManager.query('UPDATE `problem`               SET `id`         = ' + id + ' WHERE `id`         = ' + this.id);
     await entityManager.query('UPDATE `judge_state`           SET `problem_id` = ' + id + ' WHERE `problem_id` = ' + this.id);
+    await entityManager.query('UPDATE `problem_set_map`       SET `problem_id` = ' + id + ' WHERE `problem_id` = ' + this.id);
     await entityManager.query('UPDATE `problem_tag_map`       SET `problem_id` = ' + id + ' WHERE `problem_id` = ' + this.id);
     await entityManager.query('UPDATE `article`               SET `problem_id` = ' + id + ' WHERE `problem_id` = ' + this.id);
     await entityManager.query('UPDATE `submission_statistics` SET `problem_id` = ' + id + ' WHERE `problem_id` = ' + this.id);
@@ -578,6 +647,7 @@ export default class Problem extends Model {
     await this.save();
 
     await Problem.deleteFromCache(oldID);
+    await problemSetCache.del(oldID);
     await problemTagCache.del(oldID);
   }
 
@@ -609,9 +679,11 @@ export default class Problem extends Model {
       await user.save();
     }
 
+    problemSetCache.del(this.id);
     problemTagCache.del(this.id);
 
     await entityManager.query('DELETE FROM `judge_state`           WHERE `problem_id` = ' + this.id);
+    await entityManager.query('DELETE FROM `problem_set_map`       WHERE `problem_id` = ' + this.id);
     await entityManager.query('DELETE FROM `problem_tag_map`       WHERE `problem_id` = ' + this.id);
     await entityManager.query('DELETE FROM `article`               WHERE `problem_id` = ' + this.id);
     await entityManager.query('DELETE FROM `submission_statistics` WHERE `problem_id` = ' + this.id);

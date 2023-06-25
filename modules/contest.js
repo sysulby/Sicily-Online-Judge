@@ -10,9 +10,12 @@ const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../
 
 app.get('/contests', async (req, res) => {
   try {
-    let query = Contest.createQueryBuilder();
-    if (!res.locals.user || !res.locals.user.is_admin) query.where({ is_public: true });
+    const curUser = res.locals.user;
 
+    let allContests = await Contest.queryAll(Contest.createQueryBuilder());
+    let myContests = await allContests.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
+
+    let query = Contest.createQueryBuilder().where('id in (:ids)', { ids: myContests.map(x => x.id) });
     let paginate = syzoj.utils.paginate(await Contest.countForPagination(query), req.query.page, syzoj.config.page.contest);
     // Active contests come first, ended contests come second.
     query.orderBy('(UNIX_TIMESTAMP(CURRENT_TIMESTAMP) >= (CASE WHEN end_time IS NULL THEN 2147483647 ELSE end_time END))');

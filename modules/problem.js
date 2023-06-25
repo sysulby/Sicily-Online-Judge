@@ -2,6 +2,7 @@ let Problem = syzoj.model('problem');
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
 let Contest = syzoj.model('contest');
+let ProblemSet = syzoj.model('problem_set');
 let ProblemTag = syzoj.model('problem_tag');
 let Article = syzoj.model('article');
 
@@ -14,6 +15,22 @@ let CodeFormatter = syzoj.lib('code_formatter');
 
 app.get('/problems', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+
+    let problemSets = await ProblemSet.queryAll(ProblemSet.createQueryBuilder());
+    problemSets = await problemSets.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
+
+    let problemSet;
+    if (req.query.set) {
+      let setID = parseInt(req.query.set) || 0;
+      if (setID) {
+        problemSet = await ProblemSet.findById(setID);
+        if (!problemSet || !problemSet.is_public && !await problemSet.isSupervisior(curUser)) {
+          problemSet = null;
+        }
+      }
+    }
+
     const sort = req.query.sort || syzoj.config.sorting.problem.field;
     const order = req.query.order || syzoj.config.sorting.problem.order;
     if (!['id', 'title', 'rating', 'ac_num', 'submit_num', 'ac_rate', 'publicize_time'].includes(sort) || !['asc', 'desc'].includes(order)) {
@@ -21,15 +38,13 @@ app.get('/problems', async (req, res) => {
     }
 
     let query = Problem.createQueryBuilder();
-    if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) {
-      if (res.locals.user) {
-        query.where(new TypeORM.Brackets(qb => {
-               qb.where('is_public = 1')
-                 .orWhere('user_id = :user_id', { user_id: res.locals.user.id })
-             }));
-      } else {
-        query.where('is_public = 1');
+    if (problemSet) {
+      query.where('id IN (SELECT `problem_id` FROM `problem_set_map` WHERE `set_id` = :setID)', { setID: problemSet.id });
+      if (!await problemSet.isSupervisior(curUser)) {
+        query.andWhere('is_public = 1');
       }
+    } else if (!curUser || !await curUser.hasPrivilege('manage_problem')) {
+      query.where('is_public = 1');
     }
 
     let id = 0;
@@ -44,11 +59,8 @@ app.get('/problems', async (req, res) => {
     let tags;
     if (req.query.tags) {
       let tagIDs = Array.from(new Set(req.query.tags.split(',').map(x => parseInt(x))));
-      tags = (await tagIDs.mapAsync(async tagID => ProblemTag.findById(tagID))).filter(x => x != null);
-      tagIDs = tags.map(x => x.id);
-      for (let tagID of tagIDs) {
-        query.andWhere('id IN (SELECT `problem_id` FROM `problem_tag_map` WHERE `tag_id` = :tagID)', { tagID: tagID });
-      }
+      tags = (await tagIDs.mapAsync(async tagID => ProblemTag.findById(tagID))).filter(tag => tag != null);
+      query.andWhere('id IN (SELECT `problem_id` FROM `problem_tag_map` WHERE tag_id IN (:tagIDs) GROUP BY problem_id HAVING COUNT(DISTINCT tag_id) = :num)', { tagIDs: tags.map(tag => tag.id), num: tags.length });
     }
 
     query.orderBy('id = ' + id.toString(), 'DESC');
@@ -62,14 +74,17 @@ app.get('/problems', async (req, res) => {
     let problems = await Problem.queryPage(paginate, query);
 
     await problems.forEachAsync(async problem => {
-      problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
-      problem.judge_state = await problem.getJudgeState(res.locals.user, true);
+      problem.allowedUse = await problem.isAllowedUseBy(curUser);
+      problem.judge_state = await problem.getJudgeState(curUser, true);
       problem.tags = await problem.getTags();
     });
 
     res.render('problems', {
-      allowedManageTag: res.locals.user && await res.locals.user.hasPrivilege('manage_problem_tag'),
-      allowedManageProblem: res.locals.user && await res.locals.user.hasPrivilege('manage_problem'),
+      allowedManageSet: !problemSet ? (curUser && curUser.is_admin) : await problemSet.hasOwnership(curUser),
+      allowedManageTag: curUser && await curUser.hasPrivilege('manage_problem_tag'),
+      allowedManageProblem: !problemSet ? (curUser && await curUser.hasPrivilege('manage_problem')) : await problemSet.isSupervisior(curUser),
+      problemSet: problemSet,
+      problemSets: problemSets,
       keyword: req.query.keyword,
       tags: tags,
       problems: problems,
@@ -87,24 +102,22 @@ app.get('/problems', async (req, res) => {
 
 app.get('/problem/:id', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+
     let id = parseInt(req.params.id);
     let problem = await Problem.findById(id);
     if (!problem) throw new ErrorMessage('无此题目。');
 
-    if (!await problem.isAllowedUseBy(res.locals.user)) {
+    if (!await problem.isAllowedUseBy(curUser)) {
       throw new ErrorMessage('您没有权限进行此操作。');
     }
 
-    problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user);
-    problem.allowedManage = await problem.isAllowedManageBy(res.locals.user);
+    problem.allowedEdit = await problem.isAllowedEditBy(curUser);
+    problem.allowedManage = await problem.isAllowedManageBy(curUser);
 
-    if (problem.is_public || problem.allowedEdit) {
-      await syzoj.utils.markdown(problem, ['description', 'input_format', 'output_format', 'example', 'limit_and_hint']);
-    } else {
-      throw new ErrorMessage('您没有权限进行此操作。');
-    }
+    await syzoj.utils.markdown(problem, ['description', 'input_format', 'output_format', 'example', 'limit_and_hint']);
 
-    let state = await problem.getJudgeState(res.locals.user, false);
+    let state = await problem.getJudgeState(curUser, false);
 
     problem.tags = await problem.getTags();
     await problem.loadRelationships();
@@ -116,7 +129,7 @@ app.get('/problem/:id', async (req, res) => {
     res.render('problem', {
       problem: problem,
       state: state,
-      lastLanguage: res.locals.user ? await res.locals.user.getLastSubmitLanguage() : null,
+      lastLanguage: curUser ? await curUser.getLastSubmitLanguage() : null,
       testcases: testcases,
       discussionCount: discussionCount
     });
@@ -170,11 +183,22 @@ app.get('/problem/:id/export', async (req, res) => {
 
 app.get('/problem/:id/edit', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let problemSet;
+    if (req.query.set) {
+      let setID = parseInt(req.query.set) || 0;
+      if (setID) problemSet = await ProblemSet.findById(setID);
+    }
+
     let id = parseInt(req.params.id) || 0;
     let problem = await Problem.findById(id);
 
     if (!problem) {
-      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
+      if (problemSet ? !await problemSet.isSupervisior(curUser) : !await curUser.hasPrivilege('manage_problem')) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
         memory_limit: syzoj.config.default.problem.memory_limit,
@@ -182,17 +206,20 @@ app.get('/problem/:id/edit', async (req, res) => {
       });
       problem.id = id;
       problem.allowedEdit = true;
-      problem.allowedManage = true;
+      problem.allowedManage = await curUser.hasPrivilege('manage_problem');
+      problem.sets = (problemSet ? [problemSet] : []);
       problem.tags = [];
       problem.new = true;
     } else {
-      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedEditBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
       problem.allowedEdit = true;
-      problem.allowedManage = await problem.isAllowedManageBy(res.locals.user);
+      problem.allowedManage = await problem.isAllowedManageBy(curUser);
+      problem.sets = await problem.getSets();
       problem.tags = await problem.getTags();
     }
 
     res.render('problem_edit', {
+      problemSet: problemSet,
       problem: problem
     });
   } catch (e) {
@@ -205,10 +232,21 @@ app.get('/problem/:id/edit', async (req, res) => {
 
 app.post('/problem/:id/edit', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let problemSet;
+    if (req.query.set) {
+      let setID = parseInt(req.query.set) || 0;
+      if (setID) problemSet = await ProblemSet.findById(setID);
+    }
+
     let id = parseInt(req.params.id) || 0;
     let problem = await Problem.findById(id);
     if (!problem) {
-      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
+      if (problemSet ? !await problemSet.isSupervisior(curUser) : !await curUser.hasPrivilege('manage_problem')) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -222,16 +260,15 @@ app.post('/problem/:id/edit', async (req, res) => {
         problem.id = customID;
       } else if (id) problem.id = id;
 
-      problem.user_id = res.locals.user.id;
+      problem.user_id = curUser.id;
+      problem.new = true;
     } else {
-      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedEditBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
-      if (await res.locals.user.hasPrivilege('manage_problem')) {
-        let customID = parseInt(req.body.id);
-        if (customID && customID !== id) {
-          if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
-          await problem.changeID(customID);
-        }
+      let customID = parseInt(req.body.id);
+      if (customID && customID !== id) {
+        if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
+        await problem.changeID(customID);
       }
     }
 
@@ -246,6 +283,20 @@ app.post('/problem/:id/edit', async (req, res) => {
 
     // Save the problem first, to have the `id` allocated
     await problem.save();
+
+    if (await res.locals.user.hasPrivilege('manage_problem')) {
+      if (!req.body.sets) {
+        req.body.sets = [];
+      } else if (!Array.isArray(req.body.sets)) {
+        req.body.sets = [req.body.sets];
+      }
+
+      let newSetIDs = await req.body.sets.map(x => parseInt(x)).filterAsync(async x => ProblemSet.findById(x));
+      await problem.setSets(newSetIDs);
+    } else if (problem.new) {
+      let setIDs = (problemSet ? [problemSet.id]: []);
+      await problem.setSets(setIDs);
+    }
 
     if (!req.body.tags) {
       req.body.tags = [];
@@ -267,11 +318,22 @@ app.post('/problem/:id/edit', async (req, res) => {
 
 app.get('/problem/:id/import', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let problemSet;
+    if (req.query.set) {
+      let setID = parseInt(req.query.set) || 0;
+      if (setID) problemSet = await ProblemSet.findById(setID);
+    }
+
     let id = parseInt(req.params.id) || 0;
     let problem = await Problem.findById(id);
 
     if (!problem) {
-      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
+      if (problemSet ? !await problemSet.isSupervisior(curUser) : !await curUser.hasPrivilege('manage_problem')) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -280,14 +342,12 @@ app.get('/problem/:id/import', async (req, res) => {
       });
       problem.id = id;
       problem.new = true;
-      problem.user_id = res.locals.user.id;
     } else {
-      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedEditBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
     }
 
-    problem.allowedManage = await problem.isAllowedManageBy(res.locals.user);
-
     res.render('problem_import', {
+      problemSet: problemSet,
       problem: problem
     });
   } catch (e) {
@@ -300,10 +360,21 @@ app.get('/problem/:id/import', async (req, res) => {
 
 app.post('/problem/:id/import', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+
+    let problemSet;
+    if (req.query.set) {
+      let setID = parseInt(req.query.set) || 0;
+      if (setID) problemSet = await ProblemSet.findById(setID);
+    }
+
     let id = parseInt(req.params.id) || 0;
     let problem = await Problem.findById(id);
     if (!problem) {
-      if (!res.locals.user || !await res.locals.user.hasPrivilege('manage_problem')) throw new ErrorMessage('您没有权限进行此操作。');
+      if (problemSet ? !await problemSet.isSupervisior(curUser) : !await curUser.hasPrivilege('manage_problem')) {
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
 
       problem = await Problem.create({
         time_limit: syzoj.config.default.problem.time_limit,
@@ -311,17 +382,16 @@ app.post('/problem/:id/import', async (req, res) => {
         type: 'traditional'
       });
 
-      if (await res.locals.user.hasPrivilege('manage_problem')) {
-        let customID = parseInt(req.body.id);
-        if (customID) {
-          if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
-          problem.id = customID;
-        } else if (id) problem.id = id;
-      }
+      let customID = parseInt(req.body.id);
+      if (customID) {
+        if (await Problem.findById(customID)) throw new ErrorMessage('ID 已被使用。');
+        problem.id = customID;
+      } else if (id) problem.id = id;
 
-      problem.user_id = res.locals.user.id;
+      problem.user_id = curUser.id;
+      problem.new = true;
     } else {
-      if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedEditBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
     }
 
     let request = require('request-promise');
@@ -354,6 +424,11 @@ app.post('/problem/:id/import', async (req, res) => {
 
     await problem.save();
 
+    if (problem.new) {
+      let setIDs = (problemSet ? [problemSet.id]: []);
+      await problem.setSets(setIDs);
+    }
+
     let tagIDs = (await json.obj.tags.mapAsync(name => ProblemTag.findOne({ where: { name: String(name) } }))).filter(x => x).map(tag => tag.id);
     await problem.setTags(tagIDs);
 
@@ -364,11 +439,11 @@ app.post('/problem/:id/import', async (req, res) => {
     try {
       let data = await download(req.body.url + (req.body.url.endsWith('/') ? 'testdata/download' : '/testdata/download'));
       await fs.writeFile(tmpFile.path, data);
-      await problem.updateTestdata(tmpFile.path, await res.locals.user.hasPrivilege('manage_problem'));
+      await problem.updateTestdata(tmpFile.path, await curUser.hasPrivilege('manage_problem'));
       if (json.obj.have_additional_file) {
         let additional_file = await download(req.body.url + (req.body.url.endsWith('/') ? 'download/additional_file' : '/download/additional_file'));
         await fs.writeFile(tmpFile.path, additional_file);
-        await problem.updateFile(tmpFile.path, 'additional_file', await res.locals.user.hasPrivilege('manage_problem'));
+        await problem.updateFile(tmpFile.path, 'additional_file', await curUser.hasPrivilege('manage_problem'));
       }
     } catch (e) {
       syzoj.log(e);

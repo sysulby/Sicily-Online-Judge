@@ -65,21 +65,25 @@
             <% } %>
             <div class="item">
               <form action="<%= syzoj.utils.makeUrl(['problems']) %>" method="get">
+                <input type="hidden" id="search_set" name="set" />
                 <div class="ui search" id="banner_search" style="width: 100%; ">
                   <div class="ui left icon input" style="width: 100%; ">
-                    <input class="prompt" style="width: 100%; padding: 0.5em; " type="text" placeholder="ID / 题目名 …" name="keyword">
+                    <input class="prompt" style="width: 100%; padding: 0.5em; " type="text" placeholder="ID / 题目名 …" id="search_keyword" name="keyword">
                     <i class="search icon"></i>
                   </div>
                   <div class="results" style="width: 100%; "></div>
                 </div>
               </form>
               <script>
+              let set = localStorage.getItem('set');
+              let search_url = !set.trim() || set === '0' ? '/api/v2/search/problems/{query}' : '/api/v2/search/set/' + localStorage.getItem('set') + '/problems/{query}';
               $(function () {
+                $('#search_set').val(localStorage.getItem('set'));
                 $('#banner_search').search({
                   debug: true,
                   saveRemoteData: false,
                   apiSettings: {
-                    url: '/api/v2/search/problems/{query}',
+                    url: search_url,
                     cache: false
                   },
                   fields: {
@@ -116,7 +120,7 @@
     <div class="ui bottom attached borderless inverted menu" style="height: 45px; background-color: #337dd4; ">
         <div class="ui container">
             <a class="header item" href="/" style="color: white; "><i class="home icon"></i> 首页</a>
-            <a class="header item" href="/problems" style="color: white; "><i class="list icon"></i> 题库</a>
+            <a class="header item" href="/problems" onclick="location.href=this.href+'?set='+localStorage.getItem('set');return false;" style="color: white; "><i class="list icon"></i> 题库</a>
             <a class="header item" href="/contests" style="color: white; "><i class="trophy icon"></i> 比赛</a>
             <a class="header item" href="/ranklist" style="color: white; "><i class="signal icon"></i> 排名</a>
             <a class="header item" href="/submissions" style="color: white; "><i class="tasks icon"></i> 评测</a>

@@ -124,7 +124,7 @@ export default class JudgeState extends Model {
 
     if (!user) return false;
     if (user.id === this.user_id) return true;
-    if (this.type === 0) return user.id === this.problem.user_id || await user.hasPrivilege('manage_problem');
+    if (this.type === 0) return await this.problem.isAllowedEditBy(user);
     if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
       if (contest.isRunning()) {
