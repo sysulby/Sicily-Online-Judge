@@ -84,16 +84,20 @@
             let i = 0;
             for (let lesson of lessons) {
               i++;
+              let tag = '';
             %>
             <tr>
               <% if (user) { %>
               <td></td>
               <% } %>
               <td><b><%= i %></b></td>
+              <% if (!lesson.is_public) { %>
+                <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
+              <% } %>
               <% if (isSupervisior) { %>
-              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
+              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %> <%- tag %></a></td>
               <% } else { %>
-              <td class="left aligned"><%= syzoj.utils.removeTitleTag(lesson.title) %></td>
+              <td class="left aligned"><%= syzoj.utils.removeTitleTag(lesson.title) %> <%- tag %></td>
               <% } %>
               <% if (isCourseOwner) { %>
               <td>

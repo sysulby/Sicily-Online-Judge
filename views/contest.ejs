@@ -19,7 +19,8 @@
   } %>
   <div class="ui pointing below left label"><%= start %></div>
   <div class="ui pointing below right label"><%= end %></div>
-  <% let timePercentage = Math.floor(Math.min(1, (syzoj.utils.getCurrentDate() - contest.start_time) / (contest.end_time - contest.start_time)) * 100); %>
+  <% let timePercentage = (!contest.start_time || !contest.end_time ? 38.2 :
+                           Math.floor(Math.min(1, (syzoj.utils.getCurrentDate() - contest.start_time) / (contest.end_time - contest.start_time)) * 100)); %>
   <div id="timer-progress" class="ui tiny indicating progress<% if (timePercentage == 100) { %> success<% } %>" data-percent="<%= timePercentage %>">
     <div class="bar" style="width: <%= timePercentage %>%;"></div>
   </div>
@@ -121,6 +122,7 @@
   </div>
 </div>
 
+<% if (contest.start_time && contest.end_time) { %>
 <script>
 $(function () {
   setInterval(function () {
@@ -131,4 +133,5 @@ $(function () {
   }, 5000);
 });
 </script>
+<% } %>
 <% include footer %>

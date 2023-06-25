@@ -123,11 +123,15 @@
             let i = 0;
             for (let lesson of lessons) {
               i++;
+              let tag = '';
             %>
             <tr>
               <td></td>
               <td><b><%= i %></b></td>
-              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %></a></td>
+              <% if (!lesson.is_public) { %>
+                <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
+              <% } %>
+              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %> <%- tag %></a></td>
               <td><%= syzoj.utils.formatDate(lesson.start_time) %></td>
               <td><%= syzoj.utils.formatDate(lesson.end_time) %></td>
               <% if (isCourseOwner) { %>

@@ -1296,7 +1296,7 @@ app.get('/course/:id/lesson/:lid', async (req, res) => {
     }
 
     let hasStatistics = false;
-    if (contest.type === 'ioi' || contest.ended) {
+    if (contest.type === 'ioi' || contest.type == 'usaco' || contest.ended) {
       hasStatistics = true;
 
       await contest.loadRelationships();
@@ -1412,6 +1412,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
 
       contest.holder_id = curUser.id;
       contest.teachers = '';
+      contest.course_id = course.id;
     } else {
       await contest.loadRelationships();
       ranklist = contest.ranklist;
@@ -1429,9 +1430,10 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
     contest.title = req.body.title;
     contest.subtitle = req.body.subtitle;
     contest.information = req.body.information;
+    contest.admins = '';
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     contest.problems = req.body.problems.join('|');
-    if (!['ioi', 'noi'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
+    if (!['noi', 'ioi', 'usaco'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
     contest.type = req.body.type;
     contest.hide_statistics = (contest.type === 'noi');
     // [TODO]: update logic about is_public
@@ -1444,6 +1446,8 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
       course.lessons += (lid > 1 ? "|" : "") + contest.id;
 
       await course.save();
+
+      res.redirect(syzoj.utils.makeUrl(['course', course.id]));
     }
 
     res.redirect(syzoj.utils.makeUrl(['course', course.id, 'lesson', lid]));
@@ -1764,12 +1768,12 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
       clazz = await Clazz.create();
+      clazz.owner_id = curUser.id;
+      clazz.teachers = '';
       clazz.course_id = course.id;
       clazz.lessons = '';
-      clazz.students = '';
-      clazz.owner_id = parseInt(req.body.owner);
-      clazz.teachers = '';
       clazz.is_public = 0;
+      clazz.students = '';
     } else {
       if (clazz.course_id !== course.id) throw new ErrorMessage('错误的课程。');
       // if clazz exists, both system administrators and clazz owner can edit it.
@@ -1782,8 +1786,8 @@ app.post('/course/:id/class/:cid/edit', async (req, res) => {
     if (!req.body.title.trim()) throw new ErrorMessage('班级名不能为空。');
     clazz.title = req.body.title;
     clazz.information = req.body.information;
-    clazz.start_time = syzoj.utils.parseDate(req.body.start_time);
-    clazz.end_time = syzoj.utils.parseDate(req.body.end_time);
+    clazz.start_time = syzoj.utils.parseDate(req.body.start_time); // 8:00:00
+    clazz.end_time = syzoj.utils.parseDate(req.body.end_time) + 3600 * 14; // 22:00:00
     if (curUser.is_admin) {
       clazz.owner_id = parseInt(req.body.owner);
     }
@@ -1832,21 +1836,23 @@ app.post('/course/:id/class/:cid/approval', async (req, res) => {
 
     await clazz.loadRelationships();
 
-    // [TODO]: auto create lessons when approved
+    // only public lessons will be synced
     if (!clazz.lessons.trim()) {
       let lessonIDs = await course.getLessons();
-      let lessons = await lessonIDs.mapAsync(async id => {
+      let templateLessons = (await lessonIDs.mapAsync(async id => await Contest.findById(id))).filter(x => x.is_public);
+      let lessons = await templateLessons.mapAsync(async x => {
         let contest = await Contest.create();
         let contestID = contest.id;
         let ranklist = await ContestRanklist.create();
         ranklist.ranking_params = {};
         await ranklist.save();
-        contest = await Contest.create(await Contest.findById(id));
+        contest = await Contest.create(x);
 
         contest.id = contestID;
         contest.start_time = clazz.start_time;
         contest.end_time = clazz.end_time;
         contest.ranklist_id = ranklist.id;
+        contest.is_public = false;
         return await contest.save();
       });
       clazz.lessons = lessons.map(x => x.id).join('|');
@@ -1955,7 +1961,7 @@ app.get('/course/:id/class/:cid/lesson/:lid', async (req, res) => {
     }
 
     let hasStatistics = false;
-    if (contest.type === 'ioi' || contest.ended) {
+    if (contest.type === 'ioi' || contest.type === 'usaco' || contest.ended) {
       hasStatistics = true;
 
       await contest.loadRelationships();
@@ -2086,6 +2092,7 @@ app.post('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
 
       contest.holder_id = curUser.id;
       contest.teachers = '';
+      contest.course_id = course.id;
     } else {
       await contest.loadRelationships();
       ranklist = contest.ranklist;
@@ -2105,7 +2112,7 @@ app.post('/course/:id/class/:cid/lesson/:lid/edit', async (req, res) => {
     contest.information = req.body.information;
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     contest.problems = req.body.problems.join('|');
-    if (!['ioi', 'noi'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
+    if (!['noi', 'ioi', 'usaco'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
     contest.type = req.body.type;
     contest.hide_statistics = (contest.type === 'noi');
     contest.start_time = syzoj.utils.parseDate(req.body.start_time);

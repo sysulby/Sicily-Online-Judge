@@ -128,12 +128,12 @@ app.get('/api/v2/search/course/:id/problems/:keyword*?', async (req, res) => {
     let id = parseInt(keyword);
     if (id) {
       let problemById = await Problem.findById(parseInt(keyword));
-      if (problemById && problemById.course_id && problemById.course_id === course.id) {
+      if (problemById && problemById.is_public && problemById.course_id && problemById.course_id === course.id) {
         result.push(problemById);
       }
     }
     await problems.forEachAsync(async problem => {
-      if (result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id) {
+      if (result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id && problem.is_public) {
         result.push(problem);
       }
     });

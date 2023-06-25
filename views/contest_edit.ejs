@@ -26,7 +26,7 @@
               </div>
               <div class="field">
                   <label>持续时间</label>
-                  <input type="text" name="duration" value="<%= syzoj.utils.formatTime(contest.duration || 9600) %>">
+                  <input type="text" name="duration" value="<%= contest.duration ? syzoj.utils.formatTime(contest.duration) : '' %>">
               </div>
             </div>
             <div class="field">
@@ -69,7 +69,7 @@
               </div>
               <div class="field">
                 <div class="ui radio checkbox">
-                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-usaco" value="usaco"<% if (contest.type === 'usaco') { %> checked="checked"<% } %>>
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-usaco" value="usaco"<% if (!contest.id || contest.type === 'usaco') { %> checked="checked"<% } %>>
                   <label for="type-usaco">USACO</label>
                 </div>
               </div>

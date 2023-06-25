@@ -145,7 +145,15 @@ export default class Contest extends Model {
       });
 
       // Registration is required for all contests.
-      if (!player) throw new ErrorMessage('请先注册参赛。');
+      if (!player) {
+        if (!this.course_id) throw new ErrorMessage('请先注册参赛。');
+        player = await ContestPlayer.create({
+          contest_id: this.id,
+          user_id: judge_state.user_id,
+          reg_time: judge_state.submit_time
+        });
+        await player.save();
+      }
 
       // If contest is ended, submitting is still allowed, but ranklist will be frozen.
       if (this.isEnded(judge_state.submit_time) || (this.type === 'usaco' && judge_state.submit_time > player.reg_time + this.duration)) return;

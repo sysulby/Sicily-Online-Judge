@@ -12,7 +12,7 @@ app.get('/contests', async (req, res) => {
   try {
     let where;
     if (res.locals.user && res.locals.user.is_admin) where = { course_id: null }
-    else where = { is_public: true, couse_id: null };
+    else where = { is_public: true, course_id: null };
 
     let paginate = syzoj.utils.paginate(await Contest.countForPagination(where), req.query.page, syzoj.config.page.contest);
     let contests = await Contest.queryPage(paginate, where, {
@@ -101,10 +101,13 @@ app.post('/contest/:id/edit', async (req, res) => {
     contest.information = req.body.information;
     if (req.body.start_time.trim()) contest.start_time = syzoj.utils.parseDate(req.body.start_time);
     else if (contest.type !== 'usaco') throw new ErrorMessage('请指定比赛开始时间。');
+    else contest.start_time = null;
     if (req.body.end_time.trim()) contest.end_time = syzoj.utils.parseDate(req.body.end_time);
     else if (contest.type !== 'usaco') throw new ErrorMessage('请指定比赛结束时间。');
+    else contest.end_time = null;
     if (req.body.duration.trim()) contest.duration = syzoj.utils.parseTime(req.body.duration);
     else if (contest.type === 'usaco') throw new ErrorMessage('请指定比赛持续时间。');
+    else contest.duration = null;
     if (!Array.isArray(req.body.admins)) req.body.admins = [req.body.admins];
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     if (!Array.isArray(req.body.extra_problems)) req.body.extra_problems = [req.body.extra_problems];
@@ -254,12 +257,8 @@ app.get('/contest/:id', async (req, res) => {
     contest.subtitle = await syzoj.utils.markdown(contest.subtitle);
     contest.information = await syzoj.utils.markdown(contest.information);
     if (contest.type === 'usaco' && !isSupervisior) {
-      if (contest.start_time == null || player.reg_time > contest.start_time) {
-        contest.start_time = player.reg_time;
-      }
-      if (contest.end_time == null || player.reg_time + contest.duration < contest.end_time) {
-        contest.end_time = player.reg_time + contest.duration;
-      }
+      if (contest.start_time == null || player.reg_time > contest.start_time) contest.start_time = player.reg_time;
+      if (contest.end_time == null || player.reg_time + contest.duration < contest.end_time) contest.end_time = player.reg_time + contest.duration;
     }
 
     let problems_id = await contest.getProblems();

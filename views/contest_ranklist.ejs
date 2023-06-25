@@ -50,7 +50,7 @@
             let i = 0, rank = 0, lastItem;
             for (let item of ranklist) {
               i++;
-              let latest = contest.start_time, timeSum = 0, unacceptedCount = 0;
+              let latest = (contest.type === 'usaco' ? item.player.reg_time: contest.start_time), timeSum = 0, unacceptedCount = 0;
             %>
             <tr>
                 <%

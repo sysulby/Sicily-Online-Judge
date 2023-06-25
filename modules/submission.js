@@ -44,6 +44,9 @@ app.get('/submissions', async (req, res) => {
     } else {
       const contestId = Number(req.query.contest);
       const contest = await Contest.findById(contestId);
+      if (!contest || contest.course_id) {
+        throw new ErrorMessage("无此比赛。");
+      }
       contest.ended = contest.isEnded();
       if ((contest.ended && contest.is_public) || // If the contest is ended and is not hidden
         (curUser && await contest.isSupervisior(curUser)) // Or if the user have the permission to check
@@ -52,7 +55,7 @@ app.get('/submissions', async (req, res) => {
         query.andWhere('type_info = :type_info', { type_info: contestId });
         inContest = true;
       } else {
-        throw new Error("您暂时无权查看此比赛的详细评测信息。");
+        throw new ErrorMessage("您暂时无权查看此比赛的详细评测信息。");
       }
     }
 
@@ -160,22 +163,29 @@ app.get('/submission/:id', async (req, res) => {
     const curUser = res.locals.user;
     if (!await judge.isAllowedVisitBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
-    let contest;
-    if (judge.type === 1) {
-      contest = await Contest.findById(judge.type_info);
-
-      if (!(curUser && await contest.isSupervisior(curUser))) {
-        res.redirect(syzoj.utils.makeUrl(['contest', 'submission', id]));
-        return;
-      }
-    }
-
     let course;
     if (judge.type === 2) {
       course = await Course.findById(judge.type_info);
 
       if (!await course.isSupervisior(curUser)) {
-        throw new ErrorMessage(course.id + ' ' + curUser.id + '您没有权限进行此操作。');
+        throw new ErrorMessage('您没有权限进行此操作。');
+      }
+    }
+
+    let contest;
+    if (judge.type === 1) {
+      contest = await Contest.findById(judge.type_info);
+
+      if (contest.course_id) {
+        course = await Course.findById(contest.course_id);
+        if (!await course.isSupervisior(curUser)) {
+          throw new ErrorMessage('您没有权限进行此操作。');
+        }
+      } else {
+        if (!(curUser && await contest.isSupervisior(curUser))) {
+          res.redirect(syzoj.utils.makeUrl(['contest', 'submission', id]));
+          return;
+        }
       }
     }
 
