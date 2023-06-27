@@ -12,7 +12,7 @@ app.get('/contests', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
-    let allContests = await Contest.queryAll(Contest.createQueryBuilder());
+    let allContests = await Contest.queryAll(Contest.createQueryBuilder().where({ ranklist_id: TypeORM.Not(TypeORM.IsNull()) }));
     let myContests = await allContests.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
 
     let query = Contest.createQueryBuilder().where('id in (:ids)', { ids: myContests.map(x => x.id) });
@@ -47,6 +47,8 @@ app.get('/contest/:id/edit', async (req, res) => {
       contest = await Contest.create();
       contest.id = 0;
       contest.reg_info = '请遵守考试纪律。';
+    } else if (!contest.ranklist_id) {
+      throw new ErrorMessage('您没有权限进行此操作。');
     } else {
       // if contest exists, both system administrators and contest administrators can edit it.
       if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.split('|').includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
@@ -90,6 +92,8 @@ app.post('/contest/:id/edit', async (req, res) => {
       // Only new contest can be set type
       if (!['noi', 'ioi', 'usaco', 'icpc'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
       contest.type = req.body.type;
+    } else if (!contest.ranklist_id) {
+      throw new ErrorMessage('您没有权限进行此操作。');
     } else {
       // if contest exists, both system administrators and contest administrators can edit it.
       if (!res.locals.user || (!res.locals.user.is_admin && !contest.admins.split('|').includes(res.locals.user.id.toString()))) throw new ErrorMessage('您没有权限进行此操作。');
@@ -148,7 +152,7 @@ app.get('/contest/:id', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest) throw new ErrorMessage('无此比赛。');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -266,7 +270,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest) throw new ErrorMessage('无此比赛。');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -355,6 +359,7 @@ app.get('/submissions/contest/:id', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -485,7 +490,6 @@ app.get('/submissions/contest/:id', async (req, res) => {
   }
 });
 
-
 app.get('/contest/submission/:id', async (req, res) => {
   try {
     const curUser = res.locals.user;
@@ -500,6 +504,7 @@ app.get('/contest/submission/:id', async (req, res) => {
     }
 
     const contest = await Contest.findById(judge.type_info);
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
     contest.ended = contest.isEnded();
 
     if (await contest.isSupervisior(curUser)) {
@@ -551,7 +556,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest) throw new ErrorMessage('无此比赛。');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -585,7 +590,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
 
     await syzoj.utils.markdown(problem, ['description', 'input_format', 'output_format', 'example', 'limit_and_hint']);
 
-    let state = await problem.getJudgeState(res.locals.user, false);
+    let state = await problem.getJudgeState(res.locals.user, false, 1, contest.id);
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
 
     await problem.loadRelationships();
@@ -613,7 +618,7 @@ app.get('/contest/:id/:pid/download/additional_file', async (req, res) => {
 
     let id = parseInt(req.params.id);
     let contest = await Contest.findById(id);
-    if (!contest) throw new ErrorMessage('无此比赛。');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -666,7 +671,7 @@ app.get('/contest/:id/register', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest) throw new ErrorMessage('无此比赛。');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -705,7 +710,7 @@ app.post('/contest/:id/register', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest) throw new ErrorMessage('无此比赛。');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 

@@ -197,7 +197,7 @@ app.post('/admin/rating/add', async (req, res) => {
   try {
     if (!res.locals.user || !res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
     const contest = await Contest.findById(req.body.contest);
-    if (!contest) throw new ErrorMessage('无此比赛');
+    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛');
 
     await contest.loadRelationships();
     const newcalc = await RatingCalculation.create({ contest_id: contest.id });

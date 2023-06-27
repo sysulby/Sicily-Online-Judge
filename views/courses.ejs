@@ -1,0 +1,61 @@
+<% this.title = '课程' %>
+<% include header %>
+<div class="padding">
+  <h2 class="ui header" style="margin-bottom: 30px;">课程体系</h2>
+  <% if (courses.length) { %>
+  <% if (user && user.is_admin) { %>
+  <form class="ui mini form" style="margin-top: -30px;">
+    <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
+      <a href="<%= syzoj.utils.makeUrl(['course', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
+        <i class="ui icon plus"></i>
+        添加课程
+      </a>
+   </div>
+  </form>
+  <% } %>
+  <table class="ui very basic center aligned table">
+    <thead>
+      <tr>
+        <th>课程名称</th>
+        <th>课程简介</th>
+        <th>课程主管</th>
+        <% if (user) { %>
+        <th>状态</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+      for (let course of courses) {
+        let tag = '';
+      %>
+      <tr>
+        <% if (!course.is_public) { %>
+          <% tag = '<span class="ui header"><div class="ui mini red label">未公开</div></span>' %>
+        <% } %>
+        <td><a href="<%= syzoj.utils.makeUrl(['course', course.id]) %>"><%= course.title %> <%- tag %></a></td>
+        <td class="font-content"><%- course.subtitle %></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['user', course.owner.id]) %>"><%= course.owner.username %></a></td>
+        <% if (user) { %>
+        <td></td>
+        <% } %>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+  <% } else { %>
+  <div class="ui placeholder segment">
+    <div class="ui icon header">
+      <i class="book icon" style="margin-bottom: 20px; "></i>
+      暂无课程
+    </div>
+    <% if (user && user.is_admin) { %>
+    <a href="<%= syzoj.utils.makeUrl(['course', 0, 'edit']) %>" class="ui primary labeled icon button">
+      <i class="ui icon plus"></i>
+      添加第一门课程
+    </a>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+<% include footer %>

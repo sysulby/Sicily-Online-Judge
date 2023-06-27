@@ -6,6 +6,7 @@ declare var syzoj, ErrorMessage: any;
 import User from "./user";
 import Problem from "./problem";
 import Contest from "./contest";
+import Course from "./course";
 
 const Judger = syzoj.lib('judger');
 
@@ -127,11 +128,11 @@ export default class JudgeState extends Model {
     if (this.type === 0) return await this.problem.isAllowedEditBy(user);
     if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
-      if (contest.isRunning()) {
-        return user && await contest.isSupervisior(user);
-      } else {
-        return true;
-      }
+      return user && await contest.isSupervisior(user);
+    }
+    if (this.type === 2) {
+      let course = await Course.findById(this.type_info);
+      return user && await course.isSupervisior(user);
     }
   }
 

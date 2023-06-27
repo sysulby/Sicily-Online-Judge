@@ -2,6 +2,7 @@ let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
 let User = syzoj.model('user');
 let Contest = syzoj.model('contest');
+let Course = syzoj.model('course');
 let Problem = syzoj.model('problem');
 
 const jwt = require('jsonwebtoken');
@@ -150,6 +151,11 @@ app.get('/submission/:id', async (req, res) => {
     const curUser = res.locals.user;
     if (!await judge.isAllowedVisitBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
+    let course;
+    if (judge.type === 2) {
+      course = await Course.findById(judge.type_info);
+    }
+
     let contest;
     if (judge.type === 1) {
       contest = await Contest.findById(judge.type_info);
@@ -193,7 +199,8 @@ app.get('/submission/:id', async (req, res) => {
         displayConfig: displayConfig
       }, syzoj.config.session_secret) : null,
       displayConfig: displayConfig,
-      contest: contest
+      contest: contest,
+      course: course
     });
   } catch (e) {
     syzoj.log(e);

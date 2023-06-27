@@ -10,11 +10,12 @@ function formatSize(x, precision) {
   return fixed + ' ' + unit;
 }
 
-const submissionUrl = <%- serializejs(displayConfig.inContest ?
-  syzoj.utils.makeUrl(['contest', 'submission', '20000528']) :
+const submissionUrl = <%- serializejs(
+  displayConfig.inContest ? syzoj.utils.makeUrl(['contest', 'submission', '20000528']) :
   syzoj.utils.makeUrl(['submission', '20000528'])) %>;
-const problemUrl = <%- serializejs(displayConfig.inContest ?
-  syzoj.utils.makeUrl(['contest', contest.id, 'problem', '20000528']) :
+const problemUrl = <%- serializejs(
+  typeof course !== 'undefined' && course ? syzoj.utils.makeUrl(['course', course.id, 'problem', '20000528']) :
+  displayConfig.inContest ? syzoj.utils.makeUrl(['contest', contest.id, 'problem', '20000528']) :
   syzoj.utils.makeUrl(['problem', '20000528'])) %>;
 const userUrl = <%- serializejs(syzoj.utils.makeUrl(['user', '20000528'])) %>;
 

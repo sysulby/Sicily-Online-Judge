@@ -1,0 +1,173 @@
+<% this.title =  '课程题库 - ' + course.title %>
+<% include header %>
+<%
+let set = null;
+if (typeof problemSet !== 'undefined') set = problemSet;
+let tagIDs = [];
+if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
+%>
+<div class="padding">
+  <h1><%= course.title %></h1>
+  <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
+  <div class="ui grid" style="margin-bottom: 10px; ">
+    <div class="row" style="white-space: nowrap; ">
+      <div class="seven wide column">
+        <div class="ui mini dropdown button" id="problem_set_dropdown">
+          <i class="file alternate icon"></i> <%= set ? set.title : '全部题目' %> <i class="dropdown icon"></i>
+          <div class="menu">
+            <a class="item" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>"><i class="file alternate icon"></i> 全部题目</a>
+            <% for (let set of problemSets) { %>
+              <a class="item" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems'], { set: set.id }) %>" title=<%= set.subtitle %> >
+                <i class="file alternate icon"></i> <%= set.title %>
+              </a>
+            <% } %>
+          </div>
+        </div>
+        <% if (typeof keyword !== 'undefined') { %>
+          <% let query = {}; %>
+          <% if (set) query['set'] = set.id; %>
+          <% if (tagIDs) query['tags'] = tagIDs.join(','); %>
+          <% let url = syzoj.utils.makeUrl(['course', course.id, 'problems'], query); %>
+          <a href="<%= url %>" class="ui tiny grey label">
+            <i class="search alternate icon"></i> <%= keyword %> <i class="delete icon"></i>
+          </a>
+        <% } %>
+        <% if (typeof tags !== 'undefined') { %>
+          <%
+          tags.sort((a, b) => {
+            return a.color > b.color ? 1 : -1;
+          });
+          %>
+          <% for (let tag of tags) { %>
+              <% let tagListRemovedThisTag = tagIDs.filter(x => x != tag.id).sort().join(','); %>
+              <% let query = {}; %>
+              <% if (set) query['set'] = set.id; %>
+              <% if (typeof keyword !== 'undefined') query['keyword'] = keyword; %>
+              <% if (tagListRemovedThisTag) query['tags'] = tagListRemovedThisTag; %>
+              <% let url = syzoj.utils.makeUrl(['course', course.id, 'problems'], query); %>
+              <a href="<%= url %>" class="ui tiny <%= tag.color %> label">
+                <%= tag.name %> <i class="delete icon"></i>
+              </a>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <% if (problems.length) { %>
+  <table class="ui very basic center aligned table">
+    <thead>
+      <tr>
+        <th class="one wide">提交状态</th>
+        <th class="one wide"><%- createSortableTitle('id', '编号', true) %></th>
+        <th class="left aligned">
+          <%- createSortableTitle('title', '题目名称', true) %>
+          <div class="ui toggle checkbox" id="show_tag" style="float: right; ">
+            <style id="show_tag_style"></style>
+            <script data-cfasync="false">
+            if (localStorage.getItem('show_tag') !== '0') {
+              document.write('<input type="checkbox" checked>');
+              document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
+            } else {
+              document.write('<input type="checkbox">');
+              document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
+            }
+            </script>
+
+            <script>
+            $(function () {
+              $('#show_tag').checkbox('setting', 'onChange', function () {
+                let checked = $('#show_tag').checkbox('is checked');
+                localStorage.setItem('show_tag', checked ? '1' : '0');
+                if (checked) {
+                  document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { white-space: nowrap; overflow: hidden; }';
+                } else {
+                  document.getElementById('show_tag_style').innerHTML = '.show_tag_controled { width: 0; white-space: nowrap; overflow: hidden; }';
+                }
+              });
+            });
+            </script>
+            <label>显示标签</label>
+          </div>
+        </th>
+        <th class="one wide"><%- createSortableTitle('ac_num', '通过', false) %></th>
+        <th class="one wide"><%- createSortableTitle('submit_num', '提交', false) %></th>
+        <th class="one wide">通过率</th>
+      </tr>
+    </thead>
+    <tbody>
+    <% for (let problem of problems) { %>
+        <tr style="height: 44px; ">
+            <td>
+            <% if (problem.judge_state) { %>
+              <a href="<%= syzoj.utils.makeUrl(['submission', problem.judge_state.id]) %>">
+                <span class="status <%= problem.judge_state.status.toLowerCase().split(' ').join('_') %>">
+                  <i class="<%= icon[problem.judge_state.status] || 'remove' %> icon"></i>
+                </span>
+              </a>
+            <% } %>
+            </td>
+            <td><b><%= problem.id %></b></td>
+            <td class="left aligned">
+              <a style="vertical-align: middle; " href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]) %>"><%= problem.title %></a>
+              <div class="show_tag_controled" style="float: right; ">
+                <%
+                if (problem.tags) {
+                  for (let tag of problem.tags) {
+                    let tagListToggledThisTag;
+                    if (!tagIDs.includes(tag.id)) tagListToggledThisTag = tagIDs.concat([tag.id]);
+                    else tagListToggledThisTag = tagIDs.filter(x => x != tag.id);
+                    tagListToggledThisTag = tagListToggledThisTag.sort().join(',');
+
+                    let query = {};
+                    if (set) query['set'] = set.id;
+                    if (typeof keyword !== 'undefined') query['keyword'] = keyword;
+                    if (tagListToggledThisTag) query['tags'] = tagListToggledThisTag;
+                    let url = syzoj.utils.makeUrl(['course', course.id, 'problems'], query);
+                  %>
+                  <span class="ui header">
+                    <a href="<%= url %>" class="ui tiny <%= tag.color %> label">
+                      <%= tag.name %>
+                    </a>
+                  </span>
+                  <%
+                  }
+                }
+                %>
+              </div>
+            </td>
+            <td><%= problem.ac_num %></td>
+            <td><%= problem.submit_num %></td>
+            <td><%= problem.submit_num != 0 ? (((problem.ac_num / problem.submit_num * 100) || 0).toFixed(2) + '%') : '-' %></td>
+        </tr>
+    <% } %>
+    </tbody>
+  </table><br>
+  <% include page  %>
+  <% } else { %>
+  <div class="ui placeholder segment">
+    <div class="ui icon header">
+      <% if (typeof req.query.keyword !== 'undefined') { %>
+      <i class="search icon" style="margin-bottom: 20px; "></i>
+      找不到符合条件的题目
+      <% } else { %>
+      <i class="list icon" style="margin-bottom: 20px; "></i>
+      暂无题目
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+<script>
+document.addEventListener('keydown', function (event) {
+  if (event.keyCode === 39) document.getElementById('page_next').click();
+  else if (event.keyCode === 37) document.getElementById('page_prev').click();
+});
+
+$(function () {
+  $('#problem_set_dropdown').dropdown();
+});
+$(function () {
+  $('#add_problem_dropdown').dropdown();
+});
+</script>
+<% include footer %>

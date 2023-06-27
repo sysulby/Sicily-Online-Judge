@@ -77,7 +77,9 @@ app.get('/api/v2/search/set/:sid/problems/:keyword*?', async (req, res) => {
   try {
     let ProblemSetMap = syzoj.model('problem_set_map');
 
-    let setProblemIDs = (await ProblemSetMap.queryAll(ProblemSetMap.createQueryBuilder().where({ set_id: req.params.sid }))).map(x => x.problem_id);
+    let setProblemIDs = (await ProblemSetMap.queryAll(ProblemSetMap.createQueryBuilder().where({
+      set_id: req.params.sid
+    }))).map(x => x.problem_id);
     if (!setProblemIDs) return res.send({ success: false });
 
     let Problem = syzoj.model('problem');
@@ -104,6 +106,59 @@ app.get('/api/v2/search/set/:sid/problems/:keyword*?', async (req, res) => {
     }
     await problems.forEachAsync(async problem => {
       if (await problem.isAllowedUseBy(res.locals.user) && result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id) {
+        result.push(problem);
+      }
+    });
+
+    result = result.map(x => ({ name: `#${x.id}. ${x.title}`, value: x.id, url: syzoj.utils.makeUrl(['problem', x.id]) }));
+    res.send({ success: true, results: result });
+  } catch (e) {
+    syzoj.log(e);
+    res.send({ success: false });
+  }
+});
+
+app.get('/api/v2/search/course/:id/problems/:keyword*?', async (req, res) => {
+  try {
+    let Course = syzoj.model('course');
+
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course || !await course.isSupervisior(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let ProblemSetMap = syzoj.model('problem_set_map');
+
+    let setIDs = course.problem_sets.split('|');
+    let setProblemIDs = (await ProblemSetMap.queryAll(ProblemSetMap.createQueryBuilder().where({
+      set_id: TypeORM.In([...setIDs])
+    }))).map(x => x.problem_id);
+    if (!setProblemIDs) return res.send({ success: false });
+
+    let Problem = syzoj.model('problem');
+
+    let keyword = req.params.keyword || '';
+    let problems = await Problem.find({
+      where: {
+        id: TypeORM.In([...setProblemIDs]),
+        title: TypeORM.Like(`%${req.params.keyword}%`)
+      },
+      order: {
+        id: 'ASC'
+      }
+    });
+
+    let result = [];
+
+    let id = parseInt(keyword);
+    if (id) {
+      let problemById = await Problem.findById(parseInt(keyword));
+      if (problemById && setProblemIDs.includes(problemById.id)) result.push(problemById);
+    }
+    await problems.forEachAsync(async problem => {
+      if (result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id) {
         result.push(problem);
       }
     });

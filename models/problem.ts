@@ -323,13 +323,18 @@ export default class Problem extends Model {
     return null;
   }
 
-  async getJudgeState(user, acFirst) {
+  async getJudgeState(user, acFirst, type?, type_info?) {
     if (!user) return null;
 
     let where: any = {
       user_id: user.id,
       problem_id: this.id
     };
+
+    if (type) {
+      where.type = type;
+      where.type_info = type_info;
+    }
 
     if (acFirst) {
       where.status = 'Accepted';

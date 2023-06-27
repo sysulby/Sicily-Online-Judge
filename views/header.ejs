@@ -51,7 +51,7 @@
       }
     </style>
 </head>
-<body style="position: relative; overflow-y: overlay; ">
+<body style="position: relative; overflow-y: scroll !important; ">
     <div class="ui top attached borderless menu" style="height: 90px; background-color: #fafafa; ">
         <div class="ui container">
             <%
@@ -63,6 +63,37 @@
             <% } else { %>
             <a class="header item" href="/"><span style="font-family: 'Exo 2'; font-size: 2em; font-weight: 600; "><%= syzoj.config.title %></span></a>
             <% } %>
+            <% if (active === 'contest') { %>
+            <% } else if (active === 'course') { %>
+              <% if (typeof course !== 'undefined' && course) { %>
+              <div class="item">
+                <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>" method="get">
+                  <div class="ui search" id="banner_search" style="width: 100%; ">
+                    <div class="ui left icon input" style="width: 100%; ">
+                      <input class="prompt" style="width: 100%; padding: 0.5em; " type="text" placeholder="ID / 题目名 …" id="search_keyword" name="keyword">
+                      <i class="search icon"></i>
+                    </div>
+                    <div class="results" style="width: 100%; "></div>
+                  </div>
+                </form>
+                <script>
+                $(function () {
+                  $('#banner_search').search({
+                    debug: true,
+                    saveRemoteData: false,
+                    apiSettings: {
+                      url: '/api/v2/search/course/<%= course.id %>/problems/{query}',
+                      cache: false
+                    },
+                    fields: {
+                      title: 'name'
+                    }
+                  });
+                });
+                </script>
+              </div>
+              <% } %>
+            <% } else { %>
             <div class="item">
               <form action="<%= syzoj.utils.makeUrl(['problems']) %>" method="get">
                 <input type="hidden" id="search_set" name="set" />
@@ -93,6 +124,7 @@
               });
               </script>
             </div>
+            <% } %>
             <div class="right menu">
               <% if (user) { %>
               <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" style="color: #0000ff; font-size: 1.5rem; ">
@@ -122,11 +154,15 @@
             <a class="header item" href="/" style="color: white; "><i class="home icon"></i> 首页</a>
             <a class="header item" href="/problems" onclick="location.href=this.href+'?set='+localStorage.getItem('set');return false;" style="color: white; "><i class="list icon"></i> 题库</a>
             <a class="header item" href="/contests" style="color: white; "><i class="trophy icon"></i> 比赛</a>
+            <a class="header item" href="/courses" style="color: white; "><i class="book icon"></i> 课程</a>
             <a class="header item" href="/ranklist" style="color: white; "><i class="signal icon"></i> 排名</a>
             <a class="header item" href="/submissions" style="color: white; "><i class="tasks icon"></i> 评测</a>
             <a class="header item" href="/discussion/global" style="color: white; "><i class="comments icon"></i> 讨论</a>
             <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
               <a id="back_to_contest" class="header item" href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回比赛</a>
+            <% } %>
+            <% if (typeof course !== 'undefined' && course && course.id) { %>
+              <a id="back_to_course" class="header item" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课程</a>
             <% } %>
             <% if (user && user.is_admin) { %>
             <div class="right menu">

@@ -1,0 +1,95 @@
+<% this.title = course.id ? '课程设置' : '新建课程' %>
+<% include header %>
+<div class="padding">
+  <form action="<%= syzoj.utils.makeUrl(['course', course.id, 'edit']) %>" method="post">
+    <div class="ui form">
+      <div class="field">
+        <label>课程名称</label>
+        <input type="text" name="title" value="<%= course.title %>">
+      </div>
+      <div class="field">
+        <label>课程简介</label>
+        <input type="text" name="subtitle" class="markdown-edit" value="<%= course.subtitle %>">
+      </div>
+      <div class="field">
+        <label>课程介绍</label>
+        <textarea rows="5" name="information" class="markdown-edit"><%= course.information %></textarea>
+      </div>
+      <div class="field">
+        <label>课程主管</label>
+        <select class="ui fluid search dropdown" id="search_owner"<% if (!user.is_admin) { %> disabled<% } %> name="owner">
+          <option value="<%= owner.id %>" selected><%= owner.username %></option>
+        </select>
+      </div>
+      <div class="field">
+        <label>课程组成员</label>
+        <select class="ui fluid search dropdown" multiple="" id="search_teachers"<% if (!user.is_admin) { %> disabled<% } %> name="teachers">
+        <% for (let admin of teachers) { %>
+          <option value="<%= admin.id %>" selected><%= admin.username %></option>
+        <% } %>
+        </select>
+      </div>
+      <div class="field">
+        <label>关联题单</label>
+        <select class="ui fluid search dropdown" multiple="" id="search_sets" name="problem_sets">
+        <% for (let set of problem_sets) { %>
+          <option value="<%= set.id %>" selected><%= set.title %></option>
+        <% } %>
+        </select>
+      </div>
+      <div class="inline field">
+        <label class="ui header">公开</label>
+        <div class="ui toggle checkbox">
+          <input type="checkbox"<% if (course.is_public) { %> checked<% } %><% if (!user.is_admin) { %> disabled<% } %> name="is_public">
+          <label><span style="visibility: hidden; ">　</span></label>
+        </div>
+      </div>
+      <div style="text-align: center; "><button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>提交</button></div>
+    </div>
+  </form>
+<script>
+$(function () {
+  $('#search_owner')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/users/{query}',
+        cache: false
+      }
+    });
+  $('#search_teachers')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/users/{query}',
+        onResponse: function (response) {
+          var a = $('#search_teachers').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+  $('#search_sets')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/sets/{query}',
+        onResponse: function (response) {
+          var a = $('#search_sets').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x) { return !a.includes(parseInt(x.value));});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+});
+</script>
+<% include footer %>

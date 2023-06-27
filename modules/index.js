@@ -22,10 +22,10 @@ app.get('/', async (req, res) => {
     }));
 
     let contests = await Contest.queryRange([1, 3], Contest.createQueryBuilder()
-      .where({ is_public: true })
+      .where({ ranklist_id: TypeORM.Not(TypeORM.IsNull()), is_public: true })
       // Show active contests only.
       .andWhere(new TypeORM.Brackets(qb => {
-        qb.where('end_time is NULL')
+        qb.where('end_time IS NULL')
           .orWhere('UNIX_TIMESTAMP(CURRENT_TIMESTAMP) < end_time')
       }))
       // Contests started later come first.

@@ -1,0 +1,85 @@
+<% this.title = lesson.title + ' - 课节' %>
+<% include header %>
+<div class="padding">
+  <h1><%= lesson.title %></h1>
+  <div style="margin-bottom: 30px;"><%- lesson.subtitle %></div>
+  <div class="ui grid">
+    <div class="row">
+      <div class="column">
+        <div class="ui buttons">
+          <a class="ui small primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid, 'ranklist']) %>">排行榜</a>
+          <% let submissionsUrl = syzoj.utils.makeUrl(['submissions', 'course', course.id], { lid: lid }); %>
+          <a class="ui small button" href="<%= submissionsUrl %>">提交记录</a>
+        </div>
+        <div class="ui buttons right floated">
+          <% if (isCourseOwner) { %>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid, 'edit']) %>">编辑课节</a>
+          <div class="ui basic modal" id="modal-delete-lesson">
+            <div class="ui icon header">
+              <i class="trash alternate icon"></i>
+              <p style="margin-top: 15px; ">删除课节</p>
+            </div>
+            <div class="content" style="text-align: center; ">
+              <p>确认删除此课节吗？</p>
+            </div>
+            <div class="actions">
+              <div class="ui red basic cancel inverted button">
+                <i class="remove icon"></i>
+                否
+              </div>
+              <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid, 'delete']) %>">
+                <i class="checkmark icon"></i>
+                是
+              </a>
+            </div>
+          </div>
+          <div class="small ui red button" onclick="$('#modal-delete-lesson').modal('show')">删除课节</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% if (lesson.information) { %>
+    <div class="row">
+      <div class="column">
+        <h4 class="ui top attached block header">信息与公告</h4>
+        <div class="ui bottom attached segment font-content">
+          <%- lesson.information %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+    <div class="row">
+      <div class="column">
+        <table class="ui selectable celled table">
+          <thead>
+            <tr>
+              <th class="one wide" style="text-align: center">状态</th>
+              <th>题目</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%
+            let i = 0;
+            for (let problem of problems) {
+              i++;
+            %>
+            <tr>
+              <td class="center aligned" style="white-space: nowrap; ">
+              <% if (problem.judge_state) { %>
+                <a href="<%= syzoj.utils.makeUrl(['submission', problem.judge_state.id]) %>">
+                  <span class="status <%= problem.judge_state.status.toLowerCase().split(' ').join('_') %>">
+                    <i class="<%= icon[problem.judge_state.status] || 'remove' %> icon"></i>
+                  </span>
+                </a>
+              <% } %>
+              </td>
+              <td><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'problem', problem.id]) %>"><%= syzoj.utils.removeTitleTag(problem.title) %></a></td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<% include footer %>

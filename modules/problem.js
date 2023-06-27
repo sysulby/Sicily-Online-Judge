@@ -2,6 +2,7 @@ let Problem = syzoj.model('problem');
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
 let Contest = syzoj.model('contest');
+let Course = syzoj.model('course');
 let ProblemSet = syzoj.model('problem_set');
 let ProblemTag = syzoj.model('problem_tag');
 let Article = syzoj.model('article');
@@ -469,10 +470,14 @@ app.get('/problem/:id/manage', async (req, res) => {
 
     await problem.loadRelationships();
 
+    let testdata = await problem.listTestdata();
     let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
+
+    problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user)
 
     res.render('problem_manage', {
       problem: problem,
+      testdata: testdata,
       testcases: testcases
     });
   } catch (e) {
@@ -647,11 +652,24 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       }
     }
 
+    let course_id = parseInt(req.query.course_id);
+    let course;
     let contest_id = parseInt(req.query.contest_id);
     let contest;
-    if (contest_id) {
+    if (course_id) {
+      course = await Course.findById(course_id);
+      if (!course) throw new ErrorMessage('无此课程。');
+      const isSupervisior = await course.isSupervisior(curUser);
+      if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await course.hasProblem(problem)) throw new ErrorMessage('无此题目。');
+
+      judge_state.type = 2;
+      judge_state.type_info = course_id;
+
+      await judge_state.save();
+    } else if (contest_id) {
       contest = await Contest.findById(contest_id);
-      if (!contest) throw new ErrorMessage('无此比赛。');
+      if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
       if (!(contest.isRunning() || contest.isEnded()) && (!await contest.isSupervisior(curUser))) throw new ErrorMessage('比赛尚未开始。');
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
@@ -734,33 +752,6 @@ app.post('/problem/:id/delete', async (req, res) => {
   }
 });
 
-app.get('/problem/:id/testdata', async (req, res) => {
-  try {
-    let id = parseInt(req.params.id);
-    let problem = await Problem.findById(id);
-
-    if (!problem) throw new ErrorMessage('无此题目。');
-    if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
-
-    let testdata = await problem.listTestdata();
-    let testcases = await syzoj.utils.parseTestdata(problem.getTestdataPath(), problem.type === 'submit-answer');
-
-    problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user)
-
-    res.render('problem_data', {
-      problem: problem,
-      testdata: testdata,
-      testcases: testcases
-    });
-  } catch (e) {
-    syzoj.log(e);
-    res.status(404);
-    res.render('error', {
-      err: e
-    });
-  }
-});
-
 app.post('/problem/:id/testdata/upload', app.multer.array('file'), async (req, res) => {
   try {
     let id = parseInt(req.params.id);
@@ -775,7 +766,7 @@ app.post('/problem/:id/testdata/upload', app.multer.array('file'), async (req, r
       }
     }
 
-    res.redirect(syzoj.utils.makeUrl(['problem', id, 'testdata']));
+    res.redirect(syzoj.utils.makeUrl(['problem', id, 'manage']));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -795,7 +786,7 @@ app.post('/problem/:id/testdata/delete/:filename', async (req, res) => {
     
     await problem.deleteTestdataSingleFile(req.params.filename);
 
-    res.redirect(syzoj.utils.makeUrl(['problem', id, 'testdata']));
+    res.redirect(syzoj.utils.makeUrl(['problem', id, 'manage']));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -861,10 +852,17 @@ app.get('/problem/:id/download/additional_file', async (req, res) => {
     if (!problem) throw new ErrorMessage('无此题目。');
 
     // XXX: Reduce duplication (see the '/problem/:id/submit' handler)
+    let course_id = parseInt(req.query.course_id);
     let contest_id = parseInt(req.query.contest_id);
-    if (contest_id) {
+    if (course_id) {
+      let course = await Course.findById(course_id);
+      if (!course) throw new ErrorMessage('无此课程。');
+      const isSupervisior = await course.isSupervisior(res.locals.user);
+      if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await course.hasProblem(problem)) throw new ErrorMessage('无此题目。');
+    } else if (contest_id) {
       let contest = await Contest.findById(contest_id);
-      if (!contest) throw new ErrorMessage('无此比赛。');
+      if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
       if (!contest.isRunning()) throw new ErrorMessage('比赛未开始或已结束。');
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');

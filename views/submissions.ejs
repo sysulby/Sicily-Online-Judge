@@ -3,6 +3,11 @@
 <% include util %>
 <script src="<%- lib('textfit/2.3.1/textFit.min.js') %>"></script>
 <div class="padding">
+  <% if (typeof course !== 'undefined' && course) { %>
+    <h1><%= course.title %></h1>
+    <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
+  <% } %>
+
   <% if (displayConfig.inContest) { %>
     <div class="ui large info message">
       <div class="ui header">比赛 - <%= contest.title %></div>
@@ -16,7 +21,7 @@
     <input type="hidden" name="contest" value="<%= form.contest %>" />
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <label style="font-size: 1.2em; margin-right: 1px; ">题目：</label>
-      <div class="field"><input name="problem_id" style="width: 50px; " type="text" value="<%= form.problem_id %>"></div>
+      <div class="field"><input name="problem_id" style="width: 75px; " type="text" value="<%= form.problem_id %>"></div>
       <% if (displayConfig.showOthers) { %>
         <label style="font-size: 1.2em; margin-right: 1px; ">提交者：</label>
         <div class="field"><input name="submitter" style="width: 100px; " type="text" value="<%= form.submitter %>"></div>
