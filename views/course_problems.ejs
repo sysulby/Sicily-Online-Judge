@@ -17,7 +17,7 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
           <div class="menu">
             <a class="item" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>"><i class="file alternate icon"></i> 全部题目</a>
             <% for (let set of problemSets) { %>
-              <a class="item" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems'], { set: set.id }) %>" title=<%= set.subtitle %> >
+              <a class="item" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems'], { set: set ? set.id : undefined }) %>" title=<%= set.subtitle %> >
                 <i class="file alternate icon"></i> <%= set.title %>
               </a>
             <% } %>

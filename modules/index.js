@@ -22,7 +22,7 @@ app.get('/', async (req, res) => {
     }));
 
     let contests = await Contest.queryRange([1, 3], Contest.createQueryBuilder()
-      .where({ ranklist_id: TypeORM.Not(TypeORM.IsNull()), is_public: true })
+      .where({ admins: TypeORM.Not(TypeORM.IsNull()), is_public: true })
       // Show active contests only.
       .andWhere(new TypeORM.Brackets(qb => {
         qb.where('end_time IS NULL')

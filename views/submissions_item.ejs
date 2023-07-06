@@ -11,9 +11,12 @@ function formatSize(x, precision) {
 }
 
 const submissionUrl = <%- serializejs(
-  displayConfig.inContest ? syzoj.utils.makeUrl(['contest', 'submission', '20000528']) :
+  typeof lesson !== 'undefined' && lesson ? syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'submission', '20000528']) :
+  displayConfig.inContest ? syzoj.utils.makeUrl(['contest', contest.id, 'submission', '20000528']) :
   syzoj.utils.makeUrl(['submission', '20000528'])) %>;
+const rejudgeUrl = <%- serializejs(syzoj.utils.makeUrl(['submission', '20000528'])) %>;
 const problemUrl = <%- serializejs(
+  typeof lesson !== 'undefined' && lesson ? syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'problem', '20000528']) :
   typeof course !== 'undefined' && course ? syzoj.utils.makeUrl(['course', course.id, 'problem', '20000528']) :
   displayConfig.inContest ? syzoj.utils.makeUrl(['contest', contest.id, 'problem', '20000528']) :
   syzoj.utils.makeUrl(['problem', '20000528'])) %>;
@@ -36,6 +39,9 @@ Vue.component('submission-item', {
     },
     submissionLink() {
       return submissionUrl.replace('20000528', this.data.info.submissionId);
+    },
+    rejudgeLink() {
+      return rejudgeUrl.replace('20000528', this.data.info.submissionId);
     },
     problemLink() {
       return problemUrl.replace('20000528', this.data.info.problemId);
@@ -105,7 +111,7 @@ Vue.component('submission-item', {
   <td v-if="showRejudge">
     <a id="skip-button" :onclick="'check_skip(' + (statusString === 'Waiting' || statusString.startsWith('Running')).toString() + ')'" style="color: #000; " href="#"><i class="fast forward icon"></i></a>
     <a id="rejudge-button" :onclick="'check_rejudge(' + (statusString === 'Waiting' || statusString.startsWith('Running')).toString() + ')'" style="color: #000; " href="#"><i class="repeat icon"></i></a>
-    <% if (active === 'submission') { %>
+    <% if (active === 'submission' || active === 'contest' || active === 'class') { %>
     <div class="ui basic modal" id="modal-skip">
       <div class="ui icon header">
         <i class="fast forward icon"></i>
@@ -120,7 +126,7 @@ Vue.component('submission-item', {
           <i class="remove icon"></i>
           否
         </div>
-        <a class="ui green ok inverted button" :href-post="submissionLink + '/skip'">
+        <a class="ui green ok inverted button" :href-post="rejudgeLink + '/skip'">
           <i class="checkmark icon"></i>
           是
         </a>
@@ -140,7 +146,7 @@ Vue.component('submission-item', {
           <i class="remove icon"></i>
           否
         </div>
-        <a class="ui green ok inverted button" :href-post="submissionLink + '/rejudge'">
+        <a class="ui green ok inverted button" :href-post="rejudgeLink + '/rejudge'">
           <i class="checkmark icon"></i>
           是
         </a>
@@ -150,7 +156,7 @@ Vue.component('submission-item', {
   </td>
 </tr>
 </script>
-<% if (active === 'submission') { %>
+<% if (active === 'submission' || active === 'contest' || active === 'class') { %>
 <script>
 function check_rejudge(pending) {
   if (pending) {

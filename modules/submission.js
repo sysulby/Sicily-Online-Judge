@@ -3,6 +3,7 @@ let FormattedCode = syzoj.model('formatted_code');
 let User = syzoj.model('user');
 let Contest = syzoj.model('contest');
 let Course = syzoj.model('course');
+let Clazz = syzoj.model('clazz');
 let Problem = syzoj.model('problem');
 
 const jwt = require('jsonwebtoken');
@@ -151,6 +152,20 @@ app.get('/submission/:id', async (req, res) => {
     const curUser = res.locals.user;
     if (!await judge.isAllowedVisitBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
+    let lesson;
+    if (judge.type === 3) {
+      lesson = await Contest.findById(judge.type_info);
+      if (lesson) {
+        let clazz = await Clazz.findById(lesson.holder_id);
+        if (clazz) {
+          let lessonIDs = await clazz.getLessons();
+          let lid = lessonIDs.indexOf(lesson.id) + 1;
+          // Redirect lesson submission to the specific page.
+          if (lid > 0) return res.redirect(syzoj.utils.makeUrl(['class', lesson.holder_id, 'lesson', lid, 'submission', id]));
+        }
+      }
+    }
+
     let course;
     if (judge.type === 2) {
       course = await Course.findById(judge.type_info);
@@ -161,8 +176,8 @@ app.get('/submission/:id', async (req, res) => {
       contest = await Contest.findById(judge.type_info);
 
       // Redirect contest submission to the specific page.
-      if (!await contest.isSupervisior(curUser)) {
-        return res.redirect(syzoj.utils.makeUrl(['contest', 'submission', id]));
+      if (contest) {
+        return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'submission', id]));
       }
     }
 

@@ -15,6 +15,10 @@
         <label>课节公告</label>
         <textarea rows="5" name="information" class="markdown-edit"><%= lesson.information %></textarea>
       </div>
+      <div class="two wide field">
+        <label>持续时间</label>
+        <input type="text" name="duration" value="<%= lesson.duration ? syzoj.utils.formatTime(lesson.duration) : '' %>">
+      </div>
       <div class="field">
         <label>题目列表</label>
         <select class="ui fluid search dropdown" multiple="" id="search_problems" name="problems">

@@ -1,0 +1,131 @@
+<% this.title = lid ? '编辑课节' : '新建课节' %>
+<% include header %>
+<style>
+#back_to_class { display: none;  }
+</style>
+<div class="padding">
+  <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'edit']) %>" method="post">
+    <div class="ui form">
+        <div class="field">
+          <label>课节名称</label>
+          <input type="text" <% if (!isCourseOwner) { %>disabled<% } %> name="title" value="<%= lesson.title %>">
+        </div>
+        <div class="field">
+          <label>课节描述</label>
+          <input type="text" <% if (!isCourseOwner) { %>disabled<% } %> name="subtitle" class="markdown-edit" value="<%= lesson.subtitle %>">
+        </div>
+      <div class="two fields">
+        <div class="field">
+            <label>课节公告</label>
+            <textarea rows="5" name="information" class="markdown-edit"><%= lesson.information %></textarea>
+        </div>
+        <div class="field">
+            <label>考试须知</label>
+            <textarea rows="5" name="reg_info" class="markdown-edit"><%= lesson.reg_info %></textarea>
+        </div>
+      </div>
+      <div class="four fields">
+        <div class="three wide field">
+            <label>开始时间</label>
+            <input type="text" name="start_time" value="<%= lesson.start_time ? syzoj.utils.formatDate(lesson.start_time) : '' %>">
+        </div>
+        <div class="three wide field">
+            <label>结束时间</label>
+            <input type="text" name="end_time" value="<%= lesson.end_time ? syzoj.utils.formatDate(lesson.end_time) : '' %>">
+        </div>
+        <div class="two wide field">
+            <label>持续时间</label>
+            <input type="text" <% if (!isCourseOwner) { %>disabled<% } %> name="duration" value="<%= lesson.duration ? syzoj.utils.formatTime(lesson.duration) : '' %>">
+        </div>
+        <div class="eight wide field">
+            <label>邀请码</label>
+            <input type="text" name="reg_token" value="<%= lesson.reg_token %>">
+        </div>
+      </div>
+      <div class="field">
+          <label>试题列表</label>
+          <select class="ui fluid search dropdown" multiple="" id="search_problems" <% if (!isCourseOwner) { %>disabled<% } %> name="problems">
+          <% for (let problem of problems) { %>
+          <option value="<%= problem.id %>" selected>#<%= problem.id %>. <%= problem.title %></option>
+          <% } %>
+          </select>
+      </div>
+      <div class="inline fields">
+        <label>赛制</label>
+        <div class="field">
+          <div class="ui radio checkbox">
+            <input type="radio" <% if (!isCourseOwner) { %>disabled<% } %> name="type" id="type-noi" value="noi"<% if (lesson.type === 'noi') { %> checked="checked"<% } %>>
+            <label for="type-noi">NOI</label>
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui radio checkbox">
+            <input type="radio" <% if (!isCourseOwner) { %>disabled<% } %> name="type" id="type-ioi" value="ioi"<% if (lesson.type === 'ioi') { %> checked="checked"<% } %>>
+            <label for="type-ioi">IOI</label>
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui radio checkbox">
+            <input type="radio" <% if (!isCourseOwner) { %>disabled<% } %> name="type" id="type-usaco" value="usaco"<% if (!lesson.id || lesson.type === 'usaco') { %> checked="checked"<% } %>>
+            <label for="type-usaco">USACO</label>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+          <label>排行参数（格式：<code>{ "题目序号": 系数 }</code>）</label>
+          <input type="text" <% if (!isCourseOwner) { %>disabled<% } %> name="ranking_params" value="<%= lesson.ranklist ? JSON.stringify(lesson.ranklist.ranking_params) : '' %>">
+      </div>
+      <div class="inline field">
+        <label class="ui header">公开</label>
+        <div class="ui toggle checkbox">
+          <input type="checkbox"<% if (lesson.is_public) { %> checked<% } %> name="is_public">
+          <label><span style="visibility: hidden; ">　</span></label>
+        </div>
+      </div>
+      <div class="inline field">
+        <label class="ui header">隐藏统计信息</label>
+        <div class="ui toggle checkbox">
+          <input type="checkbox"<% if (lesson.hide_statistics) { %> checked<% } %> name="hide_statistics">
+          <label><span style="visibility: hidden; ">　</span></label>
+        </div>
+      </div>
+      <div style="text-align: center; "><button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>提交</button></div>
+    </div>
+  </form>
+<script>
+$(function () {
+  $('#search_admins')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/users/{query}',
+        onResponse: function (response) {
+          var a = $('#search_admins').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+  $('#search_problems')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/course/<%= course.id %>/problems/{query}',
+        onResponse: function (response) {
+          var a = $('#search_problems').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x) {return !a.includes(parseInt(x.value));});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+});
+</script>
+<% include footer %>

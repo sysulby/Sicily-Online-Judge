@@ -1,4 +1,5 @@
 let Course = syzoj.model('course');
+let Clazz = syzoj.model('clazz');
 let Contest = syzoj.model('contest');
 let Problem = syzoj.model('problem');
 let ProblemSet = syzoj.model('problem_set');
@@ -22,14 +23,80 @@ app.get('/courses', async (req, res) => {
     });
 
     if (!curUser) {
-      res.render('courses', {
+      return res.render('courses', {
         courses: courses
       });
-      return;
     }
 
+    await courses.forEachAsync(async x => {
+      if (await x.hasOwnership(curUser)) {
+        let query = Clazz.createQueryBuilder().andWhere('is_public = 0');
+        query.andWhere('course_id = :course_id', { course_id: x.id });
+        if (!curUser.is_admin) query.andWhere('teachers = \'\'');
+        x.notice = await Clazz.countQuery(query);
+      }
+    });
+
+    let allClasses = await Clazz.queryAll(Clazz.createQueryBuilder());
+    let classes = await allClasses.filterAsync(async x => await x.isParticipant(curUser));
+    let activeClasses = await classes.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
+
+    activeClasses.sort((a, b) => {
+      let x = (!a.is_public ? (a.teachers === '' ? 0 : 1) : 2);
+      let y = (!b.is_public ? (b.teachers !== '' ? 0 : 1) : 2);
+      return x != y ? x - y : b.start_time - a.start_time;
+    });
+
+    await activeClasses.forEachAsync(async x => {
+      x.running = x.isRunning();
+      x.owner = await User.findById(await x.owner_id);
+      x.teacher = await User.findById(await x.getMainTeacher());
+    });
+
     res.render('courses', {
-      courses: courses
+      courses: courses,
+      active_classes: activeClasses
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/courses/archived', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    if (!curUser) throw new ErrorMessage('请先登录。',
+      { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+
+    let publicClasses = await Clazz.queryAll(Clazz.createQueryBuilder().andWhere('is_public = 1'));
+    let classes = await publicClasses.filterAsync(async x => await x.isParticipant(curUser));
+    let archivedClassIDs = classes.filter(x => x.isEnded()).map(x => x.id);
+
+    if (!archivedClassIDs.length) {
+      return res.render('courses_archived', {
+        archived_classes: []
+      });
+    }
+
+    let query = Clazz.createQueryBuilder().andWhere('id in (:ids)', { ids: archivedClassIDs });
+    let paginate = syzoj.utils.paginate(await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
+
+    let archivedClasses = await Clazz.queryPage(paginate, query, {
+      start_time: 'DESC'
+    });
+
+    await archivedClasses.forEachAsync(async x => {
+      x.teacher = await User.findById(await x.getMainTeacher());
+      x.owner = await User.findById(await x.owner_id);
+    });
+
+    res.render('courses_archived', {
+      archived_classes: archivedClasses,
+      paginate: paginate
     });
   } catch (e) {
     syzoj.log(e);
@@ -188,6 +255,7 @@ app.get('/course/:id/problems', async (req, res) => {
     let course = await Course.findById(courseID);
 
     if (!course) throw new ErrorMessage('无此课程。');
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
 
     const isSupervisior = await course.isSupervisior(curUser);
 
@@ -329,6 +397,7 @@ app.get('/submissions/course/:id', async (req, res) => {
     let course = await Course.findById(courseID);
 
     if (!course) throw new ErrorMessage('无此课程。');
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
 
     const isSupervisior = await course.isSupervisior(curUser);
 
@@ -349,9 +418,9 @@ app.get('/submissions/course/:id', async (req, res) => {
     query.andWhere('type = 2');
     query.andWhere('type_info = :type_info', { type_info: courseID });
 
-    if (req.query.lid) {
+    if (req.query.lesson) {
       let lessonIDs = await course.getLessons();
-      let lid = parseInt(req.query.lid);
+      let lid = parseInt(req.query.lesson);
       if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
       let lessonID = lessonIDs[lid - 1];
       let lesson = await Contest.findById(lessonID);
@@ -565,22 +634,22 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
 
     if (!lesson) {
       lesson = await Contest.create();
-
-      lesson.holder_id = curUser.id;
-      lesson.teachers = '';
     } else {
       await lesson.loadRelationships();
     }
 
+    if (!['noi', 'ioi', 'usaco'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
+    lesson.type = req.body.type;
     if (!req.body.title.trim()) throw new ErrorMessage('课节名不能为空。');
     lesson.title = req.body.title;
     lesson.subtitle = req.body.subtitle;
     lesson.information = req.body.information;
-    lesson.admins = '';
+    if (lesson.type === 'usaco') {
+      if (!req.body.duration.trim()) throw new ErrorMessage('请指定持续时间。');
+      lesson.duration = syzoj.utils.parseTime(req.body.duration);
+    }
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     lesson.problems = req.body.problems.join('|');
-    if (!['noi', 'ioi', 'usaco'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
-    lesson.type = req.body.type;
     lesson.hide_statistics = (lesson.type === 'noi');
     lesson.is_public = (req.body.is_public === 'on');
 
@@ -696,7 +765,39 @@ app.get('/course/:id/lesson/:lid/ranklist', async (req, res) => {
 
 app.get('/course/:id/classes', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const allowedManageClass = (curUser && await curUser.hasPrivilege('manage_class'));
+
+    let query = Clazz.createQueryBuilder();
+    query.andWhere('course_id = :course_id', { course_id: courseID });
+
+    let paginate = syzoj.utils.paginate(await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
+    query.orderBy('(CASE WHEN is_public THEN 2 ELSE CAST(teachers != \'\' AS SIGNED INTEGER) END)');
+    query.addOrderBy('start_time', 'DESC');
+    let classes = await Clazz.queryPage(paginate, query);
+
+    await classes.forEachAsync(async x => {
+      x.running = x.isRunning();
+      x.ended = x.isEnded();
+      x.owner = await User.findById(await x.owner_id);
+      x.teacher = await User.findById(await x.getMainTeacher());
+    });
+
+    res.render('course_classes', {
+      course: course,
+      isCourseOwner: isCourseOwner,
+      allowedManageClass: allowedManageClass,
+      classes: classes,
+      paginate: paginate
+    });
   } catch (e) {
     syzoj.log(e);
     res.render('error', {

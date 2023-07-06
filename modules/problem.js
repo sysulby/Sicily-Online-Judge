@@ -2,7 +2,9 @@ let Problem = syzoj.model('problem');
 let JudgeState = syzoj.model('judge_state');
 let FormattedCode = syzoj.model('formatted_code');
 let Contest = syzoj.model('contest');
+let ContestPlayer = syzoj.model('contest_player');
 let Course = syzoj.model('course');
+let Clazz = syzoj.model('clazz');
 let ProblemSet = syzoj.model('problem_set');
 let ProblemTag = syzoj.model('problem_tag');
 let Article = syzoj.model('article');
@@ -652,11 +654,30 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       }
     }
 
+    let class_id = parseInt(req.query.class_id);
+    let lid = parseInt(req.query.lid);
+    let clazz;
+    let lesson;
     let course_id = parseInt(req.query.course_id);
     let course;
     let contest_id = parseInt(req.query.contest_id);
     let contest;
-    if (course_id) {
+    if (class_id) {
+      clazz = await Clazz.findById(class_id);
+      if (!clazz) throw new ErrorMessage('无此班级。');
+      course = await Course.findById(clazz.course_id);
+      if (!course) throw new ErrorMessage('错误的课程。');
+      let lessonIDs = await clazz.getLessons();
+      if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+      let lessonID = lessonIDs[lid - 1];
+      lesson = await Contest.findById(lessonID);
+      if (!await clazz.isSupervisior(curUser) && !await ContestPlayer.findInContest({ contest_id: lesson.id, user_id: curUser.id })) throw new ErrorMessage('您没有权限进行此操作。');
+
+      judge_state.type = 3;
+      judge_state.type_info = lesson.id;
+
+      await judge_state.save();
+    } else if (course_id) {
       course = await Course.findById(course_id);
       if (!course) throw new ErrorMessage('无此课程。');
       const isSupervisior = await course.isSupervisior(curUser);
@@ -669,7 +690,7 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       await judge_state.save();
     } else if (contest_id) {
       contest = await Contest.findById(contest_id);
-      if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+      if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
       if (!(contest.isRunning() || contest.isEnded()) && (!await contest.isSupervisior(curUser))) throw new ErrorMessage('比赛尚未开始。');
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
@@ -720,8 +741,10 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       }
     }
 
-    if (contest && (!await contest.isSupervisior(curUser))) {
-      res.redirect(syzoj.utils.makeUrl(['contest', 'submission', judge_state.id]));
+    if (lesson) {
+      res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'submission', judge_state.id]));
+    } else if (contest) {
+      res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'submission', judge_state.id]));
     } else {
       res.redirect(syzoj.utils.makeUrl(['submission', judge_state.id]));
     }
@@ -862,7 +885,7 @@ app.get('/problem/:id/download/additional_file', async (req, res) => {
       if (!await course.hasProblem(problem)) throw new ErrorMessage('无此题目。');
     } else if (contest_id) {
       let contest = await Contest.findById(contest_id);
-      if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+      if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
       if (!contest.isRunning()) throw new ErrorMessage('比赛未开始或已结束。');
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');

@@ -3,22 +3,31 @@
 <% include util %>
 <script src="<%- lib('textfit/2.3.1/textFit.min.js') %>"></script>
 <div class="padding">
-  <% if (typeof course !== 'undefined' && course) { %>
+  <% if (typeof lesson !== 'undefined' && lesson) { %>
+    <style>
+      #back_to_class { display: none;  }
+    </style>
+    <h1><%= lesson.title %></h1>
+    <div style="margin-bottom: 30px;"><%- lesson.subtitle %></div>
+    <% if (!displayConfig.showOthers) { %>
+      <div class="ui large info message" style="margin-bottom: 30px;">
+        <p>您只能看到自己的提交。</p>
+      </div>
+    <% } %>
+  <% } else if (typeof course !== 'undefined' && course) { %>
     <h1><%= course.title %></h1>
     <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
-  <% } %>
-
-  <% if (displayConfig.inContest) { %>
-    <div class="ui large info message">
-      <div class="ui header">比赛 - <%= contest.title %></div>
-      <% if (!displayConfig.showOthers) { %>
+  <% } else if (displayConfig.inContest) { %>
+    <h1><%= contest.title %></h1>
+    <div style="margin-bottom: 30px;"><%- contest.subtitle %></div>
+    <% if (!displayConfig.showOthers) { %>
+      <div class="ui large info message" style="margin-bottom: 30px;">
         <p>您只能看到自己的提交。</p>
-      <% } %>
-    </div>
+      </div>
+    <% } %>
   <% } %>
 
-  <form action="<%= syzoj.utils.makeUrl(displayConfig.inContest ? ['submissions', 'contest', contest.id] : ['submissions']) %>" class="ui mini form" method="get" role="form" id="form">
-    <input type="hidden" name="contest" value="<%= form.contest %>" />
+  <form action="<%= syzoj.utils.makeUrl(typeof lesson !== 'undefined' && lesson ? ['submissions', 'class', clazz.id, 'lesson', lid] : displayConfig.inContest ? ['submissions', 'contest', contest.id] : ['submissions']) %>" class="ui mini form" method="get" role="form" id="form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
       <label style="font-size: 1.2em; margin-right: 1px; ">题目：</label>
       <div class="field"><input name="problem_id" style="width: 75px; " type="text" value="<%= form.problem_id %>"></div>

@@ -2,7 +2,7 @@
 <%
 if (typeof lesson === 'undefined') lesson = null;
 if (lesson) {
-  this.title = syzoj.utils.removeTitleTag(problem.title) + ' - ' + lesson.title;
+  this.title = this.alpha(pid) + '. ' + syzoj.utils.removeTitleTag(problem.title) + ' - ' + lesson.title + ' - 课节';
 } else {
   this.title = problem.title + ' - ' + course.title;
 }
@@ -17,6 +17,7 @@ if (lesson) {
 #languages-menu .item::after, #testcase-menu .item::after {
     display: none;
 }
+#back_to_class { display: none;  }
 </style>
 
 <% include monaco-editor %>
@@ -25,7 +26,7 @@ if (lesson) {
     <div class="row">
       <h1 class="ui header">
         <% if (lesson) { %>
-          <%= syzoj.utils.removeTitleTag(lesson.title) %>
+          <%= this.alpha(pid) %>. <%= syzoj.utils.removeTitleTag(problem.title) %>
         <% } else { %>
           #<%= problem.id %>. <%= problem.title %>
         <% } %>
@@ -94,10 +95,11 @@ if (lesson) {
           <% if (!lesson.ended) { %>
             <a class="small ui primary button" href="#submit_code">提交</a>
           <% } else { %>
-            <a class="small ui primary button" href="#submit_code">赛后提交</a>
+            <a class="small ui primary button" href="#submit_code">课后提交</a>
           <% } %>
+          <a class="small ui button" href="<%= syzoj.utils.makeUrl(['submissions', 'class', clazz.id, 'lesson', lid], { problem_id: pid }) %>">提交记录</a>
           <% if (problem.additional_file) { %>
-            <a class="small ui button" href="<%= syzoj.utils.makeUrl(['lesson', lesson.id, pid, 'download', 'additional_file']) %>">附加文件</a>
+            <a class="small ui button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, pid, 'download', 'additional_file']) %>">附加文件</a>
           <% } %>
         <% } else { %>
           <a class="small ui primary button" href="#submit_code">提交</a>
@@ -190,7 +192,7 @@ if (lesson) {
     <div class="row">
         <div class="column">
           <%
-          const formUrl = syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { course_id: course ? course.id : undefined });
+          const formUrl = syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { course_id: course && !lesson ? course.id : undefined, class_id: lesson ? clazz.id : undefined, lid: lesson ? lid: undefined });
           %>
           <form action="<%= formUrl %>" method="post" onsubmit="return submit_code()" id="submit_code" enctype="multipart/form-data">
             <% if (problem.type === 'submit-answer') { %>

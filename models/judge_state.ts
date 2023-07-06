@@ -124,7 +124,7 @@ export default class JudgeState extends Model {
     await this.loadRelationships();
 
     if (!user) return false;
-    if (user.id === this.user_id) return true;
+    if (user.id === this.user_id || user.is_admin) return true;
     if (this.type === 0) return await this.problem.isAllowedEditBy(user);
     if (this.type === 1) {
       let contest = await Contest.findById(this.type_info);
@@ -149,7 +149,7 @@ export default class JudgeState extends Model {
       }
 
       await Promise.all(promises);
-    } else if (this.type === 1) {
+    } else if (this.type === 1 || this.type === 3) {
       let contest = await Contest.findById(this.type_info);
       await contest.newSubmission(this);
     }

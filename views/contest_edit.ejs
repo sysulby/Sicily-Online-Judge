@@ -3,14 +3,14 @@
 <div class="padding">
         <form action="<%= syzoj.utils.makeUrl(['contest', contest.id, 'edit']) %>" method="post">
           <div class="ui form">
-              <div class="field">
-                <label>比赛名称</label>
-                <input type="text" name="title" value="<%= contest.title %>">
-              </div>
-              <div class="field">
-                <label>比赛描述</label>
-                <input type="text" name="subtitle" class="markdown-edit" value="<%= contest.subtitle %>">
-              </div>
+            <div class="field">
+              <label>比赛名称</label>
+              <input type="text" name="title" value="<%= contest.title %>">
+            </div>
+            <div class="field">
+              <label>比赛描述</label>
+              <input type="text" name="subtitle" class="markdown-edit" value="<%= contest.subtitle %>">
+            </div>
             <div class="two fields">
               <div class="field">
                   <label>比赛公告</label>
@@ -35,7 +35,7 @@
                   <input type="text" name="duration" value="<%= contest.duration ? syzoj.utils.formatTime(contest.duration) : '' %>">
               </div>
               <div class="eight wide field">
-                  <label>比赛邀请码</label>
+                  <label>邀请码</label>
                   <input type="text" name="reg_token" value="<%= contest.reg_token %>">
               </div>
             </div>

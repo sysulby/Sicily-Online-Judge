@@ -7,6 +7,7 @@ import User from "./user";
 import Problem from "./problem";
 import ContestRanklist from "./contest_ranklist";
 import ContestPlayer from "./contest_player";
+import Clazz from "./clazz";
 
 enum ContestType {
   NOI = "noi",
@@ -37,15 +38,15 @@ export default class Contest extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   duration: number;
 
-  @TypeORM.Index()
-  @TypeORM.Column({ nullable: true, type: "integer" })
-  holder_id: number;
-
   @TypeORM.Column({ nullable: true, type: "text" })
   information: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   problems: string;
+
+  @TypeORM.Index()
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  holder_id: number;
 
   @TypeORM.Column({ nullable: true, type: "text" })
   admins: string;
@@ -74,12 +75,16 @@ export default class Contest extends Model {
   ranklist?: ContestRanklist;
 
   async loadRelationships() {
-    this.holder = await User.findById(this.holder_id);
-    this.ranklist = await ContestRanklist.findById(this.ranklist_id);
+    if (this.admins !== null) this.holder = await User.findById(this.holder_id);
+    if (this.ranklist_id) this.ranklist = await ContestRanklist.findById(this.ranklist_id);
   }
 
   async isSupervisior(user) {
-    return user && (user.is_admin || this.holder_id === user.id || this.admins.split('|').includes(user.id.toString()));
+    if (!user) return false;
+    if (user.is_admin) return true;
+    if (this.admins !== null) return this.holder_id === user.id || this.admins.split('|').includes(user.id.toString());
+    let clazz = await Clazz.findById(this.holder_id);
+    return await clazz.isSupervisior(user);
   }
 
   allowedSeeingOthers() {
@@ -135,7 +140,7 @@ export default class Contest extends Model {
       });
 
       // Registration is required for all contests.
-      if (!player) throw new ErrorMessage('请先注册参赛。');
+      if (!player) throw new ErrorMessage('请先报名参赛。');
 
       // If contest is ended, submitting is still allowed, but ranklist will be frozen.
       if (this.isEnded(judge_state.submit_time) || (this.type === 'usaco' && judge_state.submit_time > player.reg_time + this.duration)) return;

@@ -7,9 +7,9 @@
     <div class="row">
       <div class="column">
         <div class="ui buttons">
-          <a class="ui small primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid, 'ranklist']) %>">排行榜</a>
-          <% let submissionsUrl = syzoj.utils.makeUrl(['submissions', 'course', course.id], { lid: lid }); %>
-          <a class="ui small button" href="<%= submissionsUrl %>">提交记录</a>
+          <a class="ui small positive disabled button" %>">参与成功</a>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['submissions', 'course', course.id], { lesson: lid }) %>">提交记录</a>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid, 'ranklist']) %>">排行榜</a>
         </div>
         <div class="ui buttons right floated">
           <% if (isCourseOwner) { %>

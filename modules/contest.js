@@ -12,8 +12,15 @@ app.get('/contests', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
-    let allContests = await Contest.queryAll(Contest.createQueryBuilder().where({ ranklist_id: TypeORM.Not(TypeORM.IsNull()) }));
+    let allContests = await Contest.queryAll(Contest.createQueryBuilder().where({ admins: TypeORM.Not(TypeORM.IsNull()) }));
     let myContests = await allContests.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
+
+    if (!myContests.length) {
+      return res.render('contests', {
+        contests: [],
+        paginate: syzoj.utils.paginate(0, req.query.page, syzoj.config.page.contest)
+      });
+    }
 
     let query = Contest.createQueryBuilder().where('id in (:ids)', { ids: myContests.map(x => x.id) });
     let paginate = syzoj.utils.paginate(await Contest.countForPagination(query), req.query.page, syzoj.config.page.contest);
@@ -47,7 +54,8 @@ app.get('/contest/:id/edit', async (req, res) => {
       contest = await Contest.create();
       contest.id = 0;
       contest.reg_info = '请遵守考试纪律。';
-    } else if (!contest.ranklist_id) {
+      contest.reg_token = Math.floor(100000 + Math.random() * 900000);
+    } else if (contest.admins === null) {
       throw new ErrorMessage('您没有权限进行此操作。');
     } else {
       // if contest exists, both system administrators and contest administrators can edit it.
@@ -92,7 +100,7 @@ app.post('/contest/:id/edit', async (req, res) => {
       // Only new contest can be set type
       if (!['noi', 'ioi', 'usaco', 'icpc'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
       contest.type = req.body.type;
-    } else if (!contest.ranklist_id) {
+    } else if (contest.admins === null) {
       throw new ErrorMessage('您没有权限进行此操作。');
     } else {
       // if contest exists, both system administrators and contest administrators can edit it.
@@ -145,41 +153,55 @@ app.post('/contest/:id/edit', async (req, res) => {
   }
 });
 
+app.post('/contest/:id/delete', async (req, res) => {
+  try {
+    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
 app.get('/contest/:id', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
     // if contest is non-public, both system administrators and contest administrators can see it.
     if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
 
-    let player = await ContestPlayer.findInContest({
+    let player = !curUser ? null : await ContestPlayer.findInContest({
       contest_id: contest.id,
       user_id: curUser.id
     });
 
-    if (!isSupervisior && !player) {
-      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
-    }
-
     contest.running = contest.isRunning();
     contest.ended = contest.isEnded();
-    contest.unveiled = isSupervisior || contest.running || contest.ended;
+    contest.unveiled = isSupervisior || (player && (contest.running || contest.ended));
     contest.subtitle = await syzoj.utils.markdown(contest.subtitle);
     contest.information = await syzoj.utils.markdown(contest.information);
-    if (contest.type === 'usaco' && !isSupervisior) {
+    if (contest.type === 'usaco' && !isSupervisior && player) {
       if (syzoj.utils.getCurrentDate() >= player.reg_time + contest.duration) contest.running = false;
       if (contest.unveiled) {
         // Update contest period to running period for player.
         if (contest.end_time == null || player.reg_time < contest.end_time) contest.start_time = player.reg_time;
         if (contest.end_time == null || player.reg_time + contest.duration < contest.end_time) contest.end_time = player.reg_time + contest.duration;
       }
+    }
+
+    if (!isSupervisior && !player) {
+      return res.render('contest', {
+        contest: contest,
+        isSupervisior: isSupervisior,
+        isParticipant: false
+      });
     }
 
     let problems_id = await contest.getProblems();
@@ -251,9 +273,10 @@ app.get('/contest/:id', async (req, res) => {
 
     res.render('contest', {
       contest: contest,
+      isSupervisior: isSupervisior,
+      isParticipant: true,
       problems: problems,
-      hasStatistics: hasStatistics,
-      isSupervisior: isSupervisior
+      hasStatistics: hasStatistics
     });
   } catch (e) {
     syzoj.log(e);
@@ -270,7 +293,7 @@ app.get('/contest/:id/ranklist', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -359,7 +382,8 @@ app.get('/submissions/contest/:id', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
+    contest.subtitle = await syzoj.utils.markdown(contest.subtitle);
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -490,31 +514,36 @@ app.get('/submissions/contest/:id', async (req, res) => {
   }
 });
 
-app.get('/contest/submission/:id', async (req, res) => {
+app.get('/contest/:id/submission/:sid', async (req, res) => {
   try {
+    const id = parseInt(req.params.sid);
+    const judge = await JudgeState.findById(id);
+    if (!judge) throw new ErrorMessage("提交记录 ID 不正确。");
+    if (judge.type !== 1) return res.redirect(syzoj.utils.makeUrl(['submission', id]));
+
     const curUser = res.locals.user;
     if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
 
-    const id = parseInt(req.params.id);
-    const judge = await JudgeState.findById(id);
-    if (!judge) throw new ErrorMessage("提交记录 ID 不正确。");
-
-    if (judge.type !== 1) {
-      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
-    }
-
-    const contest = await Contest.findById(judge.type_info);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    let contest_id = parseInt(req.params.id);
+    let contest = await Contest.findById(contest_id);
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
     contest.ended = contest.isEnded();
 
-    if (await contest.isSupervisior(curUser)) {
-      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
-    }
+    const isSupervisior = await contest.isSupervisior(curUser);
 
-    if (judge.user_id !== curUser.id) throw new ErrorMessage("您没有权限执行此操作。");
+    // if contest is non-public, both system administrators and contest administrators can see it.
+    if (!contest.is_public && !isSupervisior) throw new ErrorMessage('比赛未公开，请耐心等待 (´∀ `)');
+
+    if (judge.type_info !== contest.id) throw new ErrorMessage("提交记录 ID 不正确。");
+
+    if (!isSupervisior && judge.user_id !== curUser.id) throw new ErrorMessage("您没有权限执行此操作。");
 
     const displayConfig = getDisplayConfig(contest);
     displayConfig.showCode = true;
+    if (isSupervisior) {
+      displayConfig.showTestdata = true;
+      displayConfig.showRejudge = true;
+    }
 
     await judge.loadRelationships();
     const problems_id = await contest.getProblems();
@@ -556,7 +585,7 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -572,6 +601,11 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
       return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
     }
 
+    contest.ended = (contest.isEnded() || (contest.type === 'usaco' && !isSupervisior && syzoj.utils.getCurrentDate() >= player.reg_time + contest.duration));
+    if (!await contest.isSupervisior(curUser) && !(contest.isRunning() || contest.isEnded())) {
+      throw new ErrorMessage('比赛尚未开始。');
+    }
+
     let problems_id = await contest.getProblems();
 
     let pid = parseInt(req.params.pid);
@@ -580,11 +614,6 @@ app.get('/contest/:id/problem/:pid', async (req, res) => {
     let problem_id = problems_id[pid - 1];
     let problem = await Problem.findById(problem_id);
     await problem.loadRelationships();
-
-    contest.ended = (contest.isEnded() || (contest.type === 'usaco' && !isSupervisior && syzoj.utils.getCurrentDate() >= player.reg_time + contest.duration));
-    if (!await contest.isSupervisior(curUser) && !(contest.isRunning() || contest.isEnded())) {
-      throw new ErrorMessage('比赛尚未开始。');
-    }
 
     problem.specialJudge = await problem.hasSpecialJudge();
 
@@ -618,7 +647,7 @@ app.get('/contest/:id/:pid/download/additional_file', async (req, res) => {
 
     let id = parseInt(req.params.id);
     let contest = await Contest.findById(id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -634,6 +663,11 @@ app.get('/contest/:id/:pid/download/additional_file', async (req, res) => {
       return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'register']));
     }
 
+    contest.ended = (contest.isEnded() || (contest.type === 'usaco' && !isSupervisior && syzoj.utils.getCurrentDate() >= player.reg_time + contest.duration));
+    if (!await contest.isSupervisior(curUser) && !(contest.isRunning() || contest.isEnded())) {
+      throw new ErrorMessage('比赛尚未开始。');
+    }
+
     let problems_id = await contest.getProblems();
 
     let pid = parseInt(req.params.pid);
@@ -641,14 +675,6 @@ app.get('/contest/:id/:pid/download/additional_file', async (req, res) => {
 
     let problem_id = problems_id[pid - 1];
     let problem = await Problem.findById(problem_id);
-
-    contest.ended = contest.isEnded();
-    if (!(contest.isRunning() || contest.isEnded())) {
-      if (await problem.isAllowedUseBy(res.locals.user)) {
-        return res.redirect(syzoj.utils.makeUrl(['problem', problem_id, 'download', 'additional_file']));
-      }
-      throw new ErrorMessage('比赛尚未开始。');
-    }
 
     await problem.loadRelationships();
 
@@ -671,7 +697,7 @@ app.get('/contest/:id/register', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -710,7 +736,7 @@ app.post('/contest/:id/register', async (req, res) => {
 
     let contest_id = parseInt(req.params.id);
     let contest = await Contest.findById(contest_id);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛。');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛。');
 
     const isSupervisior = await contest.isSupervisior(curUser);
 
@@ -727,7 +753,7 @@ app.post('/contest/:id/register', async (req, res) => {
     }
 
     if (contest.start_time && syzoj.utils.getCurrentDate() < contest.start_time - 72 * 3600) {
-      throw new ErrorMessage('注册将在比赛开始前 72 小时开放，请耐心等待。');
+      throw new ErrorMessage('报名将在比赛开始前 72 小时开放，请耐心等待。');
     }
 
     if (contest.reg_token && contest.reg_token.trim()) {

@@ -1,0 +1,54 @@
+<% this.title = '学员名单' %>
+<% include header %>
+<div class="padding">
+  <h1><%= clazz.title %></h1>
+  <div style="margin-bottom: 30px;"><%- clazz.subtitle %></div>
+  <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'students']) %>" method="post">
+    <div class="ui form">
+      <% if (isMainTeacher) { %>
+      <div class="field">
+        <label>入班须知</label>
+        <textarea rows="5" name="reg_info" <% if (!isClassOwner) { %>disabled<% } %> class="markdown-edit"><%= clazz.reg_info %></textarea>
+      </div>
+      <div class="field">
+        <label>邀请码</label>
+        <input type="text" name="reg_token" <% if (!isClassOwner) { %>disabled<% } %> value="<%= clazz.reg_token %>">
+      </div>
+      <% } %>
+      <div class="field">
+        <label>学员名单</label>
+        <select class="ui fluid search dropdown" multiple="" id="search_students"<% if (!isClassOwner) { %> disabled<% } %> name="students">
+        <% for (let student of students) { %>
+          <option value="<%= student.id %>" selected><%= student.username %></option>
+        <% } %>
+        </select>
+      </div>
+      <div style="text-align: center; ">
+        <% if (isClassOwner) { %>
+        <button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>提交</button>
+        <% } %>
+        <a href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
+      </div>
+    </div>
+  </form>
+<script>
+$(function () {
+  $('#search_students')
+    .dropdown({
+      debug: true,
+      saveRemoteData: false,
+      apiSettings: {
+        url: '/api/v2/search/users/{query}',
+        onResponse: function (response) {
+          var a = $('#search_students').val().map(function (x) { return parseInt(x) });
+          if (response.results) {
+            response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
+          }
+          return response;
+        },
+        cache: false
+      }
+    });
+});
+</script>
+<% include footer %>

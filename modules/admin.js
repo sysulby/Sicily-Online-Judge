@@ -61,7 +61,8 @@ let configItems = {
   'page.ranklist': { name: '排行榜', type: Number },
   'page.discussion': { name: '讨论', type: Number },
   'page.article_comment': { name: '评论', type: Number },
-  'page.contest': { name: '比赛', type: Number }
+  'page.contest': { name: '比赛', type: Number },
+  'page.course': { name: '课程', type: Number }
 };
 
 app.get('/admin/config', async (req, res) => {
@@ -197,7 +198,7 @@ app.post('/admin/rating/add', async (req, res) => {
   try {
     if (!res.locals.user || !res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
     const contest = await Contest.findById(req.body.contest);
-    if (!contest || !contest.ranklist_id) throw new ErrorMessage('无此比赛');
+    if (!contest || contest.admins === null) throw new ErrorMessage('无此比赛');
 
     await contest.loadRelationships();
     const newcalc = await RatingCalculation.create({ contest_id: contest.id });

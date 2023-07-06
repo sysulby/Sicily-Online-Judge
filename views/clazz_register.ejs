@@ -1,15 +1,18 @@
-<% this.title = '报名参赛' %>
+<% this.title = '报名选课' %>
 <% include header %>
+<style>
+#back_to_class { display: none;  }
+</style>
 <div class="padding">
-  <h1><%= contest.title %></h1>
-  <div style="margin-bottom: 30px;"><%- contest.subtitle %></div>
+  <h1><%= clazz.title %></h1>
+  <div style="margin-bottom: 30px;"><%- clazz.subtitle %></div>
   <div class="ui grid">
-    <% if (contest.reg_info) { %>
+    <% if (clazz.reg_info) { %>
     <div class="row">
       <div class="column">
-        <h4 class="ui top attached block header">参赛须知</h4>
+        <h4 class="ui top attached block header">报名须知</h4>
         <div class="ui bottom attached segment font-content">
-          <%- contest.reg_info %>
+          <%- clazz.reg_info %>
         </div>
       </div>
     </div>
@@ -18,12 +21,12 @@
       <div class="column">
         <% if (!reg_open) { %>
         <div class="ui large error message">
-          <p>报名将在比赛开始前 72 小时开放，请耐心等待。</p>
+          <p>报名将在开课前 15 日开放，请耐心等待。</p>
         </div>
         <% } else { %>
-        <form action="<%= syzoj.utils.makeUrl(['contest', contest.id, 'register']) %>" method="post" id="contest_reg">
+        <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'register']) %>" method="post" id="clazz_reg">
           <div class="ui form">
-            <% if (contest.reg_info || hasToken) { %>
+            <% if (clazz.reg_info || hasToken) { %>
             <div class="field">
               <label for="token"><% if (hasToken) { %>邀请码<% } else { %>输入 "AGREE" 以继续<% } %></label>
               <input type="text" name="token">
@@ -31,12 +34,11 @@
             <% } %>
             <div class="ui basic modal" id="modal-confirm">
               <div class="ui icon header">
-                <i class="trophy icon"></i>
-                <p style="margin-top: 15px; ">报名参赛</p>
+                <i class="book icon"></i>
+                <p style="margin-top: 15px; ">报名入班</p>
               </div>
               <div class="content" style="text-align: center; ">
-                <p>确认参加该比赛吗？</p>
-                <b>警告：该操作不可撤销。<% if (contest.type === 'usaco') { %><br>USACO 赛制将在报名完成后开始计时，<br>比赛时长 <%= contest.duration / 60 %> 分钟。<% } %></b>
+                <p>确认报名进入该班级吗？</p>
               </div>
               <div class="actions">
                 <div class="ui red basic cancel inverted button">
@@ -50,15 +52,15 @@
                 <script>
                 $(function () {
                   $('#my_submit').click(function () {
-                    $('#contest_reg').submit();
+                    $('#clazz_reg').submit();
                   });
                 });
                 </script>
               </div>
             </div>
             <div style="text-align: center; margin-top: 30px; ">
-              <div class="ui labeled icon blue button" onclick="$('#modal-confirm').modal('show')"><i class="ui edit icon"></i>参赛</div>
-              <a href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
+              <div class="ui labeled icon blue button" onclick="$('#modal-confirm').modal('show')"><i class="ui edit icon"></i>报名</div>
+              <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
             </div>
           </div>
         </form>

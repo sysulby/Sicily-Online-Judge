@@ -93,6 +93,7 @@
                 </script>
               </div>
               <% } %>
+            <% } else if (active === 'class') { %>
             <% } else { %>
             <div class="item">
               <form action="<%= syzoj.utils.makeUrl(['problems']) %>" method="get">
@@ -107,7 +108,7 @@
               </form>
               <script>
               let set = localStorage.getItem('set');
-              let search_url = !set.trim() || set === '0' ? '/api/v2/search/problems/{query}' : '/api/v2/search/set/' + localStorage.getItem('set') + '/problems/{query}';
+              let search_url = !set || set.trim() || set === '0' ? '/api/v2/search/problems/{query}' : '/api/v2/search/set/' + localStorage.getItem('set') + '/problems/{query}';
               $(function () {
                 $('#search_set').val(localStorage.getItem('set'));
                 $('#banner_search').search({
@@ -155,14 +156,21 @@
             <a class="header item" href="/problems" onclick="location.href=this.href+'?set='+localStorage.getItem('set');return false;" style="color: white; "><i class="list icon"></i> 题库</a>
             <a class="header item" href="/contests" style="color: white; "><i class="trophy icon"></i> 比赛</a>
             <a class="header item" href="/courses" style="color: white; "><i class="book icon"></i> 课程</a>
-            <a class="header item" href="/ranklist" style="color: white; "><i class="signal icon"></i> 排名</a>
             <a class="header item" href="/submissions" style="color: white; "><i class="tasks icon"></i> 评测</a>
+            <a class="header item" href="/ranklist" style="color: white; "><i class="signal icon"></i> 排名</a>
             <a class="header item" href="/discussion/global" style="color: white; "><i class="comments icon"></i> 讨论</a>
             <% if (typeof contest !== 'undefined' && contest && contest.id) { %>
               <a id="back_to_contest" class="header item" href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回比赛</a>
             <% } %>
             <% if (typeof course !== 'undefined' && course && course.id) { %>
+              <% if (typeof clazz !== 'undefined' && clazz && clazz.id) { %>
+                <% if (typeof lesson !== 'undefined' && lesson && lesson.id && lid) { %>
+                <a id="back_to_lesson" class="header item" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课节</a>
+                <% } %>
+                <a id="back_to_class" class="header item" href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回班级</a>
+              <% } else { %>
               <a id="back_to_course" class="header item" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课程</a>
+              <% } %>
             <% } %>
             <% if (user && user.is_admin) { %>
             <div class="right menu">

@@ -187,6 +187,8 @@ app.post('/user/:id/edit', async (req, res) => {
       await user.setPrivileges(privileges);
     }
 
+    user.nickname = req.body.nickname;
+    user.nameplate = req.body.nameplate;
     user.information = req.body.information;
     user.sex = req.body.sex;
     user.public_email = (req.body.public_email === 'on');

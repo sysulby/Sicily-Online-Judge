@@ -1,29 +1,23 @@
-<% this.title = contest.title + ' - 比赛' %>
+<% this.title = lesson.title + ' - 课节' %>
 <% include header %>
 <style>
 .ui.label.pointing.below.left::before { left: 12%; }
 .ui.label.pointing.below.right::before { left: 88%; }
 .ui.label.pointing.below.left { margin-bottom: 0; }
 .ui.label.pointing.below.right { margin-bottom: 0; float: right; }
-#back_to_contest { display: none;  }
+#back_to_lesson { display: none;  }
 </style>
 <div class="padding">
-  <h1><%= contest.title %></h1>
-  <div style="margin-bottom: 30px;"><%- contest.subtitle %></div>
-  <% const seeRanklist = isSupervisior || contest.ended || (contest.allowedSeeingResult() && contest.allowedSeeingOthers()); %>
-  <% let start = contest.start_time ? syzoj.utils.formatDate(contest.start_time) : 'Whenever',
-           end = contest.end_time ? syzoj.utils.formatDate(contest.end_time) : 'Forever'; %>
-  <% if (contest.unveiled && contest.running && start.split(' ')[0] === end.split(' ')[0]) {
+  <h1><%= lesson.title %></h1>
+  <div style="margin-bottom: 30px;"><%- lesson.subtitle %></div>
+  <% const seeRanklist = isSupervisior || lesson.ended || (lesson.allowedSeeingResult() && lesson.allowedSeeingOthers()); %>
+  <% let start = syzoj.utils.formatDate(lesson.start_time), end = syzoj.utils.formatDate(lesson.end_time); %>
+  <% if (lesson.unveiled && lesson.running && start.split(' ')[0] === end.split(' ')[0]) {
     start = start.split(' ')[1]; end = end.split(' ')[1];
   } %>
   <div class="ui pointing below left label"><%= start %></div>
   <div class="ui pointing below right label"><%= end %></div>
-  <% let timePercentage = Math.floor(Math.max(0, Math.min(1,
-    !contest.start_time && !contest.end_time ? 0.5 :
-    !contest.start_time ? Math.min((contest.end_time - syzoj.utils.getCurrentDate()) / 9600, 0.75) :
-    !contest.end_time ? Math.max((contest.start_time + 9600 - syzoj.utils.getCurrentDate()) / 9600, 0.25) :
-    (contest.end_time - syzoj.utils.getCurrentDate()) / (contest.end_time - contest.start_time)
-  )) * 100); %>
+  <% let timePercentage = Math.floor(Math.max(0, Math.min(1, (lesson.end_time - syzoj.utils.getCurrentDate()) / (lesson.end_time - lesson.start_time))) * 100); %>
   <div id="timer-progress" class="ui tiny indicating progress<% if (timePercentage == 0 || timePercentage == 100) { %> disabled<% } %>" dir="rtl" data-percent="<%= timePercentage %>">
     <div class="bar" dir="ltr" style="width: <%= timePercentage %>%;"></div>
   </div>
@@ -31,56 +25,60 @@
     <div class="row">
       <div class="column">
         <div class="ui buttons">
-          <% if(!isParticipant) { %>
-            <a class="ui small primary button" href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'register']) %>">报名参赛</a>
+          <% if (!isParticipant) { %>
+            <% if (lesson.type !== 'usaco') { %>
+            <a class="ui small primary button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'register']) %>">参与作业</a>
+            <% } else { %>
+            <a class="ui small primary button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'register']) %>">参与测试</a>
+            <% } %>
           <% } else { %>
-            <a class="ui small positive disabled button" %>">参赛成功</a>
-            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['submissions', 'contest', contest.id]) %>">提交记录</a>
+            <a class="ui small positive disabled button" %>">参与成功</a>
+            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['submissions', 'class', clazz.id, 'lesson', lid]) %>">提交记录</a>
           <% } %>
-          <% if(seeRanklist) { %>
-            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'ranklist']) %>">排行榜</a>
+          <% if (seeRanklist) { %>
+            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'ranklist']) %>">排行榜</a>
           <% } %>
         </div>
         <div class="ui buttons right floated">
-          <% if (isSupervisior) { %>
-            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'edit']) %>">编辑比赛</a>
+          <% if (isMainTeacher) { %>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'edit']) %>">编辑课节</a>
           <% } %>
-          <% if (user && user.is_admin) { %>
-          <div class="ui basic modal" id="modal-delete-contest">
+          <% if (isCourseOwner) { %>
+          <div class="ui basic modal" id="modal-delete-lesson">
             <div class="ui icon header">
-              <i class="trash icon"></i>
-              <p style="margin-top: 15px; ">删除比赛</p>
+              <i class="trash alternate icon"></i>
+              <p style="margin-top: 15px; ">删除课节</p>
             </div>
             <div class="content" style="text-align: center; ">
-              <p>确认删除此比赛吗？</p>
+              <p>确认删除此课节吗？</p>
             </div>
             <div class="actions">
               <div class="ui red basic cancel inverted button">
                 <i class="remove icon"></i>
                 否
               </div>
-              <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['contest', contest.id, 'delete']) %>">
+              <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'delete']) %>">
                 <i class="checkmark icon"></i>
                 是
               </a>
             </div>
           </div>
-          <div class="small ui red button" onclick="$('#modal-delete-contest').modal('show')">删除比赛</div>
+          <div class="small ui red button" onclick="$('#modal-delete-lesson').modal('show')">删除课节</div>
           <% } %>
         </div>
       </div>
     </div>
-    <% if (contest.information) { %>
+    <% if (lesson.information) { %>
     <div class="row">
       <div class="column">
         <h4 class="ui top attached block header">信息与公告</h4>
         <div class="ui bottom attached segment font-content">
-          <%- contest.information %>
+          <%- lesson.information %>
         </div>
       </div>
     </div>
     <% } %>
-    <% if (contest.unveiled) { %>
+    <% if (lesson.unveiled) { %>
     <div class="row">
       <div class="column">
          <table class="ui selectable celled table">
@@ -102,7 +100,7 @@
               <tr>
                 <td class="center aligned" style="white-space: nowrap; ">
                 <% if (problem.judge_id) { %>
-                  <a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'submission', problem.judge_id]) %>">
+                  <a href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'submission', problem.judge_id]) %>">
                   <% if (typeof problem.status === 'string') { %>
                     <span class="status <%= problem.status.toLowerCase().split(' ').join('_') %>">
                       <b>
@@ -129,16 +127,16 @@
                   <% } %>
                 <% } %>
                 </td>
-                <td><a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'problem', i]) %>"><%= syzoj.utils.removeTitleTag(problem.problem.title) %></a></td>
+                <td><a href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'problem', i]) %>"><%= syzoj.utils.removeTitleTag(problem.problem.title) %></a></td>
                 <% if (hasStatistics) { %>
                   <td class="center aligned" style="white-space: nowrap; ">
-                  <a href="<%= syzoj.utils.makeUrl(['submissions', 'contest', contest.id,], { problem_id: i, status: 'Accepted' }) %>"><%= problem.statistics.accepted %></a>
+                  <a href="<%= syzoj.utils.makeUrl(['submissions', 'class', clazz.id, 'lesson', lid], { problem_id: i, status: 'Accepted' }) %>"><%= problem.statistics.accepted %></a>
                   /
-                    <a href="<%= syzoj.utils.makeUrl(['submissions', 'contest', contest.id], { problem_id: i, min_score: 1 }) %>"><%= problem.statistics.partially %></a>
-                    <% if (contest.type === 'noi' || contest.type === 'ioi' || contest.type === 'usaco') { %>
+                    <a href="<%= syzoj.utils.makeUrl(['submissions', 'class', clazz.id, 'lesson', lid], { problem_id: i, min_score: 1 }) %>"><%= problem.statistics.partially %></a>
+                    <% if (lesson.type === 'noi' || lesson.type === 'ioi' || lesson.type === 'usaco') { %>
                     /
                   <% } %>
-                  <a href="<%= syzoj.utils.makeUrl(['submissions', 'contest', contest.id], { problem_id: i }) %>"><%= problem.statistics.attempt %></a>
+                  <a href="<%= syzoj.utils.makeUrl(['submissions', 'class', clazz.id, 'lesson', lid], { problem_id: i }) %>"><%= problem.statistics.attempt %></a>
                   </td>
                 <% } %>
               </tr>
@@ -155,19 +153,8 @@
 $(function () {
   setInterval(function () {
     $('#timer-progress').progress({
-    <% if (!contest.start_time && !contest.end_time) { %>
-      value: 4800,
-      total: 9600
-    <% } else if (!contest.start_time) { %>
-      value: Math.min(<%= contest.end_time %> - Date.now() / 1000, 7200),
-      total: 9600
-    <% } else if (!contest.end_time) { %>
-      value: Math.max(<%= contest.start_time %> + 9600 - Date.now() / 1000 , 2400),
-      total: 9600
-    <% } else { %>
-      value: <%= contest.end_time %> - Date.now() / 1000,
-      total: <%= contest.end_time - contest.start_time %>
-    <% } %>
+      value: <%= lesson.end_time %> - Date.now() / 1000,
+      total: <%= lesson.end_time - lesson.start_time %>
     });
   }, 5000);
 });

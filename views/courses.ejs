@@ -1,5 +1,68 @@
 <% this.title = '课程' %>
 <% include header %>
+<% if (user) { %>
+<div class="padding">
+  <h2 class="ui header" style="margin-bottom: 30px;">我的班级</h2>
+  <% if (active_classes.length) { %>
+  <form class="ui mini form" style="margin-top: -30px;">
+    <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
+      <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
+        <i class="ui icon archive"></i>
+        结课记录
+      </a>
+   </div>
+  </form>
+  <table class="ui very basic center aligned table">
+    <thead>
+      <tr>
+        <th>班级名称</th>
+        <th>开始时间</th>
+        <th>结束时间</th>
+        <th>班主任</th>
+        <th>任课教师</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+      for (let clazz of active_classes) {
+        let tag = '';
+      %>
+      <tr>
+        <% if (!clazz.is_public) { %>
+          <% if (!clazz.teachers.trim()) { %>
+            <% tag='<span class="ui header"><div class="ui mini disabled yellow label">新申请</div></span>' %>
+          <% } else { %>
+            <% tag='<span class="ui header"><div class="ui mini disabled yellow label">待审核</div></span>' %>
+          <% } %>
+        <% } else if (clazz.running) { %>
+          <% tag = '<span class="ui header"><div class="ui mini green label">进行中</div></span>' %>
+        <% } else { %>
+          <% tag = '<span class="ui header"><div class="ui mini red label">未开始</div></span>' %>
+        <% } %>
+        <td><a href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>"><%= clazz.title %> <%- tag %></a></td>
+        <td><%= syzoj.utils.formatDate(clazz.start_time, 'L') %></td>
+        <td><%= syzoj.utils.formatDate(clazz.end_time, 'L') %></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.owner.id]) %>"><%= clazz.owner.username %></a></td>
+        <td><a href="<%= syzoj.utils.makeUrl(['user', clazz.teacher.id]) %>"><%= clazz.teacher.username %></a></td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+  <br>
+  <% } else { %>
+  <div style="margin-bottom: 30px; " class="ui placeholder segment">
+    <div class="ui icon header">
+      <i class="book icon" style="margin-bottom: 20px; "></i>
+      暂无进行中的班级
+    </div>
+    <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui primary labeled icon button">
+      <i class="ui icon archive"></i>
+      查看结课记录
+    </a>
+  </div>
+  <% } %>
+</div>
+<% } %>
 <div class="padding">
   <h2 class="ui header" style="margin-bottom: 30px;">课程体系</h2>
   <% if (courses.length) { %>
@@ -37,7 +100,7 @@
         <td class="font-content"><%- course.subtitle %></td>
         <td><a href="<%= syzoj.utils.makeUrl(['user', course.owner.id]) %>"><%= course.owner.username %></a></td>
         <% if (user) { %>
-        <td></td>
+        <td><% if (course.notice) { %><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>"><i class="exclamation triangle yellow icon"></i>x <%= course.notice %></a><% } %></td>
         <% } %>
       </tr>
       <% } %>
