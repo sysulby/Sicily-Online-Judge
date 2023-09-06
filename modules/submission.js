@@ -31,7 +31,8 @@ app.get('/submissions', async (req, res) => {
 
     const curUser = res.locals.user;
 
-    let query = JudgeState.createQueryBuilder().where('type = 0');
+    let query = JudgeState.createQueryBuilder();
+	  if (!curUser || !curUser.is_admin) query.where('type = 0');
     let isFiltered = false;
 
     let user = await User.fromName(req.query.submitter || '');
@@ -75,8 +76,7 @@ app.get('/submissions', async (req, res) => {
       if (req.query.problem_id) {
         let problem_id = parseInt(req.query.problem_id);
         let problem = await Problem.findById(problem_id);
-        if (!problem)
-          throw new ErrorMessage("无此题目。");
+        if (!problem) throw new ErrorMessage("无此题目。");
         if (await problem.isAllowedUseBy(res.locals.user)) {
           query.andWhere('problem_id = :problem_id', { problem_id: parseInt(req.query.problem_id) || 0 });
           isFiltered = true;
@@ -227,6 +227,8 @@ app.get('/submission/:id', async (req, res) => {
 
 app.post('/submission/:id/skip', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+
     let id = parseInt(req.params.id);
     let judge = await JudgeState.findById(id);
 
@@ -234,12 +236,36 @@ app.post('/submission/:id/skip', async (req, res) => {
 
     await judge.loadRelationships();
 
-    let allowedRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
-    if (!allowedRejudge) throw new ErrorMessage('您没有权限进行此操作。');
+    if (judge.type === 0) {
+      if (!await judge.problem.isAllowedEditBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
-    await judge.skip();
+      await judge.skip();
+      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
+    } else if (judge.type === 1) {
+      let contest = await Contest.findById(judge.type_info);
+      if (!(contest && contest.isSupervisior(curUser))) throw new ErrorMessage('您没有权限进行此操作。');
 
-    res.redirect(syzoj.utils.makeUrl(['submission', id]));
+      await judge.skip();
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'submission', id]));
+    } else if (judge.type === 2) {
+      let course = await Course.findById(judge.type_info);
+      if (!(course && await course.isSupervisior(curUser))) throw new ErrorMessage('您没有权限进行此操作。');
+
+      await judge.skip();
+      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
+    } else if (judge.type === 3) {
+      let lesson = await Contest.findById(judge.type_info);
+      if (lesson) {
+        let clazz = await Clazz.findById(lesson.holder_id);
+        if (!(clazz && await clazz.isSupervisior(curUser))) throw new ErrorMessage('您没有权限进行此操作。');
+
+        await judge.skip();
+
+        let lessonIDs = await clazz.getLessons();
+        let lid = lessonIDs.indexOf(lesson.id) + 1;
+        return res.redirect(syzoj.utils.makeUrl(['class', lesson.holder_id, 'lesson', lid, 'submission', id]));
+      }
+    }
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -250,6 +276,8 @@ app.post('/submission/:id/skip', async (req, res) => {
 
 app.post('/submission/:id/rejudge', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+
     let id = parseInt(req.params.id);
     let judge = await JudgeState.findById(id);
 
@@ -257,12 +285,36 @@ app.post('/submission/:id/rejudge', async (req, res) => {
 
     await judge.loadRelationships();
 
-    let allowedRejudge = await judge.problem.isAllowedEditBy(res.locals.user);
-    if (!allowedRejudge) throw new ErrorMessage('您没有权限进行此操作。');
+    if (judge.type === 0) {
+      if (!await judge.problem.isAllowedEditBy(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
-    await judge.rejudge();
+      await judge.rejudge();
+      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
+    } else if (judge.type === 1) {
+      let contest = await Contest.findById(judge.type_info);
+      if (!(contest && contest.isSupervisior(curUser))) throw new ErrorMessage('您没有权限进行此操作。');
 
-    res.redirect(syzoj.utils.makeUrl(['submission', id]));
+      await judge.rejudge();
+      return res.redirect(syzoj.utils.makeUrl(['contest', contest.id, 'submission', id]));
+    } else if (judge.type === 2) {
+      let course = await Course.findById(judge.type_info);
+      if (!(course && await course.isSupervisior(curUser))) throw new ErrorMessage('您没有权限进行此操作。');
+
+      await judge.rejudge();
+      return res.redirect(syzoj.utils.makeUrl(['submission', id]));
+    } else if (judge.type === 3) {
+      let lesson = await Contest.findById(judge.type_info);
+      if (lesson) {
+        let clazz = await Clazz.findById(lesson.holder_id);
+        if (!(clazz && await clazz.isSupervisior(curUser))) throw new ErrorMessage('您没有权限进行此操作。');
+
+        await judge.rejudge();
+
+        let lessonIDs = await clazz.getLessons();
+        let lid = lessonIDs.indexOf(lesson.id) + 1;
+        return res.redirect(syzoj.utils.makeUrl(['class', lesson.holder_id, 'lesson', lid, 'submission', id]));
+      }
+    }
   } catch (e) {
     syzoj.log(e);
     res.render('error', {

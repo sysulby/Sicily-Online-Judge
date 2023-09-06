@@ -12,6 +12,7 @@
         <div class="ui buttons">
           <a class="ui small primary button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>">开班记录</a>
           <% if (isSupervisior) { %>
+          <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'files']) %>">课程资料</a>
           <a class="ui small button" href="<%= syzoj.utils.makeUrl(['course', course.id, 'problems']) %>">课程题库</a>
           <a class="ui small button" href="<%= syzoj.utils.makeUrl(['submissions', 'course', course.id]) %>">提交记录</a>
           <% } %>
@@ -95,13 +96,14 @@
               <% if (isSupervisior) { %>
               <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %>
                 <% if (!lesson.is_public) { %><span class="ui header"><span class="ui tiny red label">未公开</span></span><% } %>
+                <% if (!lesson.hide_statistics) { %><span class="ui header"><span class="ui tiny green label">展示中</span></span><% } %>
               </a></td>
               <% } else { %>
               <td class="left aligned"><%= syzoj.utils.removeTitleTag(lesson.title) %></td>
               <% } %>
               <% if (isCourseOwner) { %>
               <td>
-                <div class="ui basic modal" id="modal-delete-lesson">
+                <div class="ui basic modal" id="modal-delete-lesson-<%= i %>">
                   <div class="ui icon header">
                     <i class="trash alternate icon"></i>
                     <p style="margin-top: 15px; ">删除课节</p>
@@ -132,7 +134,7 @@
                   <% } else { %>
                   <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i, 'move_down']) %>"><i class="arrow down icon"></i></a>
                   <% } %>
-                  <a class="ui button" onclick="$('#modal-delete-lesson').modal('show')"><i class="trash alternate icon"></i></a>
+                  <a class="ui button" onclick="$('#modal-delete-lesson-' + <%= i %>).modal('show')"><i class="trash alternate icon"></i></a>
                 </div>
               </td>
               <% } %>

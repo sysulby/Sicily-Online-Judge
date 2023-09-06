@@ -39,7 +39,7 @@ app.get('/courses', async (req, res) => {
 
     let allClasses = await Clazz.queryAll(Clazz.createQueryBuilder());
     let classes = await allClasses.filterAsync(async x => await x.isParticipant(curUser));
-    let activeClasses = await classes.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
+    let activeClasses = await classes.filterAsync(async x => !x.isEnded() && (x.is_public || await x.isSupervisior(curUser)));
 
     activeClasses.sort((a, b) => {
       let x = (!a.is_public ? (a.teachers === '' ? 0 : 1) : 2);
@@ -125,7 +125,7 @@ app.get('/course/:id', async (req, res) => {
 
     let lessonIDs = await course.getLessons();
     let lessons = await lessonIDs.mapAsync(async id => await Contest.findById(id));
-    if (!isSupervisior) lessons = lessons.filter(x => x.is_public);
+    if (!isSupervisior) lessons = lessons.filter(x => !x.hide_statistics);
 
     res.render('course', {
       course: course,
@@ -532,9 +532,7 @@ app.get('/course/:id/lesson/:lid', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
-
     if (!lesson) throw new ErrorMessage('无此课节。');
-
     await lesson.loadRelationships();
 
     lesson.subtitle = await syzoj.utils.markdown(lesson.subtitle);
@@ -633,7 +631,9 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
     let lesson = await Contest.findById(lessonID);
 
     if (!lesson) {
+      if (lid) throw new ErrorMessage('系统错误。');
       lesson = await Contest.create();
+      lesson.holder_id = courseID;
     } else {
       await lesson.loadRelationships();
     }
@@ -650,8 +650,10 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
     }
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     lesson.problems = req.body.problems.join('|');
-    lesson.hide_statistics = (lesson.type === 'noi');
+    // lesson.hide_statistics = (lesson.type === 'noi');
     lesson.is_public = (req.body.is_public === 'on');
+    // [TODO]: refactor course presentation logic
+    lesson.hide_statistics = (req.body.is_show !== 'on');
 
     await lesson.save();
 
@@ -690,7 +692,7 @@ app.post('/course/:id/lesson/:lid/move_up', async (req, res) => {
     let lessonIDs = await course.getLessons();
 
     let lid = parseInt(req.params.lid);
-    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
     if (lid > 1) {
       [lessonIDs[lid-2], lessonIDs[lid-1]] = [lessonIDs[lid-1], lessonIDs[lid-2]];
@@ -724,7 +726,7 @@ app.post('/course/:id/lesson/:lid/move_down', async (req, res) => {
     let lessonIDs = await course.getLessons();
 
     let lid = parseInt(req.params.lid);
-    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
     if (lid < lessonIDs.length) {
       [lessonIDs[lid-1], lessonIDs[lid]] = [lessonIDs[lid], lessonIDs[lid-1]];
@@ -743,7 +745,28 @@ app.post('/course/:id/lesson/:lid/move_down', async (req, res) => {
 
 app.post('/course/:id/lesson/:lid/delete', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
+      throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
+    let lessonIDs = await course.getLessons();
+
+    let lid = parseInt(req.params.lid);
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+
+    lessonIDs.splice(lid - 1, 1);
+    course.lessons = lessonIDs.join('|');
+    await course.save();
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id]));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -800,6 +823,126 @@ app.get('/course/:id/classes', async (req, res) => {
     });
   } catch (e) {
     syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/files', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    res.render('course_files', {
+      course: course,
+      isCourseOwner: await course.hasOwnership(curUser),
+      fileList: await course.listCourseFile()
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.status(404);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/files/upload', app.multer.array('file'), async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    if (!await course.hasOwnership(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
+
+    if (req.files) {
+      for (let file of req.files) {
+        await course.uploadCourseSingleFile(file.originalname, file.path, file.size, curUser.is_admin);
+      }
+    }
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'files']));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/course/:id/files/delete/:filename', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    if (!await course.hasOwnership(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
+    
+    await course.deleteCourseSingleFile(req.params.filename);
+
+    res.redirect(syzoj.utils.makeUrl(['course', course.id, 'files']));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+function downloadOrRedirect(req, res, filename, sendName) {
+  if (syzoj.config.site_for_download) {
+    res.redirect(syzoj.config.site_for_download + syzoj.utils.makeUrl(['api', 'v2', 'download', jwt.sign({
+      filename: filename,
+      sendName: sendName,
+      originUrl: syzoj.utils.getCurrentLocation(req)
+    }, syzoj.config.session_secret, {
+      expiresIn: '2m'
+    })]));
+  } else {
+    res.download(filename, sendName);
+  }
+}
+
+app.get('/course/:id/files/download/:filename?', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
+
+    let path = require('path');
+    let filename = path.join(course.getCourseFilePath(), req.params.filename);
+    if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
+
+    downloadOrRedirect(req, res, filename, path.basename(filename));
+  } catch (e) {
+    syzoj.log(e);
+    res.status(404);
     res.render('error', {
       err: e
     });

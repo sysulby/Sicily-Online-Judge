@@ -357,6 +357,7 @@ app.post('/class/:id/approval', async (req, res) => {
           lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
         }
         lesson.is_public = false;
+        lesson.hide_statistics = (contest.type === 'noi');
 
         lesson.holder_id = classID;
         let ranklist = await ContestRanklist.create();
@@ -386,6 +387,84 @@ app.post('/class/:id/delete', async (req, res) => {
     throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
   } catch (e) {
     syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/class/:id/files', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let classID = parseInt(req.params.id);
+    let clazz = await Clazz.findById(classID);
+    if (!clazz) throw new ErrorMessage('无此班级。');
+
+    let course = await Course.findById(clazz.course_id);
+    if (!course) throw new ErrorMessage('错误的课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isClassOwner = await clazz.hasOwnership(curUser);
+    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+
+    if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
+
+    res.render('clazz_files', {
+      course: course,
+      clazz: clazz,
+      fileList: await course.listCourseFile()
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.status(404);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+function downloadOrRedirect(req, res, filename, sendName) {
+  if (syzoj.config.site_for_download) {
+    res.redirect(syzoj.config.site_for_download + syzoj.utils.makeUrl(['api', 'v2', 'download', jwt.sign({
+      filename: filename,
+      sendName: sendName,
+      originUrl: syzoj.utils.getCurrentLocation(req)
+    }, syzoj.config.session_secret, {
+      expiresIn: '2m'
+    })]));
+  } else {
+    res.download(filename, sendName);
+  }
+}
+
+app.get('/class/:id/files/download/:filename?', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let classID = parseInt(req.params.id);
+    let clazz = await Clazz.findById(classID);
+    if (!clazz) throw new ErrorMessage('无此班级。');
+
+    let course = await Course.findById(clazz.course_id);
+    if (!course) throw new ErrorMessage('错误的课程。');
+
+    const isCourseOwner = await course.hasOwnership(curUser);
+    const isClassOwner = await clazz.hasOwnership(curUser);
+    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+
+    if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
+
+    if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
+
+    let path = require('path');
+    let filename = path.join(course.getCourseFilePath(), req.params.filename);
+    if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
+
+    downloadOrRedirect(req, res, filename, path.basename(filename));
+  } catch (e) {
+    syzoj.log(e);
+    res.status(404);
     res.render('error', {
       err: e
     });
@@ -423,6 +502,7 @@ app.get('/class/:id/lesson/:lid', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     await lesson.loadRelationships();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -557,15 +637,13 @@ app.get('/class/:id/lesson/:lid/edit', async (req, res) => {
     let lesson = await Contest.findById(lessonID);
 
     if (!lesson) {
-      // if clazz does not exist, only course owner or class manager can create one
+      // if lesson does not exist, only course owner or class manager can create one
       if (!isCourseOwner) throw new ErrorMessage('您没有权限进行此操作。');
 
       lesson = await Contest.create();
       lesson.id = 0;
-      lesson.reg_info = '请遵守考试纪律。';
-      lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
     } else {
-      // if clazz exists, system administrators and clazz owner and main teacher can edit it.
+      // if lesson exists, system administrators and clazz owner and main teacher can edit it.
       if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
 
       await lesson.loadRelationships();
@@ -617,14 +695,16 @@ app.post('/class/:id/lesson/:lid/edit', async (req, res) => {
     let ranklist = null;
 
     if (!lesson) {
-      // if clazz does not exist, only course owner or class manager can create one
+      // if lesson does not exist, only course owner or class manager can create one
       if (!isCourseOwner) throw new ErrorMessage('您没有权限进行此操作。');
+
+      if (lid) throw new ErrorMessage('系统错误。');
 
       lesson = await Contest.create();
       lesson.holder_id = clazzID;
       ranklist = await ContestRanklist.create();
     } else {
-      // if clazz exists, system administrators and clazz owner and main teacher can edit it.
+      // if lesson exists, system administrators and clazz owner and main teacher can edit it.
       if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
 
       await lesson.loadRelationships();
@@ -637,6 +717,10 @@ app.post('/class/:id/lesson/:lid/edit', async (req, res) => {
       if (!req.body.title.trim()) throw new ErrorMessage('比赛名不能为空。');
       lesson.title = req.body.title;
       lesson.subtitle = req.body.subtitle;
+      if (lesson.type === 'usaco') {
+        if (!req.body.duration.trim()) throw new ErrorMessage('请指定持续时间。');
+        lesson.duration = syzoj.utils.parseTime(req.body.duration);
+      }
       if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
       lesson.problems = req.body.problems.join('|');
 
@@ -655,13 +739,136 @@ app.post('/class/:id/lesson/:lid/edit', async (req, res) => {
     lesson.end_time = !req.body.end_time.trim() ? clazz.end_time :
       Math.min(syzoj.utils.parseDate(req.body.end_time), clazz.end_time);
     if (lesson.type !== 'usaco') lesson.duration = lesson.end_time - lesson.start_time;
-    else if (isCourseOwner && req.body.duration.trim()) lesson.duration = syzoj.utils.parseTime(req.body.duration);
     lesson.reg_info = req.body.reg_info;
     lesson.reg_token = req.body.reg_token;
+    if (lesson.type === 'usaco') {
+      if (!lesson.reg_info) lesson.reg_info = '请遵守考试纪律。';
+      if (!lesson.reg_token) lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
+    }
     lesson.is_public = req.body.is_public === 'on';
     lesson.hide_statistics = req.body.hide_statistics === 'on';
 
     await lesson.save();
+
+    if (!lid) {
+      lid = lessonIDs.length + 1;
+      clazz.lessons += (lid > 1 ? "|" : "") + lesson.id;
+
+      await clazz.save();
+
+      return res.redirect(syzoj.utils.makeUrl(['class', clazz.id]));
+    }
+
+    res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid]));
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/class/:id/lesson/:lid/import', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let classID = parseInt(req.params.id);
+    let clazz = await Clazz.findById(classID);
+    if (!clazz) throw new ErrorMessage('无此班级。');
+
+    let course = await Course.findById(clazz.course_id);
+    if (!course) throw new ErrorMessage('错误的课程。');
+
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
+      throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
+    let lessonIDs = await clazz.getLessons();
+
+    let lid = parseInt(req.params.lid);
+    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+
+    let lessons = await (await course.getLessons()).mapAsync(async id => await Contest.findById(id));
+    lessons = lessons.filter(x => x.is_public);
+
+    res.render('clazz_lesson_import', {
+      course: course,
+      clazz: clazz,
+      lid: lid,
+      lessons: lessons
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/class/:id/lesson/:lid/import', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let classID = parseInt(req.params.id);
+    let clazz = await Clazz.findById(classID);
+    if (!clazz) throw new ErrorMessage('无此班级。');
+
+    let course = await Course.findById(clazz.course_id);
+    if (!course) throw new ErrorMessage('错误的课程。');
+
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
+      throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
+    let lessonIDs = await clazz.getLessons();
+
+    let lid = parseInt(req.params.lid);
+    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+
+    let contest = await Contest.findById(req.body.lesson);
+    if (!contest || !contest.is_public || contest.holder_id !== course.id) throw new ErrorMessage('该课节不可导入。');
+
+    let lessonID = (lid > 0 ? lessonIDs[lid - 1] : 0);
+    let lesson = await Contest.findById(lessonID);
+
+    if (!lesson) {
+      if (lid) throw new ErrorMessage('系统错误。');
+
+      lessonID = (await Contest.create()).id;
+      lesson = await Contest.create(contest);
+      lesson.id = lessonID;
+
+      lesson.start_time = clazz.start_time;
+      lesson.end_time = clazz.end_time;
+      lesson.duration = clazz.end_time - clazz.start_time;
+      if (contest.type === 'usaco') {
+        lesson.duration = contest.duration;
+        lesson.reg_info = '请遵守考试纪律。';
+        lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
+      }
+      lesson.is_public = false;
+      lesson.hide_statistics = false;
+
+      lesson.holder_id = classID;
+      let ranklist = await ContestRanklist.create();
+      ranklist.ranking_params = {};
+      await ranklist.save();
+      lesson.ranklist_id = ranklist.id;
+
+      await lesson.save();
+    } else {
+      if (lesson.is_public) throw new ErrorMessage('无法覆盖已开放的课节。');
+      if (lesson.type !== contest.type) throw new ErrorMessage('课节类型不一致。');
+
+      lesson.title = contest.title;
+      lesson.subtitle = contest.subtitle;
+      if (contest.type === 'usaco') lesson.duration = contest.duration;
+      lesson.problems = contest.problems;
+
+      await lesson.save();
+    }
 
     if (!lid) {
       lid = lessonIDs.length + 1;
@@ -710,6 +917,7 @@ app.get('/class/:id/lesson/:lid/register', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     await lesson.loadRelationships();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -771,6 +979,7 @@ app.post('/class/:id/lesson/:lid/register', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     await lesson.loadRelationships();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -824,7 +1033,7 @@ app.post('/class/:id/lesson/:lid/move_up', async (req, res) => {
     let lessonIDs = await clazz.getLessons();
 
     let lid = parseInt(req.params.lid);
-    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
     if (lid > 1) {
       [lessonIDs[lid-2], lessonIDs[lid-1]] = [lessonIDs[lid-1], lessonIDs[lid-2]];
@@ -860,7 +1069,7 @@ app.post('/class/:id/lesson/:lid/move_down', async (req, res) => {
     let lessonIDs = await clazz.getLessons();
 
     let lid = parseInt(req.params.lid);
-    if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
     if (lid < lessonIDs.length) {
       [lessonIDs[lid-1], lessonIDs[lid]] = [lessonIDs[lid], lessonIDs[lid-1]];
@@ -901,6 +1110,7 @@ app.post('/class/:id/lesson/:lid/public', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
 
     lesson.is_public = true;
     await lesson.save();
@@ -916,7 +1126,30 @@ app.post('/class/:id/lesson/:lid/public', async (req, res) => {
 
 app.post('/class/:id/lesson/:lid/delete', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let classID = parseInt(req.params.id);
+    let clazz = await Clazz.findById(classID);
+    if (!clazz) throw new ErrorMessage('无此班级。');
+
+    let course = await Course.findById(clazz.course_id);
+    if (!course) throw new ErrorMessage('错误的课程。');
+
+    // both system administrators and course owner can edit it.
+    if (!curUser || !await course.hasOwnership(curUser)) {
+      throw new ErrorMessage('您没有权限进行此操作。');
+    }
+
+    let lessonIDs = await clazz.getLessons();
+
+    let lid = parseInt(req.params.lid);
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+
+    lessonIDs.splice(lid - 1, 1);
+    clazz.lessons = lessonIDs.join('|');
+    await clazz.save();
+
+    res.redirect(syzoj.utils.makeUrl(['class', clazz.id]));
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -952,6 +1185,7 @@ app.get('/class/:id/lesson/:lid/ranklist', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     await lesson.loadRelationships();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -1062,6 +1296,7 @@ app.get('/submissions/class/:id/lesson/:lid', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     lesson.subtitle = await syzoj.utils.markdown(lesson.subtitle);
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -1227,6 +1462,7 @@ app.get('/class/:id/lesson/:lid/submission/:sid', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     lesson.ended = lesson.isEnded();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -1305,6 +1541,7 @@ app.get('/class/:id/lesson/:lid/problem/:pid', async (req, res) => {
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     await lesson.loadRelationships();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');
@@ -1388,6 +1625,7 @@ app.get('/class/:id/lesson/:lid/:pid/download/additional_file', async (req, res)
 
     let lessonID = lessonIDs[lid - 1];
     let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
     await lesson.loadRelationships();
 
     if (!lesson.is_public && !isSupervisior) throw new ErrorMessage('课节尚未开放，请稍后再试。');

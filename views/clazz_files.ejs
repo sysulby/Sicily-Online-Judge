@@ -1,0 +1,78 @@
+<%
+this.title = '课程资料';
+function getIcon(filename) {
+  let a = {
+    '.cpp': 'file code outline',
+    '.c': 'file code outline',
+    '.cs': 'file code outline',
+    '.pas': 'file code outline',
+    '.py': 'file code outline',
+    '.js': 'file code outline',
+    '.java': 'file code outline',
+    '.hs': 'file code outline',
+    '.vala': 'file code outline',
+    '.lua': 'file code outline',
+    '.rb': 'file code outline',
+    '.vb': 'file code outline',
+    '.ml': 'file code outline',
+    '.in': 'file text outline',
+    '.out': 'file text outline',
+    '.ans': 'file text outline',
+    '.txt': 'file text outline',
+    '.md': 'file text outline',
+    '.md': 'file text outline',
+    '.docx': 'file word outline',
+    '.odt': 'file word outline',
+    '.xlsx': 'file excel outline',
+    '.ods': 'file excel outline',
+    '.pptx': 'file powerpoint outline',
+    '.odp': 'file powerpoint outline',
+    '.zip': 'file archive outline',
+    '.7z': 'file archive outline',
+  }
+  for (let x in a) if (filename.endsWith(x)) return a[x];
+  return 'file outline';
+}
+%>
+<% include header %>
+<div class="padding">
+  <h1><%= clazz.title %></h1>
+  <div style="margin-bottom: 30px;"><%- clazz.subtitle %></div>
+  <div class="ui grid">
+    <div class="column">
+      <h3 style="text-align: center; ">文件列表</h3>
+      <% if (fileList) { %>
+        <table class="ui very basic center aligned table">
+          <thead>
+            <tr>
+              <th class="left aligned">文件名</th>
+              <th style="width: 100px">文件大小</th>
+              <th style="width: 35px">下载</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% let i = 0; %>
+            <% for (let file of fileList.files) { %>
+            <% i++; %>
+            <tr>
+              <td class="left aligned"><i class="<%= getIcon(file.filename) %> icon"></i> <%= file.filename %></td>
+              <td><%= syzoj.utils.formatSize(file.size) %></td>
+              <td>
+                <a style="color: #000; " href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'files', 'download', file.filename]) %>">
+                  <i class="download icon"></i>
+                </a>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <h4 style="text-align: center; ">无课程资料</h4>
+      <% } %>
+      <div style="text-align: center; ">
+        <a href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
+      </div>
+    </div>
+  </div>
+</div>
+<% include footer %>

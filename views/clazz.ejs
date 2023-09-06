@@ -24,6 +24,9 @@
         <% if (isSupervisior) { %>
         <div class="ui buttons">
           <a class="ui small primary button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'students']) %>">学员名单</a>
+          <% if (isMainTeacher) { %>
+            <a class="ui small button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'files']) %>">课程资料</a>
+          <% } %>
         </div>
         <% } %>
         <div class="ui buttons right floated">
@@ -94,9 +97,9 @@
           <% if (isCourseOwner) { %>
           <form class="ui mini form" style="margin-top: -30px;">
             <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
-              <a href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', 0, 'edit']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
-                <i class="ui icon plus"></i>
-                新建课节
+              <a <% if (!clazz.is_public) { %>disabled<% } %> href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', 0, 'import']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
+                <i class="ui icon cloud download"></i>
+                导入课节
               </a>
            </div>
           </form>

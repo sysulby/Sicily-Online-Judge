@@ -1,0 +1,31 @@
+<% this.title = '导入课节'; %>
+<% include header %>
+<div class="padding">
+  <div style="margin-bottom: 30px; ">
+    <h1 style="margin-bottom: 10px; ">导入课节</h1>
+    从对应课程中选择导入的课节。
+  </div>
+
+  <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'import']) %>" method="post">
+    <div class="ui form">
+      <div class="field">
+        <label>课节列表</label>
+        <select class="ui dropdown" id="lesson" name="lesson">
+          <option value="">选择课节</option>
+          <% for (let lesson of lessons) { %>
+          <option value="<%= lesson.id %>"><%= lesson.title %></option>
+          <% } %>
+        </select>
+      </div>
+      <div style="text-align: center; ">
+        <button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>提交</button>
+        <a href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
+      </div>
+    </div>
+  </form>
+<script>
+$(function () {
+	$('.ui.dropdown:not(.simple)').dropdown();
+});
+</script>
+<% include footer %>

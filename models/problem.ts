@@ -7,6 +7,7 @@ import User from "./user";
 import File from "./file";
 import JudgeState from "./judge_state";
 import Contest from "./contest";
+import ContestPlayer from "./contest_player";
 import ProblemSet from "./problem_set";
 import ProblemSetMap from "./problem_set_map";
 import ProblemTag from "./problem_tag";
@@ -361,8 +362,8 @@ export default class Problem extends Model {
 
   async resetSubmissionCount() {
     await syzoj.utils.lock(['Problem::resetSubmissionCount', this.id], async () => {
-      this.submit_num = await JudgeState.count({ problem_id: this.id, type: TypeORM.Not(1) });
-      this.ac_num = await JudgeState.count({ score: 100, problem_id: this.id, type: TypeORM.Not(1) });
+      this.submit_num = await JudgeState.count({ problem_id: this.id });
+      this.ac_num = await JudgeState.count({ score: 100, problem_id: this.id });
       await this.save();
     });
   }
@@ -631,6 +632,22 @@ export default class Problem extends Model {
       if (flag) {
         await contest.setProblemsNoCheck(problemIDs);
         await contest.save();
+
+        let players = await ContestPlayer.queryAll(ContestPlayer.createQueryBuilder().where({ contest_id: contest.id }));
+        for (let player of players) {
+          delete player.score_details[this.id];
+          let submissions = await JudgeState.find({
+            where: {
+              user_id: player.user_id,
+              problem_id: id,
+              type_info: contest.id
+            }
+          });
+          for (let sm of submissions) {
+            player.updateScore(sm);
+          }
+          await player.save();
+        }
       }
     }
 

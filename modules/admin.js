@@ -171,6 +171,9 @@ app.get('/admin/rating', async (req, res) => {
   try {
     if (!res.locals.user || !res.locals.user.is_admin) throw new ErrorMessage('您没有权限进行此操作。');
     const contests = await Contest.find({
+      where: {
+        admins: TypeORM.Not(TypeORM.IsNull())
+      },
       order: {
         start_time: 'DESC'
       }
@@ -303,6 +306,10 @@ app.post('/admin/other', async (req, res) => {
       const problems = await Problem.find();
       for (const p of problems) {
         await p.resetSubmissionCount();
+      }
+      const users = await User.find();
+      for (const u of users) {
+        await u.refreshSubmitInfo();
       }
     } else if (req.body.type === 'reset_discussion') {
       const articles = await Article.find();

@@ -671,6 +671,7 @@ app.post('/problem/:id/submit', app.multer.fields([{ name: 'answer', maxCount: 1
       if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
       let lessonID = lessonIDs[lid - 1];
       lesson = await Contest.findById(lessonID);
+      if (!lesson) throw new ErrorMessage('无此课节。');
       if (!await clazz.isSupervisior(curUser) && !await ContestPlayer.findInContest({ contest_id: lesson.id, user_id: curUser.id })) throw new ErrorMessage('您没有权限进行此操作。');
 
       judge_state.type = 3;
