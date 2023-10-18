@@ -34,6 +34,13 @@
     "editor": "cpp",
     "format": "cpp"
   },
+  "cpp14-noilinux": {
+    "show": "C++ 14 (NOI)",
+    "highlight": "cpp",
+    "version": "GCC 9.3.0 (NOILinux 2.0)",
+    "editor": "cpp",
+    "format": "cpp"
+  },
   "cpp11-clang": {
     "show": "C++ 11 (Clang)",
     "highlight": "cpp",

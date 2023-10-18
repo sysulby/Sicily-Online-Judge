@@ -477,6 +477,10 @@ app.get('/problem/:id/manage', async (req, res) => {
 
     problem.allowedEdit = await problem.isAllowedEditBy(res.locals.user)
 
+    if (problem.additional_file) {
+      problem.additional_file.size = await syzoj.utils.getFileSize(problem.additional_file.getPath());
+    }
+
     res.render('problem_manage', {
       problem: problem,
       testdata: testdata,
@@ -902,6 +906,25 @@ app.get('/problem/:id/download/additional_file', async (req, res) => {
   } catch (e) {
     syzoj.log(e);
     res.status(404);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.post('/problem/:id/additional_file/delete', async (req, res) => {
+  try {
+    let id = parseInt(req.params.id);
+    let problem = await Problem.findById(id);
+
+    if (!problem) throw new ErrorMessage('无此题目。');
+    if (!await problem.isAllowedEditBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+    
+    await problem.deleteAdditionalFile();
+
+    res.redirect(syzoj.utils.makeUrl(['problem', id, 'manage']));
+  } catch (e) {
+    syzoj.log(e);
     res.render('error', {
       err: e
     });

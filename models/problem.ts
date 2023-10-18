@@ -232,6 +232,18 @@ export default class Problem extends Model {
     });
   }
 
+  async deleteAdditionalFile() {
+    await syzoj.utils.lock(['Promise::AdditionalFile', this.id], async () => {
+      let additional_file = await File.findById(this.additional_file_id);
+      await fs.remove(additional_file.getPath());
+      const entityManager = TypeORM.getManager();
+      await entityManager.query('DELETE FROM `file` WHERE `id` = ' + additional_file.id);
+      await additional_file.destroy();
+      this.additional_file_id = null;
+      await this.save();
+    });
+  }
+
   async hasSpecialJudge() {
     try {
       let dir = this.getTestdataPath();

@@ -219,7 +219,7 @@ module.exports = {
 
         res = res.filter(x => x.cases && x.cases.length !== 0);
 
-        res.frj = !!config.frameJudge;
+        res.frj = !!config.frameJudges;
         res.spj = !!config.specialJudge;
       }
 
@@ -298,6 +298,13 @@ module.exports = {
       return (await fs.statAsync(path)).isFile();
     } catch (e) {
       return false;
+    }
+  },
+  async getFileSize(path) {
+    try {
+      return (await fs.statAsync(path)).size;
+    } catch (e) {
+      return 0;
     }
   },
   async isDir(path) {
