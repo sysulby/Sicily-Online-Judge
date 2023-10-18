@@ -172,10 +172,15 @@
               <a id="back_to_course" class="header item" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课程</a>
               <% } %>
             <% } %>
-            <% if (user && user.is_admin) { %>
+            <% if (user) { %>
             <div class="right menu">
+              <% if (user.is_admin || user.email.substring(user.email.indexOf('@') + 1) === 'turingedu.cn') { %>
+                <% include reg_token %>
+                <a class="header item" href="#" style="color: white; " onclick="reg_token();return false;"><i class="paper plane icon"></i> 获取邀请码</a>
+              <% } %>
+              <% if (user.is_admin) { %>
               <div class="ui simple dropdown item" style="color: white; ">
-                <i class="settings icon"></i> <b>管理</b> <i class="dropdown icon"></i>
+                <i class="settings icon"></i> <b>网站管理</b> <i class="dropdown icon"></i>
                 <div class="menu">
                   <a class="item" href="<%= syzoj.utils.makeUrl(['admin', 'info']) %>"><i class="terminal icon"></i>后台管理</a>
                   <div class="ui basic modal" id="modal-restart">
@@ -200,6 +205,7 @@
                   <a class="item" href="#" onclick="$('#modal-restart').modal('show')"><i class="redo icon"></i>重启服务</a>
                 </div>
               </div>
+              <% } %>
             </div>
             <% } %>
         </div>

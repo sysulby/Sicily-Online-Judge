@@ -10,10 +10,6 @@
                     <label for="username">用户名</label>
                     <input type="text" placeholder="" id="username">
                 </div>
-                <div class="field">
-                    <label for="email">邮箱</label>
-                    <input type="email" placeholder="" id="email">
-                </div>
                 <div class="two fields">
                     <div class="field">
                     <label class="ui header">密码</label>
@@ -23,6 +19,14 @@
                       <label class="ui header">确认密码</label>
                       <input type="password" placeholder="" id="password2">
                     </div>
+                </div>
+                <div class="field">
+                    <label for="email">邮箱</label>
+                    <input type="email" placeholder="" id="email">
+                </div>
+                <div class="field">
+                    <label for="token">邀请码（询问班主任或老师）</label>
+                    <input type="text" placeholder="" id="token">
                 </div>
                 <a id="sign_up" class="ui button" href="javascript:submit();">注册</a>
             </form>
@@ -62,6 +66,7 @@ function submit() {
           username: $("#username").val(),
           password: password,
           email: $("#email").val(),
+          token: $("#token").val(),
           prevUrl: <%- serializejs(req.query.url || '/') %>
         },
         success: function(data) {
@@ -70,17 +75,23 @@ function submit() {
                 case 2001:
                     show_error("服务器未收到数据");
                     break;
-                case 2005:
                 case 2002:
                     show_error("用户名需要大于 3 个字符小于 16 个字符，仅允许字母数字和下划线");
                     break;
-                case 2007:
                 case 2003:
                     show_error("密码不得为空");
                     break;
                 case 2004:
+                    show_error("请输入邀请码");
+                    break;
+                case 2005:
+                    show_error("邀请码不存在");
+                    break;
                 case 2006:
                     show_error("请输入正确的邮箱");
+                    break;
+                case 2007:
+                    show_error("内部账号请联系管理员获取");
                     break;
                 case 2008:
                     show_error("已经有人用过这个用户名了");

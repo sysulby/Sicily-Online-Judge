@@ -1,5 +1,6 @@
 let User = syzoj.model('user');
 let Problem = syzoj.model('problem');
+let RegToken = syzoj.model('reg_token');
 let File = syzoj.model('file');
 const Email = require('../libs/email');
 const jwt = require('jsonwebtoken');
@@ -63,6 +64,29 @@ app.post('/api/forget', async (req, res) => {
   }
 });
 
+app.post('/api/reg_token', async (req, res) => {
+  try {
+    res.setHeader('Content-Type', 'application/json');
+    let curUser = res.locals.user;
+
+    if (!curUser || !(curUser.is_admin || curUser.email.substring(curUser.email.indexOf('@') + 1) === 'turingedu.cn')) throw 1001;
+
+    token = await RegToken.create({
+      token: Math.floor(100000 + Math.random() * 900000).toString(),
+      expire_time: parseInt((new Date()).getTime() / 1000) + 3600 * 24
+    });
+    await token.save();
+
+    res.send({
+      error_code: 1,
+      token: token.token
+    });
+  } catch (e) {
+    syzoj.log(e);
+    res.send(JSON.stringify({ error_code: e }));
+  }
+});
+
 // Sign up
 app.post('/api/sign_up', async (req, res) => {
   try {
@@ -78,6 +102,7 @@ app.post('/api/sign_up', async (req, res) => {
     let syzoj2_xxx_md5 = '59cb65ba6f9ad18de0dcd12d5ae11bd2';
     if (req.body.password === syzoj2_xxx_md5) throw 2007;
     if (!(req.body.email = req.body.email.trim())) throw 2006;
+    if (req.body.email.substring(req.body.email.indexOf('@') + 1) === 'turingedu.cn') throw 2007;
     if (!syzoj.utils.isValidUsername(req.body.username)) throw 2002;
 
     if (syzoj.config.register_mail) {
@@ -107,6 +132,13 @@ app.post('/api/sign_up', async (req, res) => {
 
       res.send(JSON.stringify({ error_code: 2 }));
     } else {
+      if (!(req.body.token = req.body.token.trim())) throw 2004;
+      const token = await RegToken.findOne({ where: { token: req.body.token } });
+      if (!token) throw 2005;
+      const expired = token.isExpired();
+      await token.destroy();
+      if (expired) throw 2005;
+
       user = await User.create({
         username: req.body.username,
         password: req.body.password,

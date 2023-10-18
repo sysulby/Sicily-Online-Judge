@@ -1,0 +1,36 @@
+<script src="<%- lib('blueimp-md5/2.10.0/js/md5.min.js') %>"></script>
+<script type="text/javascript">
+function show_error(error) {
+  $("#global_banner #msg").text(error).fadeIn("slow").delay(2000).fadeOut();
+}
+function reg_token() {
+    $.ajax({
+        url: "/api/reg_token",
+        type: 'POST',
+        async: true,
+        success: function(data) {
+            error_code = data.error_code;
+            switch (error_code) {
+                case 1001:
+                    show_error("获取验证码失败");
+                    break;
+                case 1:
+                    alert("邀请码（有效期 24 小时）: " + data.token);
+                    return;
+                default:
+                    show_error("未知错误");
+                    break;
+            }
+        },
+        error:  function(XMLHttpRequest, textStatus, errorThrown) {
+            alert(XMLHttpRequest.responseText);
+            show_error("未知错误");
+        }
+    });
+}
+$(document).ready(function() {
+    $("#reg_token").click(function() {
+        reg_token();
+    });
+});
+</script>
