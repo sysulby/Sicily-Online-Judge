@@ -940,7 +940,7 @@ app.get('/class/:id/lesson/:lid/register', async (req, res) => {
       lid: lid,
       lesson: lesson,
       reg_open: !lesson.start_time || syzoj.utils.getCurrentDate() >= lesson.start_time - 300,
-      hasToken: lesson.reg_token && lesson.reg_token.trim()
+      hasToken: lesson.reg_token && (typeof lesson.reg_token === "string") && lesson.reg_token.trim()
     });
   } catch (e) {
     syzoj.log(e);
@@ -994,7 +994,7 @@ app.post('/class/:id/lesson/:lid/register', async (req, res) => {
     }
 
     if (lesson.reg_token && lesson.reg_token.trim()) {
-      if (!req.body.token.trim()) throw new ErrorMessage('请输入邀请码。');
+      if (!req.body.token || !req.body.token.trim()) throw new ErrorMessage('请输入邀请码。');
       if (req.body.token !== lesson.reg_token) throw new ErrorMessage('邀请码错误。');
     }
 

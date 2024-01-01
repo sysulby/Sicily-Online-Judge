@@ -55,12 +55,12 @@ app.get('/api/v2/search/problems/:keyword*?', async (req, res) => {
     let id = parseInt(keyword);
     if (id) {
       let problemById = await Problem.findById(parseInt(keyword));
-      if (problemById && (problemById.is_public || await res.locals.user.hasPrivilege('manage_problem'))) {
+      if (problemById && (problemById.is_public || (res.locals.user && await res.locals.user.hasPrivilege('manage_problem')))) {
         result.push(problemById);
       }
     }
     await problems.forEachAsync(async problem => {
-      if ((problem.is_public || await res.locals.user.hasPrivilege('manage_problem')) && result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id) {
+      if ((problem.is_public || (res.locals.user && await res.locals.user.hasPrivilege('manage_problem'))) && result.length < syzoj.config.page.edit_contest_problem_list && problem.id !== id) {
         result.push(problem);
       }
     });
