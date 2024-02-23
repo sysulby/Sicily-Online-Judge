@@ -54,7 +54,7 @@ app.get('/contest/:id/edit', async (req, res) => {
       contest = await Contest.create();
       contest.id = 0;
       contest.reg_info = '请遵守考试纪律。';
-      contest.reg_token = Math.floor(100000 + Math.random() * 900000);
+      contest.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
     } else if (contest.admins === null) {
       throw new ErrorMessage('您没有权限进行此操作。');
     } else {
