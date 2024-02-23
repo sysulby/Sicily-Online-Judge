@@ -175,7 +175,7 @@
             <% } %>
             <% if (user) { %>
             <div class="right menu">
-              <% if (user.is_admin || user.email.substring(user.email.indexOf('@') + 1) === 'turingedu.cn') { %>
+              <% if (user.is_admin || user.email.substring(user.email.indexOf('@') + 1) === syzoj.config.domain) { %>
                 <% include reg_token %>
                 <a class="header item" href="#" style="color: white; " onclick="reg_token();return false;"><i class="paper plane icon"></i> 获取邀请码</a>
               <% } %>

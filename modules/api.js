@@ -46,8 +46,8 @@ app.post('/api/forget', async (req, res) => {
     const vurl = syzoj.utils.getCurrentLocation(req, true) + syzoj.utils.makeUrl(['api', 'forget_confirm'], { token: token });
     try {
       await Email.send(user.email,
-        `${user.username} 的 ${syzoj.config.title} 密码重置邮件`,
-        `<p>请点击该链接来重置密码：</p><p><a href="${vurl}">${vurl}</a></p><p>链接有效期为 12h。如果您不是 ${user.username}，请忽略此邮件。</p>`
+        `来自 ${syzoj.config.title} 的密码重置邮件`,
+        `<p>请点击该链接来重置 ${user.username} 的密码：</p><p><a href="${vurl}">${vurl}</a></p><p>链接有效期为 12h。如果您不是 ${user.username}，请忽略此邮件。</p>`
       );
     } catch (e) {
       return res.send({
@@ -69,11 +69,12 @@ app.post('/api/reg_token', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     let curUser = res.locals.user;
 
-    if (!curUser || !(curUser.is_admin || curUser.email.substring(curUser.email.indexOf('@') + 1) === 'turingedu.cn')) throw 1001;
+    if (!curUser || !(curUser.is_admin || curUser.email.substring(curUser.email.indexOf('@') + 1) === syzoj.config.domain)) throw 1001;
 
-    token = await RegToken.create({
+    let token = await RegToken.create({
       token: Math.floor(100000 + Math.random() * 900000).toString(),
-      expire_time: parseInt((new Date()).getTime() / 1000) + 3600 * 24
+      expire_time: parseInt((new Date()).getTime() / 1000) + 3600 * 24,
+      creator_id: curUser.id
     });
     await token.save();
 
@@ -100,9 +101,9 @@ app.post('/api/sign_up', async (req, res) => {
     // Because the salt is "syzoj2_xxx" and the "syzoj2_xxx" 's md5 is"59cb..."
     // the empty password 's md5 will equal "59cb.."
     let syzoj2_xxx_md5 = '59cb65ba6f9ad18de0dcd12d5ae11bd2';
-    if (req.body.password === syzoj2_xxx_md5) throw 2007;
+    if (req.body.password === syzoj2_xxx_md5) throw 2003;
     if (!(req.body.email = req.body.email.trim())) throw 2006;
-    if (req.body.email.substring(req.body.email.indexOf('@') + 1) === 'turingedu.cn') throw 2007;
+    if (req.body.email.substring(req.body.email.indexOf('@') + 1) === syzoj.config.domain) throw 2007;
     if (!syzoj.utils.isValidUsername(req.body.username)) throw 2002;
 
     if (syzoj.config.register_mail) {
@@ -120,7 +121,7 @@ app.post('/api/sign_up', async (req, res) => {
       const vurl = syzoj.utils.getCurrentLocation(req, true) + syzoj.utils.makeUrl(['api', 'sign_up_confirm'], { token: token });
       try {
         await Email.send(req.body.email,
-          `${req.body.username} 的 ${syzoj.config.title} 注册验证邮件`,
+          `来自 ${syzoj.config.title} 的注册验证邮件`,
           `<p>请点击该链接完成您在 ${syzoj.config.title} 的注册：</p><p><a href="${vurl}">${vurl}</a></p><p>如果您不是 ${req.body.username}，请忽略此邮件。</p>`
         );
       } catch (e) {
@@ -133,11 +134,16 @@ app.post('/api/sign_up', async (req, res) => {
       res.send(JSON.stringify({ error_code: 2 }));
     } else {
       if (!(req.body.token = req.body.token.trim())) throw 2004;
-      const token = await RegToken.findOne({ where: { token: req.body.token } });
-      if (!token) throw 2005;
-      const expired = token.isExpired();
-      await token.destroy();
-      if (expired) throw 2005;
+      if (req.body.token !== syzoj.config.default_token) {
+        const token = await RegToken.findOne({
+          where: { token: req.body.token },
+          order: { expired_time: "DESC" }
+        });
+        if (!token) throw 2005;
+        const expired = token.isExpired();
+        await token.destroy();
+        if (expired) throw 2005;
+	    }
 
       user = await User.create({
         username: req.body.username,

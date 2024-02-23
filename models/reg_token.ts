@@ -12,6 +12,9 @@ export default class RegToken extends Model {
   @TypeORM.Column({ nullable: true, type: "integer" })
   expire_time: number;
 
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  creator_id: number;
+
   isExpired(now?) {
     if (!now) now = syzoj.utils.getCurrentDate();
     return this.expire_time && now > this.expire_time;
