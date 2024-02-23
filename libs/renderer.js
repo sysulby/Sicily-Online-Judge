@@ -10,12 +10,15 @@ rendererd.on('message', msg => {
   delete resolver[msg.id];
 });
 
-exports.markdown = (markdownCode, callback) => {
+exports.markdown = (markdownCode, mergeCells, callback) => {
   resolver[++currentId] = callback;
   rendererd.send({
     id: currentId,
     type: 'markdown',
-    source: markdownCode
+    source: {
+      markdownCode,
+      mergeCells
+    }
   });
 }
 

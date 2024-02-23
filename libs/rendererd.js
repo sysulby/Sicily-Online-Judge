@@ -27,7 +27,7 @@ async function highlight(code, lang) {
   });
 }
 
-async function markdown(markdownCode) {
+async function markdown(markdownCode, mergeCells) {
   function filter(html) {
     html = xss.process(html);
     if (html) {
@@ -36,14 +36,16 @@ async function markdown(markdownCode) {
     return html;
   };
 
-  return await renderer.markdown(markdownCode, cache, filter);
+  return await renderer.markdown(markdownCode, cache, filter, {
+    markdownItMergeCells: mergeCells
+  });
 }
 
 process.on('message', async msg => {
   if (msg.type === 'markdown') {
     process.send({
       id: msg.id,
-      result: await markdown(msg.source)
+      result: await markdown(msg.source.markdownCode, msg.source.mergeCells)
     });
   } else if (msg.type === 'highlight') {
     process.send({

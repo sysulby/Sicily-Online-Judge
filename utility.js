@@ -56,13 +56,13 @@ module.exports = {
     return new Promise((resolve, reject) => {
       if (!keys) {
         if (!obj || !obj.trim()) resolve("");
-        else renderer.markdown(obj, s => {
+        else renderer.markdown(obj, false, s => {
             resolve(replaceUI(s));
         });
       } else {
         let res = obj, cnt = keys.length;
         for (let key of keys) {
-          renderer.markdown(res[key], (s) => {
+          renderer.markdown(res[key], key === 'limit_and_hint', (s) => {
             res[key] = replaceUI(s);
             if (!--cnt) resolve(res);
           });
