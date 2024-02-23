@@ -80,7 +80,7 @@ app.get('/class/:id/edit', async (req, res) => {
       clazz = await Clazz.create();
       clazz.id = 0;
       clazz.reg_info = '邀请码询问班主任或老师。';
-      clazz.reg_token = Math.floor(100000 + Math.random() * 900000);
+      clazz.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
     } else {
       // if clazz exists, both system administrators and clazz owner can edit it.
       if (!await clazz.hasOwnership(curUser)) {
@@ -354,7 +354,7 @@ app.post('/class/:id/approval', async (req, res) => {
         if (contest.type === 'usaco') {
           lesson.duration = contest.duration;
           lesson.reg_info = '请遵守考试纪律。';
-          lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
+          lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
         }
         lesson.is_public = false;
         lesson.hide_statistics = (contest.type === 'noi');
@@ -743,7 +743,7 @@ app.post('/class/:id/lesson/:lid/edit', async (req, res) => {
     lesson.reg_token = req.body.reg_token;
     if (lesson.type === 'usaco') {
       if (!lesson.reg_info) lesson.reg_info = '请遵守考试纪律。';
-      if (!lesson.reg_token) lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
+      if (!lesson.reg_token) lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
     }
     lesson.is_public = req.body.is_public === 'on';
     lesson.hide_statistics = req.body.hide_statistics === 'on';
@@ -846,7 +846,7 @@ app.post('/class/:id/lesson/:lid/import', async (req, res) => {
       if (contest.type === 'usaco') {
         lesson.duration = contest.duration;
         lesson.reg_info = '请遵守考试纪律。';
-        lesson.reg_token = Math.floor(100000 + Math.random() * 900000);
+        lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
       }
       lesson.is_public = false;
       lesson.hide_statistics = false;
@@ -940,7 +940,7 @@ app.get('/class/:id/lesson/:lid/register', async (req, res) => {
       lid: lid,
       lesson: lesson,
       reg_open: !lesson.start_time || syzoj.utils.getCurrentDate() >= lesson.start_time - 300,
-      hasToken: lesson.reg_token && (typeof lesson.reg_token === "string") && lesson.reg_token.trim()
+      hasToken: lesson.reg_token && lesson.reg_token.trim()
     });
   } catch (e) {
     syzoj.log(e);

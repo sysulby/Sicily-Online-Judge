@@ -112,7 +112,7 @@
                 <th class="left aligned">课节</th>
                 <th class="three wide">开始时间</th>
                 <th class="three wide">结束时间</th>
-                <% if (isMainTeacher) { %>
+                <% if (isSupervisior) { %>
                 <th class="two wide">操作</th>
                 <% } %>
               </tr>
@@ -134,7 +134,7 @@
                 <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %> <%- tag %></a></td>
                 <td><%= syzoj.utils.formatDate(lesson.start_time) %></td>
                 <td><%= syzoj.utils.formatDate(lesson.end_time) %></td>
-                <% if (isMainTeacher) { %>
+                <% if (isSupervisior) { %>
                 <td>
                   <div class="ui basic modal" id="modal-public-lesson-<%= i %>">
                     <div class="ui icon header">
@@ -174,6 +174,7 @@
                       </a>
                     </div>
                   </div>
+                  <% if (isMainTeacher) { %>
                   <div class="ui mini basic icon buttons">
                     <a class="ui <% if (lesson.is_public) { %>disabled<% } %> button" onclick="$('#modal-public-lesson-' + <%= i %>).modal('show')"><i class="checkmark icon"></i></a>
                     <a class="ui button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', i, 'edit']) %>"><i class="edit icon"></i></a>
@@ -183,6 +184,9 @@
                     <a class="ui button" onclick="$('#modal-delete-lesson-' + <%= i %>).modal('show')"><i class="trash alternate icon"></i></a>
                     <% } %>
                   </div>
+                  <% } else if (isSupervisior) { %>
+                  <a class="ui mini <% if (!lesson.reg_token) { %>disabled<% } %> button" onclick="alert('邀请码：'+<%= lesson.reg_token %>);">查看邀请码</a>
+                  <% } %>
                 </td>
                 <% } %>
               </tr>
