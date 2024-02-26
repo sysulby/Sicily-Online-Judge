@@ -146,7 +146,7 @@ if (typeof tags !== 'undefined') tagIDs = tags.map(x => x.id);
               <div class="show_tag_controled" style="float: right; ">
                 <%
                 if (problem.tags) {
-                  for (let tag of problem.tags) {
+                  for (let tag of problem.tags.reverse()) {
                     let tagListToggledThisTag;
                     if (!tagIDs.includes(tag.id)) tagListToggledThisTag = tagIDs.concat([tag.id]);
                     else tagListToggledThisTag = tagIDs.filter(x => x != tag.id);

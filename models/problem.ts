@@ -583,7 +583,7 @@ export default class Problem extends Model {
     });
 
     res.sort((a, b) => {
-      return a.color > b.color ? 1 : -1;
+      return a.id < b.id ? -1 : 1;
     });
 
     return res;

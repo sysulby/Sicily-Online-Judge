@@ -163,7 +163,6 @@ if (contest) {
       <% } %>
     </div>
   </div>
-  <% if (problem.type !== 'submit-answer') { %>
   <% if (problem.description) { %>
   <div class="row">
     <div class="column">
@@ -233,107 +232,100 @@ if (contest) {
         </div>
     </div>
   <% } %>
-  <% } %>
-    <% let noSubmit = false; %>
-    <%
-    if (!testcases || testcases.error) {
-      noSubmit = true;
-    }
-    %>
-    <% if (!noSubmit) { %>
-    <div class="row">
-        <div class="column">
-          <%
-          const formUrl = (contest? 
-            syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { contest_id: contest.id}):
-            syzoj.utils.makeUrl(['problem', problem.id, 'submit'])
-          );
-          %>
-          <form action="<%= formUrl %>" method="post" onsubmit="return submit_code()" id="submit_code" enctype="multipart/form-data">
-            <% if (problem.type === 'submit-answer') { %>
-              <div class="row">
-                <div class="column">
-                  <h4 class="ui top attached block header">随堂练习</h4>
-                  <div class="ui bottom attached segment font-content"><%- problem.description %></div>
-                </div>
-              </div>
-              <script>
-              $(document).ready(function () {
-                $(".quiz").each(function() {
-                  const i = $(this).prev().text().match(/\d+/)[0];
-                  $(this).children().wrapAll("<div class=\"ui form\"><div class=\"grouped fields\">").each(function() {
-                    if ($(this).is("p") && $(this).text().substring(0, 4) === "[ ] ") {
-                      let s = $(this).text().substring(4);
-                      let v = s.substring(0, s.indexOf('.'));
-                      $(this).wrap("<div class=\"field\"><div class=\"ui radio checkbox\"></div></div>")
-                             .replaceWith(function() {
-                                return "<input type=\"radio\" name=\"quiz-" + i + "\" value=\"" + v + "\"><label>" + s + "</label>";
-                              });
-                    }
-                  });
+  <% let noSubmit = false; %>
+  <%
+  if (!testcases || testcases.error) {
+    noSubmit = true;
+  }
+  %>
+  <% if (!noSubmit) { %>
+  <div class="row">
+      <div class="column">
+        <%
+        const formUrl = (contest? 
+          syzoj.utils.makeUrl(['problem', problem.id, 'submit'], { contest_id: contest.id}):
+          syzoj.utils.makeUrl(['problem', problem.id, 'submit'])
+        );
+        %>
+        <form action="<%= formUrl %>" method="post" onsubmit="return submit_code()" id="submit_code" enctype="multipart/form-data">
+          <% if (problem.type === 'submit-answer') { %>
+            <script>
+            $(document).ready(function () {
+              $(".quiz").each(function() {
+                const i = $(this).prev().text().match(/\d+/)[0];
+                $(this).children().wrapAll("<div class=\"ui form\"><div class=\"grouped fields\">").each(function() {
+                  if ($(this).is("p") && $(this).text().substring(0, 4) === "[ ] ") {
+                    let s = $(this).text().substring(4);
+                    let v = s.substring(0, s.indexOf('.'));
+                    $(this).wrap("<div class=\"field\"><div class=\"ui radio checkbox\"></div></div>")
+                           .replaceWith(function() {
+                              return "<input type=\"radio\" name=\"quiz-" + i + "\" value=\"" + v + "\"><label>" + s + "</label>";
+                            });
+                  }
                 });
               });
-              </script>
-              <%
-              let cases = [];
-              if (testcases && !testcases.error) {
-                for (let subtasks of testcases) {
-                  for (let testcase of subtasks.cases) {
-                    cases.push(testcase.answer);
-                  }
+            });
+            </script>
+            <%
+            let cases = [];
+            if (testcases && !testcases.error) {
+              for (let subtasks of testcases) {
+                for (let testcase of subtasks.cases) {
+                  cases.push(testcase.answer);
                 }
               }
-              %>
-              <script>
-              var cases = <%- serializejs(cases) %>, currCase = 0;
-              </script>
-              <input id="answer_by_editor" name="answer_by_editor" type="hidden">
-              <div class="ui center aligned vertical segment" style="padding-bottom: 0; "><button type="submit" class="ui labeled icon button"><i class="ui edit icon"></i>提交</button></div>
-            <% } else { %>
-              <input name="language" type="hidden" id="form">
-              <input name="code" type="hidden">
-              <div class="ui grid">
-                <div class="four wide column" style="margin-right: -25px; ">
-                  <div class="ui attached vertical fluid pointing menu" id="languages-menu" style="height: 370px; overflow-y: scroll; overflow-x: hidden; ">
-                    <%
-                    let language = syzoj.config.enabled_languages[0];
-                    if (state) {
-                      language = state.language;
-                    } else if (lastLanguage) language = lastLanguage;
-                    if (!syzoj.config.enabled_languages.includes(language)) language = syzoj.config.enabled_languages[0];
-                    %>
-                    <% for (lang of syzoj.config.enabled_languages) { %>
-                      <a style="border-radius: 0; " class="item<%= lang === language ? ' active' : '' %>" data-value="<%= lang %>" data-mode="<%= syzoj.languages[lang].editor %>">
-                        <%= syzoj.languages[lang].show %>
-                        <div class="ui right floated" style="opacity: 0.4; margin-top: 8px; font-size: 0.7em; "><%= syzoj.languages[lang].version %></div>
-                      </a>
-                    <% } %>
-                  </div>
+            }
+            %>
+            <script>
+            var cases = <%- serializejs(cases) %>, currCase = 0;
+            </script>
+            <input id="answer_by_editor" name="answer_by_editor" type="hidden">
+            <div class="ui center aligned vertical segment" style="padding-bottom: 0; "><button type="submit" class="ui labeled icon button"><i class="ui edit icon"></i>提交</button></div>
+          <% } else { %>
+            <input name="language" type="hidden" id="form">
+            <input name="code" type="hidden">
+            <div class="ui grid">
+              <div class="four wide column" style="margin-right: -25px; ">
+                <div class="ui attached vertical fluid pointing menu" id="languages-menu" style="height: 370px; overflow-y: scroll; overflow-x: hidden; ">
+                  <%
+                  let language = syzoj.config.enabled_languages[0];
+                  if (state) {
+                    language = state.language;
+                  } else if (lastLanguage) language = lastLanguage;
+                  if (!syzoj.config.enabled_languages.includes(language)) language = syzoj.config.enabled_languages[0];
+                  %>
+                  <% for (lang of syzoj.config.enabled_languages) { %>
+                    <a style="border-radius: 0; " class="item<%= lang === language ? ' active' : '' %>" data-value="<%= lang %>" data-mode="<%= syzoj.languages[lang].editor %>">
+                      <%= syzoj.languages[lang].show %>
+                      <div class="ui right floated" style="opacity: 0.4; margin-top: 8px; font-size: 0.7em; "><%= syzoj.languages[lang].version %></div>
+                    </a>
+                  <% } %>
                 </div>
-                <div class="twelve wide stretched column" style="position: relative; padding-left: 0; margin-left: calc(-1rem - 1px); width: calc(75% + 1rem + 13px) !important; ">
-                  <div id="editor" style="position: absolute; width: 100%; height: calc(100% - 28px); border: 1px solid #D4D4D5; overflow: hidden; " class="editor" contenteditable>
-                    <%- this.showLoadingEditor(); %>
-                  </div>
+              </div>
+              <div class="twelve wide stretched column" style="position: relative; padding-left: 0; margin-left: calc(-1rem - 1px); width: calc(75% + 1rem + 13px) !important; ">
+                <div id="editor" style="position: absolute; width: 100%; height: calc(100% - 28px); border: 1px solid #D4D4D5; overflow: hidden; " class="editor" contenteditable>
+                  <%- this.showLoadingEditor(); %>
                 </div>
-                <div class="ui form" style="width: 100%; ">
-                  <div class="inline fields" style="width: 100%; ">
-                    <div class="field" style="margin: 0 auto; ">
-                      <label for="answer">或者，上传代码文件</label>
-                      <input type="file" id="answer" name="answer">
-                    </div>
+              </div>
+              <div class="ui form" style="width: 100%; ">
+                <div class="inline fields" style="width: 100%; ">
+                  <div class="field" style="margin: 0 auto; ">
+                    <label for="answer">或者，上传代码文件</label>
+                    <input type="file" id="answer" name="answer">
                   </div>
                 </div>
               </div>
-              <div class="ui center aligned vertical segment" style="padding-bottom: 0; ">
-                <button type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>
-                  <% if (typeof contest !== 'undefined' && contest && contest.ended) { %>赛后<% } %>提交
-                </button>
-              </div>
-            <% } %>
-          </form>
-        </div>
-    </div>
-    <% } %>
+            </div>
+            <div class="ui center aligned vertical segment" style="padding-bottom: 0; ">
+              <button type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>
+                <% if (typeof contest !== 'undefined' && contest && contest.ended) { %>赛后<% } %>提交
+              </button>
+            </div>
+          <% } %>
+        </form>
+      </div>
+  </div>
+  <% } %>
 </div>
 
 <% if (problem.type !== 'submit-answer') { %>

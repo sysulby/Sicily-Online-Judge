@@ -2,7 +2,7 @@
 <% include header %>
 <% if (user) { %>
 <div class="padding">
-  <h2 class="ui header" style="margin-bottom: 30px;">我的班级</h2>
+  <h2 class="ui header" style="margin-bottom: 30px;">我的课程</h2>
   <% if (active_classes.length) { %>
   <form class="ui mini form" style="margin-top: -30px;">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
@@ -53,7 +53,7 @@
   <div style="margin-bottom: 30px; " class="ui placeholder segment">
     <div class="ui icon header">
       <i class="book icon" style="margin-bottom: 20px; "></i>
-      暂无进行中的班级
+      暂无进行中的课程
     </div>
     <a href="<%= syzoj.utils.makeUrl(['courses', 'archived']) %>" class="ui primary labeled icon button">
       <i class="ui icon archive"></i>
@@ -81,7 +81,7 @@
       <tr>
         <th>课程名称</th>
         <th>课程简介</th>
-        <th>课程主管</th>
+        <th>主管教练</th>
         <% if (user) { %>
         <th>状态</th>
         <% } %>
@@ -109,7 +109,7 @@
   <% } else { %>
   <div class="ui placeholder segment">
     <div class="ui icon header">
-      <i class="book icon" style="margin-bottom: 20px; "></i>
+      <i class="sitemap icon" style="margin-bottom: 20px; "></i>
       暂无课程
     </div>
     <% if (user && user.is_admin) { %>
