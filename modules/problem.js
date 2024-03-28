@@ -148,10 +148,10 @@ app.get('/problem/:id/export', async (req, res) => {
   try {
     let id = parseInt(req.params.id);
     let problem = await Problem.findById(id);
-    if (!problem || !problem.is_public) throw new ErrorMessage('无此题目。');
+    if (!problem) throw new ErrorMessage('无此题目。');
 
     if (!await problem.isAllowedEditBy(res.locals.user)) {
-      if (req.query.token == null || req.query.token !== syzoj.config.export_token) {
+      if (!req.query.token || req.query.token !== syzoj.config.export_token) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
     }
@@ -843,11 +843,10 @@ app.get('/problem/:id/testdata/download/:filename?', async (req, res) => {
     let problem = await Problem.findById(id);
 
     if (!problem) throw new ErrorMessage('无此题目。');
-    if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
     if (typeof req.params.filename === 'string' && (req.params.filename.includes('../'))) throw new ErrorMessage('您没有权限进行此操作。)');
 
     if (!await problem.isAllowedEditBy(res.locals.user)) {
-      if (req.query.token == null || req.query.token !== syzoj.config.export_token) {
+      if (!req.query.token || req.query.token !== syzoj.config.export_token) {
         throw new ErrorMessage('您没有权限进行此操作。');
       }
     }
@@ -895,7 +894,11 @@ app.get('/problem/:id/download/additional_file', async (req, res) => {
       let problems_id = await contest.getProblems();
       if (!problems_id.includes(id)) throw new ErrorMessage('无此题目。');
     } else {
-      if (!await problem.isAllowedUseBy(res.locals.user)) throw new ErrorMessage('您没有权限进行此操作。');
+      if (!await problem.isAllowedUseBy(res.locals.user)) {
+        if (!req.query.token || req.query.token !== syzoj.config.export_token) {
+          throw new ErrorMessage('您没有权限进行此操作。');
+        }
+      }
     }
 
     await problem.loadRelationships();

@@ -1,6 +1,7 @@
 let Course = syzoj.model('course');
 let Clazz = syzoj.model('clazz');
 let Contest = syzoj.model('contest');
+let ContestPlayer = syzoj.model('contest_player');
 let Problem = syzoj.model('problem');
 let ProblemSet = syzoj.model('problem_set');
 let ProblemTag = syzoj.model('problem_tag');
@@ -777,7 +778,86 @@ app.post('/course/:id/lesson/:lid/delete', async (req, res) => {
 
 app.get('/course/:id/lesson/:lid/ranklist', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let lessonIDs = await course.getLessons();
+
+    let lid = parseInt(req.params.lid);
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+
+    let lessonID = lessonIDs[lid - 1];
+    let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
+    await lesson.loadRelationships();
+
+    let problemIDs = await lesson.getProblems();
+    let problems = await problemIDs.mapAsync(async id => await Problem.findById(id));
+
+    let playerIDs = course.owner_id.toString();
+    if (course.teachers) playerIDs += '|' + course.teachers;
+    let players = await playerIDs.split('|').mapAsync(async id => await User.findById(id));
+
+    let ranklist = await players.mapAsync(async user => {
+      let player = await ContestPlayer.create();
+      player.latest = 0;
+      player.score = 0;
+      player.score_details = {};
+
+      await problems.forEachAsync(async problem => {
+        let judge_state = await problem.getJudgeState(user, true, 2, course.id);
+        if (judge_state) {
+          player.latest = Math.max(player.latest, judge_state.submit_time);
+
+          let i = problem.id;
+
+          player.score_details[i] = {
+            score: judge_state.score,
+            judge_id: judge_state.id,
+            submissions: {
+              judge_id: judge_state.id,
+              score: judge_state.score,
+              time: judge_state.submit_time
+            }
+          };
+
+          player.score_details[i].judge_state = judge_state;
+
+          let multiplier = 1.0;
+          player.score_details[i].weighted_score = player.score_details[i].score == null ? null : Math.round(player.score_details[i].score * multiplier);
+          player.score += player.score_details[i].weighted_score;
+        }
+      });
+
+      return {
+        user: user,
+        player: player
+      };
+    });
+
+    ranklist.sort((a, b) => {
+      if (a.player.score > b.player.score) return -1;
+      if (b.player.score > a.player.score) return 1;
+      if (a.player.latest < b.player.latest) return -1;
+      if (a.player.latest > b.player.latest) return 1;
+      return 0;
+    });
+
+    res.render('course_lesson_ranklist', {
+      course: course,
+      lid: lid,
+      lesson: lesson,
+      ranklist: ranklist,
+      problems: problems
+    });
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
