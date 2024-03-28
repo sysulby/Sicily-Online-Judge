@@ -41,8 +41,14 @@ export default class Clazz extends Model {
   @TypeORM.Column({ nullable: true, type: "text" })
   reg_info: string;
 
-  @TypeORM.Column({ nullable: true, type: "varchar", length: 120 })
-  reg_token: string;
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  reg_start_time: number;
+
+  @TypeORM.Column({ nullable: true, type: "integer" })
+  reg_end_time: number;
+
+  @TypeORM.Column({ nullable: true, type: "text" })
+  candidates: string;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
@@ -67,7 +73,7 @@ export default class Clazz extends Model {
   }
 
   async hasOwnership(user) {
-    return user && (user.id === this.owner_id || await this.isCourseOwner(user) || await user.hasPrivilege('manage_class'));
+    return user && (user.id === this.owner_id || await user.hasPrivilege('manage_class') || await this.isCourseOwner(user));
   }
 
   async isSupervisior(user) {
@@ -78,7 +84,8 @@ export default class Clazz extends Model {
     return user && (
       user.id === this.owner_id ||
       this.teachers.split('|').includes(user.id.toString()) ||
-      this.students.split('|').includes(user.id.toString())
+      this.students.split('|').includes(user.id.toString()) ||
+      this.candidates.split('|').includes(user.id.toString())
     );
   }
 

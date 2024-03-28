@@ -1,4 +1,4 @@
-<% this.title = '报名选课' %>
+<% this.title = '报名申请' %>
 <% include header %>
 <style>
 #back_to_class { display: none;  }
@@ -19,26 +19,22 @@
     <% } %>
     <div class="row">
       <div class="column">
-        <% if (!reg_open) { %>
-        <div class="ui large error message">
-          <p>报名将在开课前 15 日开放，请耐心等待。</p>
+        <h4 class="ui top attached block header">注意事项</h4>
+        <div class="ui bottom attached segment font-content">
+          <p>申请开放时段：<%- syzoj.utils.formatDate(clazz.reg_start_time) %> ~ <%- syzoj.utils.formatDate(clazz.reg_end_time) %></p>
+          <p>请提前完善学员资料，点击 <a href="<%= syzoj.utils.makeUrl(['user', user.id, 'profile']) %>">此处</a> 填写或更新。</p>
         </div>
-        <% } else { %>
+        <% if (clazz.reg_start_time <= syzoj.utils.getCurrentDate() && syzoj.utils.getCurrentDate() < clazz.reg_end_time) { %>
         <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'register']) %>" method="post" id="clazz_reg">
           <div class="ui form">
-            <% if (clazz.reg_info || hasToken) { %>
-            <div class="field">
-              <label for="token"><% if (hasToken) { %>邀请码<% } else { %>输入 "AGREE" 以继续<% } %></label>
-              <input type="text" name="token">
-            </div>
-            <% } %>
             <div class="ui basic modal" id="modal-confirm">
               <div class="ui icon header">
-                <i class="book icon"></i>
-                <p style="margin-top: 15px; ">报名入班</p>
+                <i class="edit icon"></i>
+                <p style="margin-top: 15px; ">报名申请</p>
               </div>
               <div class="content" style="text-align: center; ">
-                <p>确认报名进入该班级吗？</p>
+                <p>确认申请进入该班级吗？</p>
+                <b>[TODO]: 显示学员信息</b>
               </div>
               <div class="actions">
                 <div class="ui red basic cancel inverted button">
@@ -60,7 +56,6 @@
             </div>
             <div style="text-align: center; margin-top: 30px; ">
               <div class="ui labeled icon blue button" onclick="$('#modal-confirm').modal('show')"><i class="ui edit icon"></i>报名</div>
-              <a href="<%= syzoj.utils.makeUrl(['course', course.id, 'classes']) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
             </div>
           </div>
         </form>

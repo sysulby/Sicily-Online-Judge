@@ -5,14 +5,18 @@
   <div style="margin-bottom: 30px;"><%- clazz.subtitle %></div>
   <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'students']) %>" method="post">
     <div class="ui form">
-      <% if (isMainTeacher) { %>
+      <% if (isClassOwner) { %>
       <div class="field">
-        <label>入班须知</label>
-        <textarea rows="5" name="reg_info" <% if (!isClassOwner) { %>disabled<% } %> class="markdown-edit"><%= clazz.reg_info %></textarea>
+        <label>报名须知</label>
+        <textarea rows="5" name="reg_info" class="markdown-edit"><%= clazz.reg_info %></textarea>
       </div>
       <div class="field">
-        <label>邀请码</label>
-        <input type="text" name="reg_token" <% if (!isClassOwner) { %>disabled<% } %> value="<%= clazz.reg_token %>">
+        <label>候选人名单</label>
+        <select class="ui fluid dropdown" multiple="" id="candidates" name="candidates">
+        <% for (let candidate of candidates) { %>
+          <option value="<%= candidate.id %>" selected><%= candidate.username %></option>
+        <% } %>
+        </select>
       </div>
       <% } %>
       <div class="field">
@@ -32,6 +36,9 @@
     </div>
   </form>
 <script>
+$(function () {
+  $('#candidates').dropdown();
+});
 $(function () {
   $('#search_students')
     .dropdown({

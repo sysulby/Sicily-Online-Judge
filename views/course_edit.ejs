@@ -16,6 +16,14 @@
         <textarea rows="5" name="information" class="markdown-edit"><%= course.information %></textarea>
       </div>
       <div class="field">
+        <label>关联题单</label>
+        <select class="ui fluid search dropdown" multiple="" id="search_sets"<% if (!user.is_admin) { %> disabled<% } %>  name="problem_sets">
+        <% for (let set of problem_sets) { %>
+          <option value="<%= set.id %>" selected><%= set.title %></option>
+        <% } %>
+        </select>
+      </div>
+      <div class="field">
         <label>课程主管</label>
         <select class="ui fluid search dropdown" id="search_owner"<% if (!user.is_admin) { %> disabled<% } %> name="owner">
           <option value="<%= owner.id %>" selected><%= owner.username %></option>
@@ -26,14 +34,6 @@
         <select class="ui fluid search dropdown" multiple="" id="search_teachers"<% if (!user.is_admin) { %> disabled<% } %> name="teachers">
         <% for (let admin of teachers) { %>
           <option value="<%= admin.id %>" selected><%= admin.username %></option>
-        <% } %>
-        </select>
-      </div>
-      <div class="field">
-        <label>关联题单</label>
-        <select class="ui fluid search dropdown" multiple="" id="search_sets" name="problem_sets">
-        <% for (let set of problem_sets) { %>
-          <option value="<%= set.id %>" selected><%= set.title %></option>
         <% } %>
         </select>
       </div>

@@ -3,7 +3,7 @@
 <% include util %>
 <script src="<%- lib('textfit/2.3.1/textFit.min.js') %>"></script>
 <div class="padding">
-  <% if (typeof lesson !== 'undefined' && lesson) { %>
+  <% if (typeof clazz !== 'undefined' && clazz) { %>
     <style>
       #back_to_class { display: none;  }
     </style>
@@ -15,6 +15,11 @@
       </div>
     <% } %>
   <% } else if (typeof course !== 'undefined' && course) { %>
+    <% if (typeof lesson !== 'undefined' && lesson) { %>
+      <style>
+        #back_to_course { display: none;  }
+      </style>
+    <% } %>
     <h1><%= course.title %></h1>
     <div style="margin-bottom: 30px;"><%- course.subtitle %></div>
   <% } else if (displayConfig.inContest) { %>
@@ -27,8 +32,11 @@
     <% } %>
   <% } %>
 
-  <form action="<%= syzoj.utils.makeUrl(typeof lesson !== 'undefined' && lesson ? ['submissions', 'class', clazz.id, 'lesson', lid] : displayConfig.inContest ? ['submissions', 'contest', contest.id] : ['submissions']) %>" class="ui mini form" method="get" role="form" id="form">
+  <form action="<%= syzoj.utils.makeUrl(typeof clazz !== 'undefined' && clazz ? ['submissions', 'class', clazz.id, 'lesson', lid] : typeof course !== 'undefined' && course ? ['submissions', 'course', course.id] : displayConfig.inContest ? ['submissions', 'contest', contest.id] : ['submissions']) %>" class="ui mini form" method="get" role="form" id="form">
     <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
+      <% if (form.lesson) { %>
+        <input type="hidden" name="lesson" value="<%= form.lesson %>">
+      <% } %>
       <label style="font-size: 1.2em; margin-right: 1px; ">题目：</label>
       <div class="field"><input name="problem_id" style="width: 75px; " type="text" value="<%= form.problem_id %>"></div>
       <% if (displayConfig.showOthers) { %>

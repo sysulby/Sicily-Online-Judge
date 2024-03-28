@@ -11,12 +11,12 @@ function formatSize(x, precision) {
 }
 
 const submissionUrl = <%- serializejs(
-  typeof lesson !== 'undefined' && lesson ? syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'submission', '20000528']) :
+  typeof clazz !== 'undefined' && clazz ? syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'submission', '20000528']) :
   displayConfig.inContest ? syzoj.utils.makeUrl(['contest', contest.id, 'submission', '20000528']) :
   syzoj.utils.makeUrl(['submission', '20000528'])) %>;
 const rejudgeUrl = <%- serializejs(syzoj.utils.makeUrl(['submission', '20000528'])) %>;
 const problemUrl = <%- serializejs(
-  typeof lesson !== 'undefined' && lesson ? syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'problem', '20000528']) :
+  typeof clazz !== 'undefined' && clazz ? syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'problem', '20000528']) :
   typeof course !== 'undefined' && course ? syzoj.utils.makeUrl(['course', course.id, 'problem', '20000528']) :
   displayConfig.inContest ? syzoj.utils.makeUrl(['contest', contest.id, 'problem', '20000528']) :
   syzoj.utils.makeUrl(['problem', '20000528'])) %>;

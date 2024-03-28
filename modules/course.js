@@ -1,6 +1,8 @@
 let Course = syzoj.model('course');
 let Clazz = syzoj.model('clazz');
 let Contest = syzoj.model('contest');
+let ContestRanklist = syzoj.model('contest_ranklist');
+let ContestPlayer = syzoj.model('contest_player');
 let Problem = syzoj.model('problem');
 let ProblemSet = syzoj.model('problem_set');
 let ProblemTag = syzoj.model('problem_tag');
@@ -49,8 +51,8 @@ app.get('/courses', async (req, res) => {
 
     await activeClasses.forEachAsync(async x => {
       x.running = x.isRunning();
-      x.owner = await User.findById(await x.owner_id);
       x.teacher = await User.findById(await x.getMainTeacher());
+      x.owner = await User.findById(await x.owner_id);
     });
 
     res.render('courses', {
@@ -69,8 +71,7 @@ app.get('/courses/archived', async (req, res) => {
   try {
     const curUser = res.locals.user;
 
-    if (!curUser) throw new ErrorMessage('请先登录。',
-      { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
 
     let publicClasses = await Clazz.queryAll(Clazz.createQueryBuilder().andWhere('is_public = 1'));
     let classes = await publicClasses.filterAsync(async x => await x.isParticipant(curUser));
@@ -125,7 +126,7 @@ app.get('/course/:id', async (req, res) => {
 
     let lessonIDs = await course.getLessons();
     let lessons = await lessonIDs.mapAsync(async id => await Contest.findById(id));
-    if (!isSupervisior) lessons = lessons.filter(x => !x.hide_statistics);
+    if (!isSupervisior) lessons = lessons.filter(x => x.is_public);
 
     res.render('course', {
       course: course,
@@ -214,16 +215,15 @@ app.post('/course/:id/edit', async (req, res) => {
     course.title = req.body.title;
     course.subtitle = req.body.subtitle;
     course.information = req.body.information;
-    // only system administrators can set course owner and teachers and set public
+    // only system administrators can set problem sets, course owner, teachers and set public
     if (curUser.is_admin) {
+      if (!Array.isArray(req.body.problem_sets)) req.body.problem_sets = [req.body.problem_sets];
+      course.problem_sets = req.body.problem_sets.join('|');
       course.owner_id = parseInt(req.body.owner);
       if (!Array.isArray(req.body.teachers)) req.body.teachers = [req.body.teachers];
       course.teachers = req.body.teachers.join('|');
       course.is_public = (req.body.is_public === 'on');
     }
-    if (!Array.isArray(req.body.problem_sets)) req.body.problem_sets = [req.body.problem_sets];
-    course.problem_sets = req.body.problem_sets.join('|');
-    // [TODO]: clear lesson problems if problem_sets is changed.
 
     await course.save();
 
@@ -418,12 +418,13 @@ app.get('/submissions/course/:id', async (req, res) => {
     query.andWhere('type = 2');
     query.andWhere('type_info = :type_info', { type_info: courseID });
 
+    let lesson = null;
     if (req.query.lesson) {
       let lessonIDs = await course.getLessons();
       let lid = parseInt(req.query.lesson);
       if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
       let lessonID = lessonIDs[lid - 1];
-      let lesson = await Contest.findById(lessonID);
+      lesson = await Contest.findById(lessonID);
       if (!lesson) throw new ErrorMessage('无此课节。');
       let problemIDs = lesson.problems.split('|');
       query.andWhere('problem_id in (:problem_ids)', { problem_ids: problemIDs });
@@ -486,6 +487,8 @@ app.get('/submissions/course/:id', async (req, res) => {
 
     res.render('submissions', {
       course: course,
+      lid: req.query.lesson,
+      lesson: lesson,
       items: judge_state.map(x => ({
         info: getSubmissionInfo(x, displayConfig),
         token: (x.pending && x.task_id != null) ? jwt.sign({
@@ -629,6 +632,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
 
     let lessonID = (lid > 0 ? lessonIDs[lid - 1] : 0);
     let lesson = await Contest.findById(lessonID);
+    let ranklist = null;
 
     if (!lesson) {
       if (lid) throw new ErrorMessage('系统错误。');
@@ -636,6 +640,7 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
       lesson.holder_id = courseID;
     } else {
       await lesson.loadRelationships();
+      ranklist = lesson.ranklist;
     }
 
     if (!['noi', 'ioi', 'usaco'].includes(req.body.type)) throw new ErrorMessage('无效的赛制。');
@@ -650,10 +655,16 @@ app.post('/course/:id/lesson/:lid/edit', async (req, res) => {
     }
     if (!Array.isArray(req.body.problems)) req.body.problems = [req.body.problems];
     lesson.problems = req.body.problems.join('|');
-    // lesson.hide_statistics = (lesson.type === 'noi');
+    if (!ranklist) ranklist = await ContestRanklist.create();
+    try {
+      ranklist.ranking_params = JSON.parse(req.body.ranking_params);
+    } catch (e) {
+      ranklist.ranking_params = {};
+    }
+    await ranklist.save();
+    lesson.ranklist_id = ranklist.id;
     lesson.is_public = (req.body.is_public === 'on');
-    // [TODO]: refactor course presentation logic
-    lesson.hide_statistics = (req.body.is_show !== 'on');
+    lesson.hide_statistics = (lesson.type === 'noi');
 
     await lesson.save();
 
@@ -777,7 +788,86 @@ app.post('/course/:id/lesson/:lid/delete', async (req, res) => {
 
 app.get('/course/:id/lesson/:lid/ranklist', async (req, res) => {
   try {
-    throw new ErrorMessage('功能开发中，请耐心等待 (´∀ `)');
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    let lessonIDs = await course.getLessons();
+
+    let lid = parseInt(req.params.lid);
+    if (lid < 1 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
+
+    let lessonID = lessonIDs[lid - 1];
+    let lesson = await Contest.findById(lessonID);
+    if (!lesson) throw new ErrorMessage('无此课节。');
+    await lesson.loadRelationships();
+
+    let problemIDs = await lesson.getProblems();
+    let problems = await problemIDs.mapAsync(async id => await Problem.findById(id));
+
+    let playerIDs = course.owner_id.toString();
+    if (course.teachers) playerIDs += '|' + course.teachers;
+    let players = await playerIDs.split('|').mapAsync(async id => await User.findById(id));
+
+    let ranklist = await players.mapAsync(async user => {
+      let player = await ContestPlayer.create();
+      player.latest = 0;
+      player.score = 0;
+      player.score_details = {};
+
+      await problems.forEachAsync(async problem => {
+        let judge_state = await problem.getJudgeState(user, true, 2, course.id);
+        if (judge_state) {
+          player.latest = Math.max(player.latest, judge_state.submit_time);
+
+          let i = problem.id;
+
+          player.score_details[i] = {
+            score: judge_state.score,
+            judge_id: judge_state.id,
+            submissions: {
+              judge_id: judge_state.id,
+              score: judge_state.score,
+              time: judge_state.submit_time
+            }
+          };
+
+          player.score_details[i].judge_state = judge_state;
+
+          let multiplier = (lesson.ranklist.ranking_params || {})[i] || 1.0;
+          player.score_details[i].weighted_score = player.score_details[i].score == null ? null : Math.round(player.score_details[i].score * multiplier);
+          player.score += player.score_details[i].weighted_score;
+        }
+      });
+
+      return {
+        user: user,
+        player: player
+      };
+    });
+
+    ranklist.sort((a, b) => {
+      if (a.player.score > b.player.score) return -1;
+      if (b.player.score > a.player.score) return 1;
+      if (a.player.latest < b.player.latest) return -1;
+      if (a.player.latest > b.player.latest) return 1;
+      return 0;
+    });
+
+    res.render('course_lesson_ranklist', {
+      course: course,
+      lid: lid,
+      lesson: lesson,
+      ranklist: ranklist,
+      problems: problems
+    });
   } catch (e) {
     syzoj.log(e);
     res.render('error', {
@@ -789,6 +879,7 @@ app.get('/course/:id/lesson/:lid/ranklist', async (req, res) => {
 app.get('/course/:id/classes', async (req, res) => {
   try {
     const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
 
     let courseID = parseInt(req.params.id);
     let course = await Course.findById(courseID);
@@ -796,11 +887,16 @@ app.get('/course/:id/classes', async (req, res) => {
     if (!course) throw new ErrorMessage('无此课程。');
     course.subtitle = await syzoj.utils.markdown(course.subtitle);
 
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!course.is_public && !isSupervisior) throw new ErrorMessage('课程主页维护中，请稍后再试。');
+
     const isCourseOwner = await course.hasOwnership(curUser);
     const allowedManageClass = (curUser && await curUser.hasPrivilege('manage_class'));
 
     let query = Clazz.createQueryBuilder();
     query.andWhere('course_id = :course_id', { course_id: courseID });
+    if (!isSupervisior) query.andWhere('is_public = 1');
 
     let paginate = syzoj.utils.paginate(await Clazz.countForPagination(query), req.query.page, syzoj.config.page.course);
     query.orderBy('(CASE WHEN is_public THEN 2 ELSE CAST(teachers != \'\' AS SIGNED INTEGER) END)');

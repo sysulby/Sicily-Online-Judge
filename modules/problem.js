@@ -395,7 +395,7 @@ app.post('/problem/:id/import', async (req, res) => {
     let url = require('url');
 
     let json = await request({
-      uri: req.body.url + (req.body.url.endsWith('/') ? 'export' : '/export'),
+      uri: req.body.url + (req.body.url.endsWith('/') ? '' : '/') + 'export?token=' + syzoj.config.default_token,
       timeout: 1500,
       json: true
     });
@@ -434,11 +434,11 @@ app.post('/problem/:id/import', async (req, res) => {
     let tmpFile = await tmp.file();
 
     try {
-      let data = await download(req.body.url + (req.body.url.endsWith('/') ? 'testdata/download' : '/testdata/download'));
+      let data = await download(req.body.url + (req.body.url.endsWith('/') ? '' : '/') + 'testdata/download?token=' + syzoj.config.default_token);
       await fs.writeFile(tmpFile.path, data);
       await problem.updateTestdata(tmpFile.path, await curUser.hasPrivilege('manage_problem'));
       if (json.obj.have_additional_file) {
-        let additional_file = await download(req.body.url + (req.body.url.endsWith('/') ? 'download/additional_file' : '/download/additional_file'));
+        let additional_file = await download(req.body.url + (req.body.url.endsWith('/') ? '' : '/') + 'download/additional_file?token=' + syzoj.config.default_token);
         await fs.writeFile(tmpFile.path, additional_file);
         await problem.updateFile(tmpFile.path, 'additional_file', await curUser.hasPrivilege('manage_problem'));
       }

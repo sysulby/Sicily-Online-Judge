@@ -13,26 +13,30 @@
           <textarea rows="5" name="information" class="markdown-edit"><%= clazz.information %></textarea>
         </div>
         <div class="field">
-          <label>入班须知</label>
+          <label>报名须知</label>
           <textarea rows="5" name="reg_info" class="markdown-edit"><%= clazz.reg_info %></textarea>
         </div>
       </div>
-      <div class="four fields">
+      <div class="five fields">
         <div class="four wide field">
-          <label>开始时间</label>
-          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate(true), 'L') %>">
+          <label>开课日期</label>
+          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 15, 'L') %>">
         </div>
         <div class="four wide field">
-          <label>结束时间</label>
-          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate(true), 'L') %>">
+          <label>结课日期</label>
+          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 195, 'L') %>">
         </div>
-        <div class="eight wide field">
-          <label>邀请码</label>
-          <input type="text" name="reg_token" value="<%= clazz.reg_token %>">
+        <div class="four wide field">
+          <label>报名开始</label>
+          <input type="text" name="reg_start_time" value="<%= syzoj.utils.formatDate(clazz.reg_start_time || syzoj.utils.getCurrentDate(true) + 3600 * 8) %>">
+        </div>
+        <div class="four wide field">
+          <label>报名截止</label>
+          <input type="text" name="reg_end_time" value="<%= syzoj.utils.formatDate(clazz.reg_end_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 195) %>">
         </div>
       </div>
       <div class="field">
-        <label>班主任</label>
+        <label>主教练</label>
         <select class="ui fluid search dropdown" id="search_owner"<% if (!allowedManageClass) { %> disabled<% } %>  name="owner">
           <option value="<%= owner.id %>" selected><%= owner.username %></option>
         </select>

@@ -31,12 +31,12 @@
             <% } %>
             <div class="ui basic modal" id="modal-confirm">
               <div class="ui icon header">
-                <i class="trophy icon"></i>
+                <i class="edit icon"></i>
                 <p style="margin-top: 15px; ">报名参赛</p>
               </div>
               <div class="content" style="text-align: center; ">
-                <p>确认参加该比赛吗？</p>
-                <b>警告：该操作不可撤销。<% if (contest.type === 'usaco') { %><br>USACO 赛制将在报名完成后开始计时，<br>比赛时长 <%= contest.duration / 60 %> 分钟。<% } %></b>
+                <p>确认参加该比赛吗？<% if (contest.type === 'usaco') { %><br><br>USACO 赛制，限时 <%= contest.duration / 60 %> 分钟<br>对于正在进行中的比赛，将在报名后开始计时<% } %></p>
+                <b>警告：该操作不可撤销。</b>
               </div>
               <div class="actions">
                 <div class="ui red basic cancel inverted button">

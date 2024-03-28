@@ -3,35 +3,32 @@
 <div class="padding">
   <div class="ui three column grid">
     <div class="five wide column">
-      <% if (notices && notices.length) { %>
-      <h4 class="ui top attached block header"><i class="ui info icon"></i>公告</h4>
+      <h4 class="ui top attached block header"><i class="ui calendar icon"></i>近期活动</h4>
       <div class="ui bottom attached segment">
-        <table class="ui very basic table">
+        <% if (notices && notices.length) { %>
+        <table class="ui very basic center aligned table">
           <thead>
             <tr>
-              <th>标题</th>
-              <th class="five wide">时间</th>
+              <th>公告</th>
+              <th class="five wide">发布日期</th>
             </tr>
           </thead>
           <tbody>
             <% for (let item of notices) { %>
                 <tr>
-                    <td><a href="<%= item.url %>"><%= item.title %></a></td>
+                    <td class="left aligned"><a href="<%= item.url %>"><%= item.title %></a></td>
                     <td><%= item.date %></td>
                 </tr>
             <% } %>
           </tbody>
         </table>
-      </div>
-      <% } %>
-      <% if (contests && contests.length) { %>
-      <h4 class="ui top attached block header"><i class="ui calendar icon"></i>近期比赛</h4>
-      <div class="ui bottom attached segment">
+        <% } %>
+        <% if (contests && contests.length) { %>
         <table class="ui very basic center aligned table">
           <thead>
             <tr>
-              <th>比赛名称</th>
-              <th>开始时间</th>
+              <th>比赛</th>
+              <th class="five wide">开始时间</th>
             </tr>
           </thead>
           <tbody>
@@ -48,14 +45,14 @@
               <% } else { %>
                 <% tag = '<span class="ui header"><div class="ui mini green label">进行中</div></span>' %>
               <% } %>
-              <td><a href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>"><%= contest.title %> <%- tag %></a></td>
+              <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['contest', contest.id]) %>"><%= contest.title %> <%- tag %></a></td>
               <td><%= contest.start_time ? syzoj.utils.formatDate(contest.start_time) : 'Whenever' %></td>
             </tr>
             <% } %>
           </tbody>
         </table>
+        <% } %>
       </div>
-      <% } %>
       <h4 class="ui top attached block header"><i class="ui signal icon"></i>排名</h4>
       <div class="ui bottom attached segment">
         <table class="ui very basic center aligned table">
@@ -81,18 +78,6 @@
             } %>
           </tbody>
         </table>
-      </div>
-      <h4 class="ui top attached block header"><i class="ui search icon"></i>查找用户</h4>
-      <div class="ui bottom attached segment">
-        <form action="<%= syzoj.utils.makeUrl(['find_user']) %>" method="get">
-          <div class="ui search" id="search_users" style="width: 100%; ">
-            <div class="ui left icon input" style="width: 100%; ">
-              <input class="prompt" style="width: 100%; " type="text" placeholder="ID / 用户名 …" name="nickname">
-              <i class="search icon"></i>
-            </div>
-            <div class="results" style="width: 100%; "></div>
-          </div>
-        </form>
       </div>
     </div>
     <div class="eleven wide column">

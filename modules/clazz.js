@@ -13,6 +13,7 @@ const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../
 app.get('/class/:id', async (req, res) => {
   try {
     const curUser = res.locals.user;
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
 
     let classID = parseInt(req.params.id);
     let clazz = await Clazz.findById(classID);
@@ -22,9 +23,10 @@ app.get('/class/:id', async (req, res) => {
     if (!course) throw new ErrorMessage('错误的课程。');
 
     const isSupervisior = await clazz.isSupervisior(curUser);
+    const isStudent = await clazz.students.split('|').includes(curUser.id.toString());
 
     if (!isSupervisior) {
-      if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
+      if (!isStudent && !await clazz.candidates.split('|').includes(curUser.id.toString())) {
         return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
@@ -32,7 +34,7 @@ app.get('/class/:id', async (req, res) => {
 
     const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isMainTeacher = isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
 
     clazz.subtitle = await syzoj.utils.markdown(clazz.subtitle);
     clazz.information = await syzoj.utils.markdown(clazz.information);
@@ -46,6 +48,7 @@ app.get('/class/:id', async (req, res) => {
       course: course,
       clazz: clazz,
       isSupervisior: isSupervisior,
+      isStudent: isStudent,
       isCourseOwner: isCourseOwner,
       isClassOwner: isClassOwner,
       isMainTeacher: isMainTeacher,
@@ -79,8 +82,7 @@ app.get('/class/:id/edit', async (req, res) => {
       }
       clazz = await Clazz.create();
       clazz.id = 0;
-      clazz.reg_info = '邀请码询问班主任或老师。';
-      clazz.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
+      clazz.reg_info = '';
     } else {
       // if clazz exists, both system administrators and clazz owner can edit it.
       if (!await clazz.hasOwnership(curUser)) {
@@ -133,6 +135,7 @@ app.post('/class/:id/edit', async (req, res) => {
       clazz.owner_id = curUser.id;
       clazz.teachers = '';
       clazz.students = '';
+      clazz.candidates = '';
       clazz.lessons = '';
       clazz.course_id = course.id;
       clazz.is_public = 0;
@@ -146,10 +149,18 @@ app.post('/class/:id/edit', async (req, res) => {
     if (!req.body.title.trim()) throw new ErrorMessage('班级名不能为空。');
     clazz.title = req.body.title;
     clazz.information = req.body.information;
-    clazz.start_time = syzoj.utils.parseDate(req.body.start_time); // 8:00:00
-    clazz.end_time = syzoj.utils.parseDate(req.body.end_time) + 3600 * 14; // 22:00:00
+    if (req.body.start_time.trim()) clazz.start_time = syzoj.utils.parseDate(req.body.start_time); // 8:00:00
+    else throw new ErrorMessage('请指定开课日期');
+    if (req.body.start_time.trim()) clazz.end_time = syzoj.utils.parseDate(req.body.end_time) + 3600 * 14; // 22:00:00
+    else throw new ErrorMessage('请指定结课日期');
+    if (clazz.start_time >= clazz.end_time) throw new ErrorMessage('开课日期应早于结课日期');
+
     clazz.reg_info = req.body.reg_info;
-    clazz.reg_token = req.body.reg_token;
+    if (req.body.reg_start_time.trim()) clazz.reg_start_time = syzoj.utils.parseDate(req.body.reg_start_time);
+    else clazz.reg_start_time = clazz.start_time - 3600 * 24 * 15;
+    if (req.body.reg_end_time.trim()) clazz.reg_end_time = syzoj.utils.parseDate(req.body.reg_end_time);
+    else clazz.reg_end_time = clazz.end_time;
+
     if (allowedManageClass) {
       clazz.owner_id = parseInt(req.body.owner);
     }
@@ -187,9 +198,12 @@ app.get('/class/:id/students', async (req, res) => {
 
     if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
 
-    const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+
+    let candidates = [];
+    if (clazz.candidates) {
+      candidates = await clazz.candidates.split('|').mapAsync(async id => await User.findById(id));
+    }
 
     let students = [];
     if (clazz.students) {
@@ -202,7 +216,7 @@ app.get('/class/:id/students', async (req, res) => {
       course: course,
       clazz: clazz,
       isClassOwner: isClassOwner,
-      isMainTeacher: isMainTeacher,
+      candidates: candidates,
       students: students
     });
   } catch (e) {
@@ -227,9 +241,13 @@ app.post('/class/:id/students', async (req, res) => {
     if (!await clazz.hasOwnership(curUser)) throw new ErrorMessage('您没有权限进行此操作。');
 
     clazz.reg_info = req.body.reg_info;
-    clazz.reg_token = req.body.reg_token;
+
+    if (!Array.isArray(req.body.candidates)) req.body.candidates = [req.body.candidates];
+    clazz.candidates = req.body.candidates.join('|');
+
     if (!Array.isArray(req.body.students)) req.body.students = [req.body.students];
     clazz.students = req.body.students.join('|');
+
     await clazz.save();
 
     res.redirect(syzoj.utils.makeUrl(['class', clazz.id]));
@@ -244,7 +262,7 @@ app.post('/class/:id/students', async (req, res) => {
 app.get('/class/:id/register', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
 
     let classID = parseInt(req.params.id);
     let clazz = await Clazz.findById(classID);
@@ -255,7 +273,9 @@ app.get('/class/:id/register', async (req, res) => {
 
     const isSupervisior = await clazz.isSupervisior(curUser);
 
-    if (isSupervisior || await clazz.students.split('|').includes(curUser.id.toString())) {
+    if (isSupervisior ||
+        await clazz.students.split('|').includes(curUser.id.toString()) ||
+        await clazz.candidates.split('|').includes(curUser.id.toString())) {
       return res.redirect(syzoj.utils.makeUrl(['class', clazz.id]));
     }
 
@@ -266,9 +286,7 @@ app.get('/class/:id/register', async (req, res) => {
 
     res.render('clazz_register', {
       course: course,
-      clazz: clazz,
-      reg_open: !clazz.start_time || syzoj.utils.getCurrentDate() >= clazz.start_time - 15 * 24 * 3600,
-      hasToken: clazz.reg_token && clazz.reg_token.trim()
+      clazz: clazz
     });
   } catch (e) {
     syzoj.log(e);
@@ -281,7 +299,7 @@ app.get('/class/:id/register', async (req, res) => {
 app.post('/class/:id/register', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
 
     let classID = parseInt(req.params.id);
     let clazz = await Clazz.findById(classID);
@@ -292,24 +310,18 @@ app.post('/class/:id/register', async (req, res) => {
 
     const isSupervisior = await clazz.isSupervisior(curUser);
 
-    if (isSupervisior || await clazz.students.split('|').includes(curUser.id.toString())) {
+    if (isSupervisior ||
+        await clazz.students.split('|').includes(curUser.id.toString()) ||
+        await clazz.candidates.split('|').includes(curUser.id.toString())) {
       return res.redirect(syzoj.utils.makeUrl(['class', clazz.id]));
     }
 
     if (!clazz.is_public) throw new ErrorMessage('此班级尚未公开，请耐心等待。');
 
-    if (clazz.start_time && syzoj.utils.getCurrentDate() < clazz.start_time - 15 * 24 * 3600) {
-      throw new ErrorMessage('报名入班将在开课前 15 日开放，请耐心等待。');
-    }
+    if (syzoj.utils.getCurrentDate() < clazz.reg_start_time) throw new ErrorMessage('报名尚未开始，请耐心等待。');
+    if (syzoj.utils.getCurrentDate() >= clazz.reg_end_time) throw new ErrorMessage('报名已经结束，敬请期待下期课程。');
 
-    if (clazz.reg_token && clazz.reg_token.trim()) {
-      if (!req.body.token.trim()) throw new ErrorMessage('请输入邀请码。');
-      if (req.body.token !== clazz.reg_token) throw new ErrorMessage('邀请码错误。');
-    } else if (clazz.reg_info) {
-      if (!req.body.token.trim() || req.body.token !== 'AGREE') throw new ErrorMessage('请输入 "AGREE" 以继续。');
-    }
-
-    clazz.students = (clazz.students === "" ? curUser.id.toString() : clazz.students + "|" + curUser.id.toString());
+    clazz.candidates = (clazz.candidates === "" ? curUser.id.toString() : clazz.candidates + "|" + curUser.id.toString());
     await clazz.save();
 
     res.redirect(syzoj.utils.makeUrl(['class', clazz.id]));
@@ -350,10 +362,9 @@ app.post('/class/:id/approval', async (req, res) => {
         lesson.id = lessonID;
         lesson.start_time = clazz.start_time;
         lesson.end_time = clazz.end_time;
-        lesson.duration = clazz.end_time - clazz.start_time;
         if (contest.type === 'usaco') {
           lesson.duration = contest.duration;
-          lesson.reg_info = '请遵守考试纪律。';
+          lesson.reg_info = '请独立完成试题。';
           lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
         }
         lesson.is_public = false;
@@ -404,11 +415,14 @@ app.get('/class/:id/files', async (req, res) => {
     let course = await Course.findById(clazz.course_id);
     if (!course) throw new ErrorMessage('错误的课程。');
 
-    const isCourseOwner = await course.hasOwnership(curUser);
-    const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isSupervisior = await clazz.isSupervisior(curUser);
 
-    if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
+    if (!isSupervisior) {
+      if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
+      }
+      if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
+    }
 
     res.render('clazz_files', {
       course: course,
@@ -449,11 +463,14 @@ app.get('/class/:id/files/download/:filename?', async (req, res) => {
     let course = await Course.findById(clazz.course_id);
     if (!course) throw new ErrorMessage('错误的课程。');
 
-    const isCourseOwner = await course.hasOwnership(curUser);
-    const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isSupervisior = await clazz.isSupervisior(curUser);
 
-    if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
+    if (!isSupervisior) {
+      if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
+      }
+      if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
+    }
 
     if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
 
@@ -486,14 +503,14 @@ app.get('/class/:id/lesson/:lid', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
 
     const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isMainTeacher = isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
 
     let lessonIDs = await clazz.getLessons();
 
@@ -626,7 +643,7 @@ app.get('/class/:id/lesson/:lid/edit', async (req, res) => {
 
     const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isMainTeacher = isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
 
     let lessonIDs = await clazz.getLessons();
 
@@ -642,6 +659,8 @@ app.get('/class/:id/lesson/:lid/edit', async (req, res) => {
 
       lesson = await Contest.create();
       lesson.id = 0;
+      lesson.reg_info = '请独立完成试题。';
+      lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
     } else {
       // if lesson exists, system administrators and clazz owner and main teacher can edit it.
       if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
@@ -683,7 +702,7 @@ app.post('/class/:id/lesson/:lid/edit', async (req, res) => {
 
     const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isMainTeacher = isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
 
     let lessonIDs = await clazz.getLessons();
 
@@ -738,13 +757,8 @@ app.post('/class/:id/lesson/:lid/edit', async (req, res) => {
       Math.max(syzoj.utils.parseDate(req.body.start_time), clazz.start_time);
     lesson.end_time = !req.body.end_time.trim() ? clazz.end_time :
       Math.min(syzoj.utils.parseDate(req.body.end_time), clazz.end_time);
-    if (lesson.type !== 'usaco') lesson.duration = lesson.end_time - lesson.start_time;
     lesson.reg_info = req.body.reg_info;
     lesson.reg_token = req.body.reg_token;
-    if (lesson.type === 'usaco') {
-      if (!lesson.reg_info) lesson.reg_info = '请遵守考试纪律。';
-      if (!lesson.reg_token) lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
-    }
     lesson.is_public = req.body.is_public === 'on';
     lesson.hide_statistics = req.body.hide_statistics === 'on';
 
@@ -790,7 +804,6 @@ app.get('/class/:id/lesson/:lid/import', async (req, res) => {
     if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
     let lessons = await (await course.getLessons()).mapAsync(async id => await Contest.findById(id));
-    lessons = lessons.filter(x => x.is_public);
 
     res.render('clazz_lesson_import', {
       course: course,
@@ -828,7 +841,7 @@ app.post('/class/:id/lesson/:lid/import', async (req, res) => {
     if (lid < 0 || lid > lessonIDs.length) throw new ErrorMessage('无此课节。');
 
     let contest = await Contest.findById(req.body.lesson);
-    if (!contest || !contest.is_public || contest.holder_id !== course.id) throw new ErrorMessage('该课节不可导入。');
+    if (!contest || contest.holder_id !== course.id) throw new ErrorMessage('该课节不可导入。');
 
     let lessonID = (lid > 0 ? lessonIDs[lid - 1] : 0);
     let lesson = await Contest.findById(lessonID);
@@ -842,14 +855,13 @@ app.post('/class/:id/lesson/:lid/import', async (req, res) => {
 
       lesson.start_time = clazz.start_time;
       lesson.end_time = clazz.end_time;
-      lesson.duration = clazz.end_time - clazz.start_time;
       if (contest.type === 'usaco') {
         lesson.duration = contest.duration;
-        lesson.reg_info = '请遵守考试纪律。';
+        lesson.reg_info = '请独立完成试题。';
         lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
       }
       lesson.is_public = false;
-      lesson.hide_statistics = false;
+      lesson.hide_statistics = (contest.type === 'noi');
 
       lesson.holder_id = classID;
       let ranklist = await ContestRanklist.create();
@@ -891,8 +903,8 @@ app.post('/class/:id/lesson/:lid/import', async (req, res) => {
 app.get('/class/:id/lesson/:lid/register', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
-    if (!curUser.nickname) throw new ErrorMessage('请先设置姓名。', { '': syzoj.utils.makeUrl(['user', curUser.id, 'edit'], { 'url': req.originalUrl }) })
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+    if (!curUser.nickname) throw new ErrorMessage('请先设置姓名。', { '': syzoj.utils.makeUrl(['user', curUser.id, 'edit'], { 'url': req.originalUrl }) });
 
     let classID = parseInt(req.params.id);
     let clazz = await Clazz.findById(classID);
@@ -905,7 +917,7 @@ app.get('/class/:id/lesson/:lid/register', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
@@ -953,8 +965,8 @@ app.get('/class/:id/lesson/:lid/register', async (req, res) => {
 app.post('/class/:id/lesson/:lid/register', async (req, res) => {
   try {
     const curUser = res.locals.user;
-    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) })
-    if (!curUser.nickname) throw new ErrorMessage('请先设置姓名。', { '修改资料': syzoj.utils.makeUrl(['user', curUser.id, 'edit'], { 'url': req.originalUrl }) })
+    if (!curUser) throw new ErrorMessage('请先登录。', { '登录': syzoj.utils.makeUrl(['login'], { 'url': req.originalUrl }) });
+    if (!curUser.nickname) throw new ErrorMessage('请先设置姓名。', { '修改资料': syzoj.utils.makeUrl(['user', curUser.id, 'edit'], { 'url': req.originalUrl }) });
 
     let classID = parseInt(req.params.id);
     let clazz = await Clazz.findById(classID);
@@ -967,7 +979,7 @@ app.post('/class/:id/lesson/:lid/register', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
@@ -1097,9 +1109,8 @@ app.post('/class/:id/lesson/:lid/public', async (req, res) => {
     let course = await Course.findById(clazz.course_id);
     if (!course) throw new ErrorMessage('错误的课程。');
 
-    const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isMainTeacher = isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
 
     if (!isMainTeacher) throw new ErrorMessage('您没有权限进行此操作。');
 
@@ -1173,7 +1184,7 @@ app.get('/class/:id/lesson/:lid/ranklist', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
@@ -1284,7 +1295,7 @@ app.get('/submissions/class/:id/lesson/:lid', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
@@ -1446,14 +1457,13 @@ app.get('/class/:id/lesson/:lid/submission/:sid', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
 
-    const isCourseOwner = await course.hasOwnership(curUser);
     const isClassOwner = await clazz.hasOwnership(curUser);
-    const isMainTeacher = isCourseOwner || isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
+    const isMainTeacher = isClassOwner || (curUser && curUser.id.toString() === await clazz.getMainTeacher());
 
     let lessonIDs = await clazz.getLessons();
 
@@ -1529,7 +1539,7 @@ app.get('/class/:id/lesson/:lid/problem/:pid', async (req, res) => {
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }
@@ -1613,7 +1623,7 @@ app.get('/class/:id/lesson/:lid/:pid/download/additional_file', async (req, res)
 
     if (!isSupervisior) {
       if (!curUser || !await clazz.students.split('|').includes(curUser.id.toString())) {
-        return res.redirect(syzoj.utils.makeUrl(['class', clazz.id, 'register']));
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
       }
       if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
     }

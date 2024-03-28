@@ -1,4 +1,4 @@
-<% this.title = '参加考试' %>
+<% this.title = '课节签到' %>
 <% include header %>
 <style>
 #back_to_class { display: none;  }
@@ -10,7 +10,7 @@
     <% if (lesson.reg_info) { %>
     <div class="row">
       <div class="column">
-        <h4 class="ui top attached block header">考试须知</h4>
+        <h4 class="ui top attached block header">课节须知</h4>
         <div class="ui bottom attached segment font-content">
           <%- lesson.reg_info %>
         </div>
@@ -21,7 +21,7 @@
       <div class="column">
         <% if (!reg_open) { %>
         <div class="ui large error message">
-          <p>报名将在考试开始前 5 分钟开放，请耐心等待。</p>
+          <p>签到将在课节开始前 5 分钟开放，请耐心等待。</p>
         </div>
         <% } else { %>
         <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid, 'register']) %>" method="post" id="lesson_reg">
@@ -34,12 +34,12 @@
             <% } %>
             <div class="ui basic modal" id="modal-confirm">
               <div class="ui icon header">
-                <i class="file alternate icon"></i>
-                <p style="margin-top: 15px; ">参加考试</p>
+                <i class="edit icon"></i>
+                <p style="margin-top: 15px; ">课节签到</p>
               </div>
               <div class="content" style="text-align: center; ">
-                <p>确认参加该考试吗？</p>
-                <b>警告：该操作不可撤销。<% if (lesson.type === 'usaco') { %><br>USACO 赛制将在报名完成后开始计时，<br>测试时长 <%= lesson.duration / 60 %> 分钟。<% } %></b>
+                <p>确认签到该课节吗？<% if (lesson.type === 'usaco') { %><br><br>限时 <%= lesson.duration / 3600.0 %> 小时<br>对于正在进行中的课节，将在签到后开始计时<% } %></p>
+                <b>警告：该操作不可撤销。</b>
               </div>
               <div class="actions">
                 <div class="ui red basic cancel inverted button">
@@ -60,7 +60,7 @@
               </div>
             </div>
             <div style="text-align: center; margin-top: 30px; ">
-              <div class="ui labeled icon blue button" onclick="$('#modal-confirm').modal('show')"><i class="ui edit icon"></i>报名</div>
+              <div class="ui labeled icon blue button" onclick="$('#modal-confirm').modal('show')"><i class="ui edit icon"></i>签到</div>
               <a href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', lid]) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
             </div>
           </div>

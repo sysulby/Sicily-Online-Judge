@@ -22,21 +22,48 @@
               </div>
             </div>
             <div class="four fields">
-              <div class="three wide field">
+              <div class="four wide field">
                   <label>开始时间</label>
                   <input type="text" name="start_time" value="<%= contest.start_time ? syzoj.utils.formatDate(contest.start_time) : '' %>">
               </div>
-              <div class="three wide field">
+              <div class="four wide field">
                   <label>结束时间</label>
                   <input type="text" name="end_time" value="<%= contest.end_time ? syzoj.utils.formatDate(contest.end_time) : '' %>">
               </div>
-              <div class="two wide field">
+              <div class="four wide field">
                   <label>比赛时长</label>
-                  <input type="text" name="duration" value="<%= contest.duration ? syzoj.utils.formatTime(contest.duration) : '' %>">
+                  <input type="text" name="duration" value="<%= contest.type === 'usaco' ? syzoj.utils.formatTime(contest.duration) : '' %>">
               </div>
-              <div class="eight wide field">
+              <div class="four wide field">
                   <label>邀请码</label>
                   <input type="text" name="reg_token" value="<%= contest.reg_token %>">
+              </div>
+            </div>
+            <div class="inline fields">
+              <label>赛制</label>
+              <div class="field">
+                <div class="ui radio checkbox">
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-usaco" value="usaco"<% if (!contest.id || contest.type === 'usaco') { %> checked="checked"<% } %>>
+                  <label for="type-usaco">USACO</label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="ui radio checkbox">
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-ioi" value="ioi"<% if (contest.type === 'ioi') { %> checked="checked"<% } %>>
+                  <label for="type-ioi">IOI</label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="ui radio checkbox">
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-noi" value="noi"<% if (contest.type === 'noi') { %> checked="checked"<% } %>>
+                  <label for="type-noi">NOI</label>
+                </div>
+              </div>
+              <div class="field">
+                <div class="ui radio checkbox">
+                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-icpc" value="icpc"<% if (contest.type === 'icpc') { %> checked="checked"<% } %>>
+                  <label for="type-icpc">ICPC</label>
+                </div>
               </div>
             </div>
             <div class="field">
@@ -48,43 +75,16 @@
                 </select>
             </div>
             <div class="field">
+                <label>排行参数（格式：<code>{ "题目1 ID": 系数1, "题目2 ID": 系数2, ... }</code>）</label>
+                <input type="text" name="ranking_params" value="<%= contest.ranklist ? JSON.stringify(contest.ranklist.ranking_params) : '' %>">
+            </div>
+            <div class="field">
                 <label>比赛管理员</label>
                 <select class="ui fluid search dropdown" multiple="" id="search_admins" name="admins">
                 <% for (let admin of admins) { %>
                 <option value="<%= admin.id %>" selected><%= admin.username %></option>
                 <% } %>
                 </select>
-            </div>
-            <div class="inline fields">
-              <label>赛制</label>
-              <div class="field">
-                <div class="ui radio checkbox">
-                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-noi" value="noi"<% if (contest.type === 'noi') { %> checked="checked"<% } %>>
-                  <label for="type-noi">NOI</label>
-                </div>
-              </div>
-              <div class="field">
-                <div class="ui radio checkbox">
-                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-ioi" value="ioi"<% if (contest.type === 'ioi') { %> checked="checked"<% } %>>
-                  <label for="type-ioi">IOI</label>
-                </div>
-              </div>
-              <div class="field">
-                <div class="ui radio checkbox">
-                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-usaco" value="usaco"<% if (!contest.id || contest.type === 'usaco') { %> checked="checked"<% } %>>
-                  <label for="type-usaco">USACO</label>
-                </div>
-              </div>
-              <div class="field">
-                <div class="ui radio checkbox">
-                  <input <% if (contest.id) { %>disabled <% } %>type="radio" name="type" id="type-icpc" value="icpc"<% if (contest.type === 'icpc') { %> checked="checked"<% } %>>
-                  <label for="type-icpc">ICPC</label>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-                <label>排行参数（格式：<code>{ "题目序号": 系数 }</code>）</label>
-                <input type="text" name="ranking_params" value="<%= contest.ranklist ? JSON.stringify(contest.ranklist.ranking_params) : '' %>">
             </div>
             <div class="inline field">
               <label class="ui header">公开</label>

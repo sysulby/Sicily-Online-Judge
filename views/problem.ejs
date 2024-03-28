@@ -280,7 +280,12 @@ if (contest) {
             var cases = <%- serializejs(cases) %>, currCase = 0;
             </script>
             <input id="answer_by_editor" name="answer_by_editor" type="hidden">
-            <div class="ui center aligned vertical segment" style="padding-bottom: 0; "><button type="submit" class="ui labeled icon button"><i class="ui edit icon"></i>提交</button></div>
+            <div class="ui center aligned vertical segment" style="padding-bottom: 0; ">
+              <button type="submit" class="ui labeled icon button">
+                <i class="ui edit icon"></i>
+                <% if (typeof contest !== 'undefined' && contest && contest.ended) { %>赛后<% } %>提交
+              </button>
+            </div>
           <% } else { %>
             <input name="language" type="hidden" id="form">
             <input name="code" type="hidden">
@@ -317,7 +322,8 @@ if (contest) {
               </div>
             </div>
             <div class="ui center aligned vertical segment" style="padding-bottom: 0; ">
-              <button type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>
+              <button type="submit" class="ui labeled icon blue button">
+                <i class="ui edit icon"></i>
                 <% if (typeof contest !== 'undefined' && contest && contest.ended) { %>赛后<% } %>提交
               </button>
             </div>

@@ -72,7 +72,7 @@
         <table class="ui very basic center aligned table">
           <thead>
             <tr>
-              <% if (user) { %>
+              <% if (isSupervisior) { %>
               <th class="one wide">状态</th>
               <% } %>
               <th class="one wide">#</th>
@@ -89,14 +89,13 @@
               i++;
             %>
             <tr>
-              <% if (user) { %>
+              <% if (isSupervisior) { %>
               <td></td>
               <% } %>
               <td><b><%= i %></b></td>
               <% if (isSupervisior) { %>
               <td class="left aligned"><a href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i]) %>"><%= syzoj.utils.removeTitleTag(lesson.title) %>
                 <% if (!lesson.is_public) { %><span class="ui header"><span class="ui tiny red label">未公开</span></span><% } %>
-                <% if (!lesson.hide_statistics) { %><span class="ui header"><span class="ui tiny green label">展示中</span></span><% } %>
               </a></td>
               <% } else { %>
               <td class="left aligned"><%= syzoj.utils.removeTitleTag(lesson.title) %></td>

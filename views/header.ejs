@@ -128,7 +128,7 @@
             <% } %>
             <div class="right menu">
               <% if (user) { %>
-              <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" style="color: #0000ff; font-size: 1.5rem; ">
+              <a href="<%= syzoj.utils.makeUrl(['user', user.id]) %>" style="color: gray!important; font-size: 1.5rem; ">
               <div class="ui simple dropdown item">
                 <img class="ui avatar image" src="<%= syzoj.utils.gravatar(user.email, 1000) %>">
                 <%= user.username %><% if (user.nameplate) { %><%- user.nameplate %><% } %>
@@ -170,7 +170,10 @@
                 <% } %>
                 <a id="back_to_class" class="header item" href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回班级</a>
               <% } else { %>
-              <a id="back_to_course" class="header item" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课程</a>
+                <% if (typeof lesson !== 'undefined' && lesson && lesson.id && lid) { %>
+                <a id="back_to_lesson" class="header item" href="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', lid]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课节</a>
+                <% } %>
+                <a id="back_to_course" class="header item" href="<%= syzoj.utils.makeUrl(['course', course.id]) %>" style="color: white; "><i class="arrow left icon"></i> 返回课程</a>
               <% } %>
             <% } %>
             <% if (user) { %>

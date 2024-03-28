@@ -21,7 +21,7 @@
                 <% for (let i = 0; i < problems.length; i++) { %>
                 <th>
                   <a href="<%= syzoj.utils.makeUrl(['contest', contest.id, 'problem', i + 1]) %>">
-                    <%= syzoj.utils.removeTitleTag(problems[i].title) %>
+                    <%= this.alpha(i + 1) %>
                   </a>
                 </th>
                 <% } %>

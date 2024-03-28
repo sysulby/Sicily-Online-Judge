@@ -12,10 +12,7 @@ app.get('/', async (req, res) => {
     let notices = (await Article.find({
       where: { is_notice: true }, 
       order: { public_time: 'DESC' }
-    })).filter(article =>
-      // Show only announcements made within 15 days.
-      syzoj.utils.getCurrentDate() - article.public_time < 15 * 24 * 3600
-    ).map(article => ({
+    })).map(article => ({
       title: article.title,
       url: syzoj.utils.makeUrl(['article', article.id]),
       date: syzoj.utils.formatDate(article.public_time, 'L')
