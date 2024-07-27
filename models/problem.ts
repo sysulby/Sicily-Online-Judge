@@ -146,7 +146,7 @@ export default class Problem extends Model {
     if (await user.hasPrivilege('manage_problem')) return true;
     let sets = await this.getSets();
     for (let set of sets) {
-      if (await set.hasOwnership(user) || (user.id === this.user_id && await set.isSupervisior(user))) return true;
+      if (await set.isSupervisior(user)) return true; // [TODO]: think twice
     }
     return false;
   }

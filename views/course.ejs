@@ -24,7 +24,7 @@
           <% if (user && user.is_admin) { %>
           <div class="ui basic modal" id="modal-delete-course">
             <div class="ui icon header">
-              <i class="trash icon"></i>
+              <i class="trash alternate icon"></i>
               <p style="margin-top: 15px; ">删除课程</p>
             </div>
             <div class="content" style="text-align: center; ">
@@ -133,7 +133,7 @@
                   <% } else { %>
                   <a class="ui button" href-post="<%= syzoj.utils.makeUrl(['course', course.id, 'lesson', i, 'move_down']) %>"><i class="arrow down icon"></i></a>
                   <% } %>
-                  <a class="ui button" onclick="$('#modal-delete-lesson-' + <%= i %>).modal('show')"><i class="trash alternate icon"></i></a>
+                  <a class="ui button" onclick="$('#modal-delete-lesson-<%= i %>').modal('show')"><i class="trash alternate icon"></i></a>
                 </div>
               </td>
               <% } %>

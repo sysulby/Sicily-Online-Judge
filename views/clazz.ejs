@@ -31,8 +31,10 @@
           <% } else { %>
             <% if (isStudent) { %>
               <a class="ui small positive disabled button">报名成功</a>
-            <% } else { %>
+            <% } else if (isCandidate) { %>
               <a class="ui small yellow disabled button">报名审核中</a>
+            <% } else { %>
+              <a class="ui small negative disabled button">报名失败</a>
             <% } %>
           <% } %>
           <% if (isSupervisior || isStudent) { %>
@@ -68,7 +70,7 @@
           <% if (user.is_admin) { %>
           <div class="ui basic modal" id="modal-delete-clazz">
             <div class="ui icon header">
-              <i class="trash icon"></i>
+              <i class="trash alternate icon"></i>
               <p style="margin-top: 15px; ">删除班级</p>
             </div>
             <div class="content" style="text-align: center; ">
@@ -90,7 +92,7 @@
         </div>
       </div>
     </div>
-    <% if (clazz.information && (isSupervisior || isStudent)) { %>
+    <% if (clazz.information) { %>
       <div class="row">
         <div class="column">
           <h4 class="ui top attached block header">班级公告</h4>
@@ -100,11 +102,21 @@
         </div>
       </div>
     <% } %>
+    <% if (typeof clazz.reg_feedback === 'string') { %>
+      <div class="row">
+        <div class="column">
+          <h4 class="ui red top attached block header">结果反馈</h4>
+          <div class="ui bottom attached segment font-content">
+            <%- clazz.reg_feedback %>
+          </div>
+        </div>
+      </div>
+    <% } %>
     <div class="row">
       <div class="column">
         <% if (unveiled) { %>
         <h2 class="ui header" style="margin-bottom: 30px;">课节列表</h2>
-        <% if (isCourseOwner) { %>
+        <% if (isClassOwner) { %>
         <form class="ui mini form" style="margin-top: -30px;">
           <div class="inline fields" style="margin-bottom: 25px; white-space: nowrap; ">
             <a <% if (!clazz.is_public) { %>disabled<% } %> href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', 0, 'import']) %>" class="ui mini labeled icon right floated button" style="margin-left: auto; ">
@@ -187,12 +199,14 @@
                   </div>
                 <% } %>
                 <div class="ui mini basic icon buttons">
-                  <a class="ui <% if (lesson.is_public) { %>disabled<% } %> button" onclick="$('#modal-public-lesson-' + <%= i %>).modal('show')"><i class="checkmark icon"></i></a>
+                  <a class="ui <% if (lesson.is_public) { %>disabled<% } %> button" onclick="$('#modal-public-lesson-<%= i %>').modal('show')"><i class="checkmark icon"></i></a>
                   <a class="ui button" href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', i, 'edit']) %>"><i class="edit icon"></i></a>
-                  <% if (isCourseOwner) { %>
+                  <% if (isClassOwner) { %>
                   <a class="ui <% if (i == 1) { %>disabled<% } %> button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', i, 'move_up']) %>"><i class="arrow up icon"></i></a>
                   <a class="ui <% if (i == lessons.length) { %>disabled<% } %> button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'lesson', i, 'move_down']) %>"><i class="arrow down icon"></i></a>
-                  <a class="ui button" onclick="$('#modal-delete-lesson-' + <%= i %>).modal('show')"><i class="trash alternate icon"></i></a>
+                  <% } %>
+                  <% if (isCourseOwner) { %>
+                  <a class="ui button" onclick="$('#modal-delete-lesson-<%= i %>').modal('show')"><i class="trash alternate icon"></i></a>
                   <% } %>
                 </div>
               </td>
@@ -210,9 +224,12 @@
             <% if (isStudent) { %>
             <i class="hourglass start icon" style="margin-bottom: 20px; "></i>
             课程尚未开始
+            <% } else if (isCandidate) { %>
+            <i class="hourglass start icon" style="margin-bottom: 20px; "></i>
+            等待审核中...
             <% } else { %>
-            <i class="edit icon" style="margin-bottom: 20px; "></i>
-            请先完成报名
+            <i class="remove icon" style="margin-bottom: 20px; "></i>
+            课程暂不可用
             <% } %>
           </div>
         </div>

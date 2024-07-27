@@ -20,11 +20,11 @@
       <div class="five fields">
         <div class="four wide field">
           <label>开课日期</label>
-          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 15, 'L') %>">
+          <input type="text" name="start_time" value="<%= syzoj.utils.formatDate(clazz.start_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 10, 'L') %>">
         </div>
         <div class="four wide field">
           <label>结课日期</label>
-          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 195, 'L') %>">
+          <input type="text" name="end_time" value="<%= syzoj.utils.formatDate(clazz.end_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 190, 'L') %>">
         </div>
         <div class="four wide field">
           <label>报名开始</label>
@@ -32,7 +32,7 @@
         </div>
         <div class="four wide field">
           <label>报名截止</label>
-          <input type="text" name="reg_end_time" value="<%= syzoj.utils.formatDate(clazz.reg_end_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 195) %>">
+          <input type="text" name="reg_end_time" value="<%= syzoj.utils.formatDate(clazz.reg_end_time || syzoj.utils.getCurrentDate(true) + 3600 * 24 * 190) %>">
         </div>
       </div>
       <div class="field">

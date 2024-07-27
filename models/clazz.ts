@@ -5,6 +5,7 @@ declare var syzoj: any;
 
 import User from "./user";
 import Course from "./course";
+import ClazzStudent from "./clazz_student";
 
 @TypeORM.Entity()
 export default class Clazz extends Model {
@@ -36,9 +37,6 @@ export default class Clazz extends Model {
   teachers: string;
 
   @TypeORM.Column({ nullable: true, type: "text" })
-  students: string;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
   reg_info: string;
 
   @TypeORM.Column({ nullable: true, type: "integer" })
@@ -46,9 +44,6 @@ export default class Clazz extends Model {
 
   @TypeORM.Column({ nullable: true, type: "integer" })
   reg_end_time: number;
-
-  @TypeORM.Column({ nullable: true, type: "text" })
-  candidates: string;
 
   @TypeORM.Index()
   @TypeORM.Column({ nullable: true, type: "integer" })
@@ -80,13 +75,25 @@ export default class Clazz extends Model {
     return user && (this.teachers.split('|').includes(user.id.toString()) || await this.hasOwnership(user));
   }
 
+  async isStudent(user) {
+    if (!user) return false;
+    let student = await ClazzStudent.findInClazz({
+      class_id: this.id,
+      user_id: user.id
+    });
+    return student && student.status === 'Accepted';
+  }
+
   async isParticipant(user) {
-    return user && (
-      user.id === this.owner_id ||
-      this.teachers.split('|').includes(user.id.toString()) ||
-      this.students.split('|').includes(user.id.toString()) ||
-      this.candidates.split('|').includes(user.id.toString())
-    );
+    if (!user) return false;
+    if (user.id === this.owner_id || this.teachers.split('|').includes(user.id.toString())) return true;
+    let student = await ClazzStudent.findInClazz({
+      class_id: this.id,
+      user_id: user.id
+    });
+    if (!student) return false;
+    if (student.status === 'Accepted' || student.status === 'Waiting') return true;
+    return !this.isEnded() && syzoj.utils.getCurrentDate() - student.last_modified <= 3600 * 24 * 10;
   }
 
   async getMainTeacher() {

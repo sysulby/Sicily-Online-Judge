@@ -17,12 +17,22 @@
       </div>
     </div>
     <% } %>
+    <% if (typeof clazz.reg_feedback === 'string') { %>
+      <div class="row">
+        <div class="column">
+          <h4 class="ui red top attached block header">结果反馈</h4>
+          <div class="ui bottom attached segment font-content">
+            <%- clazz.reg_feedback %>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
     <div class="row">
       <div class="column">
         <h4 class="ui top attached block header">注意事项</h4>
         <div class="ui bottom attached segment font-content">
           <p>申请开放时段：<%- syzoj.utils.formatDate(clazz.reg_start_time) %> ~ <%- syzoj.utils.formatDate(clazz.reg_end_time) %></p>
-          <p>请提前完善学员资料，点击 <a href="<%= syzoj.utils.makeUrl(['user', user.id, 'profile']) %>">此处</a> 填写或更新。</p>
+          <p>请提前完善学员资料，点击 <a href="<%= syzoj.utils.makeUrl(['user', user.id, 'resume'], { class: clazz.id }) %>"><i class="linkify icon"></i>此处</a> 填写或更新。</p>
         </div>
         <% if (clazz.reg_start_time <= syzoj.utils.getCurrentDate() && syzoj.utils.getCurrentDate() < clazz.reg_end_time) { %>
         <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'register']) %>" method="post" id="clazz_reg">
@@ -33,8 +43,28 @@
                 <p style="margin-top: 15px; ">报名申请</p>
               </div>
               <div class="content" style="text-align: center; ">
+                <% if (!resume) { %>
+                <b>未读取到学员信息，刷新页面以重试。</b>
+                <% } else { %>
+                <p>
+                  姓名：<%- resume.name %><br>
+                  学校/年级：<%- resume.school %> / <%- resume.grade %><br>
+                  联系人：<%- resume.contact %> (<%- resume.contact_relationship %>) / <%- resume.phone_number %><br>
+                  校内成绩：<%- resume.score %><br>
+                  奖项 1：<%- resume.award1 %><br>
+                  奖项 2：<%- resume.award2 %><br>
+                  奖项 3：<%- resume.award3 %><br>
+                  奖项 4：<%- resume.award4 %>
+                </p>
+                <p>
+                  <% if (!resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', user.id, 'resume_file']) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+                <% } %>
                 <p>确认申请进入该班级吗？</p>
-                <b>[TODO]: 显示学员信息</b>
               </div>
               <div class="actions">
                 <div class="ui red basic cancel inverted button">
@@ -62,6 +92,7 @@
         <% } %>
       </div>
     </div>
+    <% } %>
   </div>
 </div>
 <% include footer %>

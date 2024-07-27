@@ -3,59 +3,489 @@
 <div class="padding">
   <h1><%= clazz.title %></h1>
   <div style="margin-bottom: 30px;"><%- clazz.subtitle %></div>
-  <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'students']) %>" method="post">
-    <div class="ui form">
-      <% if (isClassOwner) { %>
-      <div class="field">
-        <label>报名须知</label>
-        <textarea rows="5" name="reg_info" class="markdown-edit"><%= clazz.reg_info %></textarea>
-      </div>
-      <div class="field">
-        <label>候选人名单</label>
-        <select class="ui fluid dropdown" multiple="" id="candidates" name="candidates">
-        <% for (let candidate of candidates) { %>
-          <option value="<%= candidate.id %>" selected><%= candidate.username %></option>
+  <% if (isClassOwner) { %>
+    <% if (candidates.length) { %>
+    <h2 class="ui header" style="margin-bottom: 30px;">候选人</h2>
+    <table class="ui very basic center aligned table">
+      <thead>
+        <tr>
+          <th>用户名</th>
+          <th>姓名</th>
+          <th>学校</th>
+          <th>年级</th>
+          <th>校内成绩</th>
+          <th>主要奖项</th>
+          <th class="two wide">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%
+        let i = 0;
+        for (let candidate of candidates) {
+          i++;
+        %>
+        <tr>
+          <td><a href="<%= syzoj.utils.makeUrl(['user', candidate.user.id]) %>"><%= candidate.user.username %></a></td>
+          <td><%- candidate.resume.name %></td>
+          <td><%- candidate.resume.school %></td>
+          <td><%- candidate.resume.grade %></td>
+          <td><%- candidate.resume.score %></td>
+          <td><%- candidate.resume.award1 %></td>
+          <td>
+            <div class="ui basic modal" id="modal-candidate-resume-<%= i %>">
+              <div class="ui icon header">
+                <i class="address card icon"></i>
+                <p style="margin-top: 15px; ">学员信息</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- candidate.resume.name %><br>
+                  学校/年级：<%- candidate.resume.school %> / <%- candidate.resume.grade %><br>
+                  联系人：<%- candidate.resume.contact %> (<%- candidate.resume.contact_relationship %>) / <%- candidate.resume.phone_number %><br>
+                  校内成绩：<%- candidate.resume.score %><br>
+                  奖项 1：<%- candidate.resume.award1 %><br>
+                  奖项 2：<%- candidate.resume.award2 %><br>
+                  奖项 3：<%- candidate.resume.award3 %><br>
+                  奖项 4：<%- candidate.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!candidate.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+              </div>
+              <div class="actions">
+                <div class="ui green basic cancel inverted button">
+                  <i class="checkmark icon"></i>
+                  已阅
+                </div>
+              </div>
+            </div>
+            <div class="ui basic modal" id="modal-candidate-approval-<%= i %>">
+              <div class="ui icon header">
+                <i class="checkmark icon"></i>
+                <p style="margin-top: 15px; ">通过申请</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- candidate.resume.name %><br>
+                  学校/年级：<%- candidate.resume.school %> / <%- candidate.resume.grade %><br>
+                  联系人：<%- candidate.resume.contact %> (<%- candidate.resume.contact_relationship %>) / <%- candidate.resume.phone_number %><br>
+                  校内成绩：<%- candidate.resume.score %><br>
+                  奖项 1：<%- candidate.resume.award1 %><br>
+                  奖项 2：<%- candidate.resume.award2 %><br>
+                  奖项 3：<%- candidate.resume.award3 %><br>
+                  奖项 4：<%- candidate.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!candidate.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+                <p>确认通过该申请吗？</p>
+              </div>
+              <div class="actions">
+                <div class="ui red basic cancel inverted button">
+                  <i class="remove icon"></i>
+                  否
+                </div>
+                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'student', candidate.id, 'approval']) %>">
+                  <i class="checkmark icon"></i>
+                  是
+                </a>
+              </div>
+            </div>
+            <div class="ui basic modal" id="modal-candidate-reject-<%= i %>">
+              <div class="ui icon header">
+                <i class="remove icon"></i>
+                <p style="margin-top: 15px; ">驳回申请</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- candidate.resume.name %><br>
+                  学校/年级：<%- candidate.resume.school %> / <%- candidate.resume.grade %><br>
+                  联系人：<%- candidate.resume.contact %> (<%- candidate.resume.contact_relationship %>) / <%- candidate.resume.phone_number %><br>
+                  校内成绩：<%- candidate.resume.score %><br>
+                  奖项 1：<%- candidate.resume.award1 %><br>
+                  奖项 2：<%- candidate.resume.award2 %><br>
+                  奖项 3：<%- candidate.resume.award3 %><br>
+                  奖项 4：<%- candidate.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!candidate.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+                <p>确认驳回该申请吗？</p>
+              </div>
+              <div class="actions">
+                <div class="ui red basic cancel inverted button">
+                  <i class="remove icon"></i>
+                  否
+                </div>
+                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'student', candidate.id, 'reject']) %>">
+                  <i class="checkmark icon"></i>
+                  是
+                </a>
+              </div>
+            </div>
+            <div class="ui mini basic icon buttons">
+              <a class="ui button" onclick="$('#modal-candidate-resume-<%= i %>').modal('show')"><i class="info icon"></i></a>
+              <a class="ui <% if (!candidate.resume_file) { %>disabled<% } %> button" href="<%= syzoj.utils.makeUrl(['user', candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>
+              <a class="ui button" onclick="$('#modal-candidate-approval-<%= i %>').modal('show')"><i class="checkmark icon"></i></a>
+              <a class="ui button" onclick="$('#modal-candidate-reject-<%= i %>').modal('show')"><i class="remove icon"></i></a>
+            </div>
+          </td>
+        </tr>
         <% } %>
-        </select>
-      </div>
-      <% } %>
-      <div class="field">
-        <label>学员名单</label>
-        <select class="ui fluid search dropdown" multiple="" id="search_students"<% if (!isClassOwner) { %> disabled<% } %> name="students">
-        <% for (let student of students) { %>
-          <option value="<%= student.id %>" selected><%= student.username %></option>
-        <% } %>
-        </select>
-      </div>
-      <div style="text-align: center; ">
+      </tbody>
+    </table><br>
+    <% } else { %>
+        <div class="ui placeholder segment">
+          <div class="ui icon header">
+            <i class="users icon" style="margin-bottom: 20px; "></i>
+            暂无候选人
+          </div>
+        </div>
+    <% } %>
+  <% } %>
+  <% if (students.length) { %>
+  <h2 class="ui header" style="margin-bottom: 30px;">在读学员</h2>
+  <table class="ui very basic center aligned table">
+    <thead>
+      <tr>
+        <th>用户名</th>
+        <th>姓名</th>
+        <th>学校</th>
+        <th>年级</th>
+        <th>Rating</th>
         <% if (isClassOwner) { %>
-        <button id="submit_button" type="submit" class="ui labeled icon blue button"><i class="ui edit icon"></i>提交</button>
+        <th class="two wide">操作</th>
         <% } %>
-        <a href="<%= syzoj.utils.makeUrl(['class', clazz.id]) %>" class="ui labeled icon button"><i class="ui angle left icon"></i>返回</a>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+      let i = 0;
+      for (let student of students) {
+        i++;
+      %>
+      <tr>
+        <td><a href="<%= syzoj.utils.makeUrl(['user', student.user.id]) %>"><%= student.user.username %></a></td>
+        <td><%- student.resume.name %></td>
+        <td><%- student.resume.school %></td>
+        <td><%- student.resume.grade %></td>
+        <td><%- student.user.rating %></td>
+        <% if (isClassOwner) { %>
+        <td>
+          <div class="ui basic modal" id="modal-student-resume-<%= i %>">
+            <div class="ui icon header">
+              <i class="address card icon"></i>
+              <p style="margin-top: 15px; ">学员信息</p>
+            </div>
+            <div class="content" style="text-align: center; ">
+              <p>
+                姓名：<%- student.resume.name %><br>
+                学校/年级：<%- student.resume.school %> / <%- student.resume.grade %><br>
+                联系人：<%- student.resume.contact %> (<%- student.resume.contact_relationship %>) / <%- student.resume.phone_number %><br>
+                校内成绩：<%- student.resume.score %><br>
+                奖项 1：<%- student.resume.award1 %><br>
+                奖项 2：<%- student.resume.award2 %><br>
+                奖项 3：<%- student.resume.award3 %><br>
+                奖项 4：<%- student.resume.award4 %><br>
+              </p>
+              <p>
+                <% if (!student.resume_file) { %>
+                <i class="file pdf outline icon"></i>简历文件：无
+                <% } else { %>
+                <a href="<%= syzoj.utils.makeUrl(['user', student.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                <% } %>
+              </p>
+            </div>
+            <div class="actions">
+              <div class="ui green basic cancel inverted button">
+                <i class="checkmark icon"></i>
+                已阅
+              </div>
+            </div>
+          </div>
+          <div class="ui basic modal" id="modal-student-remove-<%= i %>">
+            <div class="ui icon header">
+              <i class="remove icon"></i>
+              <p style="margin-top: 15px; ">移出学员</p>
+            </div>
+            <div class="content" style="text-align: center; ">
+              <p>
+                姓名：<%- student.resume.name %><br>
+                学校/年级：<%- student.resume.school %> / <%- student.resume.grade %><br>
+                联系人：<%- student.resume.contact %> (<%- student.resume.contact_relationship %>) / <%- student.resume.phone_number %><br>
+                校内成绩：<%- student.resume.score %><br>
+                奖项 1：<%- student.resume.award1 %><br>
+                奖项 2：<%- student.resume.award2 %><br>
+                奖项 3：<%- student.resume.award3 %><br>
+                奖项 4：<%- student.resume.award4 %><br>
+              </p>
+              <p>
+                <% if (!student.resume_file) { %>
+                <i class="file pdf outline icon"></i>简历文件：无
+                <% } else { %>
+                <a href="<%= syzoj.utils.makeUrl(['user', student.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                <% } %>
+              </p>
+              <p>确认移出该学员吗？</p>
+            </div>
+            <div class="actions">
+              <div class="ui red basic cancel inverted button">
+                <i class="remove icon"></i>
+                否
+              </div>
+              <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'student', student.id, 'remove']) %>">
+                <i class="checkmark icon"></i>
+                是
+              </a>
+            </div>
+          </div>
+          <div class="ui mini basic icon buttons">
+            <a class="ui button" onclick="$('#modal-student-resume-<%= i %>').modal('show')"><i class="info icon"></i></a>
+            <a class="ui <% if (!student.resume_file) { %>disabled<% } %> button" href="<%= syzoj.utils.makeUrl(['user', student.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>
+            <a class="ui button" onclick="$('#modal-student-remove-<%= i %>').modal('show')"><i class="remove icon"></i></a>
+          </div>
+        </td>
+        <% } %>
+      </tr>
+      <% } %>
+    </tbody>
+  </table><br>
+  <% } else { %>
+      <div class="ui placeholder segment">
+        <div class="ui icon header">
+          <i class="users icon" style="margin-bottom: 20px; "></i>
+          暂无在读学员
+        </div>
       </div>
-    </div>
-  </form>
-<script>
-$(function () {
-  $('#candidates').dropdown();
-});
-$(function () {
-  $('#search_students')
-    .dropdown({
-      debug: true,
-      saveRemoteData: false,
-      apiSettings: {
-        url: '/api/v2/search/users/{query}',
-        onResponse: function (response) {
-          var a = $('#search_students').val().map(function (x) { return parseInt(x) });
-          if (response.results) {
-            response.results = response.results.filter(function(x){ return !a.includes(parseInt(x.value))});
-          }
-          return response;
-        },
-        cache: false
-      }
-    });
-});
-</script>
+  <% } %>
+  <% if (isClassOwner) { %>
+    <% if (removed_students.length) { %>
+    <h2 class="ui header" style="margin-bottom: 30px;">移出的学员</h2>
+    <table class="ui very basic center aligned table">
+      <thead>
+        <tr>
+          <th>用户名</th>
+          <th>姓名</th>
+          <th>学校</th>
+          <th>年级</th>
+          <th>Rating</th>
+          <% if (isClassOwner) { %>
+          <th class="two wide">操作</th>
+          <% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <%
+        let i = 0;
+        for (let removed_student of removed_students) {
+          i++;
+        %>
+        <tr>
+          <td><a href="<%= syzoj.utils.makeUrl(['user', removed_student.user.id]) %>"><%= removed_student.user.username %></a></td>
+          <td><%- removed_student.resume.name %></td>
+          <td><%- removed_student.resume.school %></td>
+          <td><%- removed_student.resume.grade %></td>
+          <td><%- removed_student.user.rating %></td>
+          <% if (isClassOwner) { %>
+          <td>
+            <div class="ui basic modal" id="modal-removed-student-resume-<%= i %>">
+              <div class="ui icon header">
+                <i class="address card icon"></i>
+                <p style="margin-top: 15px; ">学员信息</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- removed_student.resume.name %><br>
+                  学校/年级：<%- removed_student.resume.school %> / <%- removed_student.resume.grade %><br>
+                  联系人：<%- removed_student.resume.contact %> (<%- removed_student.resume.contact_relationship %>) / <%- removed_student.resume.phone_number %><br>
+                  校内成绩：<%- removed_student.resume.score %><br>
+                  奖项 1：<%- removed_student.resume.award1 %><br>
+                  奖项 2：<%- removed_student.resume.award2 %><br>
+                  奖项 3：<%- removed_student.resume.award3 %><br>
+                  奖项 4：<%- removed_student.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!removed_student.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', removed_student.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+              </div>
+              <div class="actions">
+                <div class="ui green basic cancel inverted button">
+                  <i class="checkmark icon"></i>
+                  已阅
+                </div>
+              </div>
+            </div>
+            <div class="ui basic modal" id="modal-removed-student-undo-<%= i %>">
+              <div class="ui icon header">
+                <i class="undo icon"></i>
+                <p style="margin-top: 15px; ">恢复移出的学员</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- removed_student.resume.name %><br>
+                  学校/年级：<%- removed_student.resume.school %> / <%- removed_student.resume.grade %><br>
+                  联系人：<%- removed_student.resume.contact %> (<%- removed_student.resume.contact_relationship %>) / <%- removed_student.resume.phone_number %><br>
+                  校内成绩：<%- removed_student.resume.score %><br>
+                  奖项 1：<%- removed_student.resume.award1 %><br>
+                  奖项 2：<%- removed_student.resume.award2 %><br>
+                  奖项 3：<%- removed_student.resume.award3 %><br>
+                  奖项 4：<%- removed_student.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!removed_student.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', removed_student.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+                <p>确认恢复该学员吗？</p>
+              </div>
+              <div class="actions">
+                <div class="ui red basic cancel inverted button">
+                  <i class="remove icon"></i>
+                  否
+                </div>
+                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'student', removed_student.id, 'approval']) %>">
+                  <i class="checkmark icon"></i>
+                  是
+                </a>
+              </div>
+            </div>
+            <div class="ui mini basic icon buttons">
+              <a class="ui button" onclick="$('#modal-removed-student-resume-<%= i %>').modal('show')"><i class="info icon"></i></a>
+              <a class="ui <% if (!removed_student.resume_file) { %>disabled<% } %> button" href="<%= syzoj.utils.makeUrl(['user', removed_student.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>
+              <a class="ui button" onclick="$('#modal-removed-student-undo-<%= i %>').modal('show')"><i class="undo icon"></i></a>
+            </div>
+          </td>
+          <% } %>
+        </tr>
+        <% } %>
+      </tbody>
+    </table><br>
+    <% } %>
+  <% } %>
+  <% if (isClassOwner) { %>
+    <% if (rejected_candidates.length) { %>
+    <h2 class="ui header" style="margin-bottom: 30px;">驳回的候选人</h2>
+    <table class="ui very basic center aligned table">
+      <thead>
+        <tr>
+          <th>用户名</th>
+          <th>姓名</th>
+          <th>学校</th>
+          <th>年级</th>
+          <th>校内成绩</th>
+          <th>主要奖项</th>
+          <th class="two wide">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%
+        let i = 0;
+        for (let rejected_candidate of rejected_candidates) {
+          i++;
+        %>
+        <tr>
+          <td><a href="<%= syzoj.utils.makeUrl(['user', rejected_candidate.user.id]) %>"><%= rejected_candidate.user.username %></a></td>
+          <td><%- rejected_candidate.resume.name %></td>
+          <td><%- rejected_candidate.resume.school %></td>
+          <td><%- rejected_candidate.resume.grade %></td>
+          <td><%- rejected_candidate.resume.score %></td>
+          <td><%- rejected_candidate.resume.award1 %></td>
+          <td>
+            <div class="ui basic modal" id="modal-rejected-candidate-resume-<%= i %>">
+              <div class="ui icon header">
+                <i class="address card icon"></i>
+                <p style="margin-top: 15px; ">学员信息</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- rejected_candidate.resume.name %><br>
+                  学校/年级：<%- rejected_candidate.resume.school %> / <%- rejected_candidate.resume.grade %><br>
+                  联系人：<%- rejected_candidate.resume.contact %> (<%- rejected_candidate.resume.contact_relationship %>) / <%- rejected_candidate.resume.phone_number %><br>
+                  校内成绩：<%- rejected_candidate.resume.score %><br>
+                  奖项 1：<%- rejected_candidate.resume.award1 %><br>
+                  奖项 2：<%- rejected_candidate.resume.award2 %><br>
+                  奖项 3：<%- rejected_candidate.resume.award3 %><br>
+                  奖项 4：<%- rejected_candidate.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!rejected_candidate.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', rejected_candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+              </div>
+              <div class="actions">
+                <div class="ui green basic cancel inverted button">
+                  <i class="checkmark icon"></i>
+                  已阅
+                </div>
+              </div>
+            </div>
+            <div class="ui basic modal" id="modal-rejected-candidate-approval-<%= i %>">
+              <div class="ui icon header">
+                <i class="checkmark icon"></i>
+                <p style="margin-top: 15px; ">通过申请</p>
+              </div>
+              <div class="content" style="text-align: center; ">
+                <p>
+                  姓名：<%- rejected_candidate.resume.name %><br>
+                  学校/年级：<%- rejected_candidate.resume.school %> / <%- rejected_candidate.resume.grade %><br>
+                  联系人：<%- rejected_candidate.resume.contact %> (<%- rejected_candidate.resume.contact_relationship %>) / <%- rejected_candidate.resume.phone_number %><br>
+                  校内成绩：<%- rejected_candidate.resume.score %><br>
+                  奖项 1：<%- rejected_candidate.resume.award1 %><br>
+                  奖项 2：<%- rejected_candidate.resume.award2 %><br>
+                  奖项 3：<%- rejected_candidate.resume.award3 %><br>
+                  奖项 4：<%- rejected_candidate.resume.award4 %><br>
+                </p>
+                <p>
+                  <% if (!rejected_candidate.resume_file) { %>
+                  <i class="file pdf outline icon"></i>简历文件：无
+                  <% } else { %>
+                  <a href="<%= syzoj.utils.makeUrl(['user', rejected_candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>简历文件</a>
+                  <% } %>
+                </p>
+                <p>确认通过该申请吗？</p>
+              </div>
+              <div class="actions">
+                <div class="ui red basic cancel inverted button">
+                  <i class="remove icon"></i>
+                  否
+                </div>
+                <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['class', clazz.id, 'student', rejected_candidate.id, 'approval']) %>">
+                  <i class="checkmark icon"></i>
+                  是
+                </a>
+              </div>
+            </div>
+            <div class="ui mini basic icon buttons">
+              <a class="ui button" onclick="$('#modal-rejected-candidate-resume-<%= i %>').modal('show')"><i class="info icon"></i></a>
+              <a class="ui <% if (!rejected_candidate.resume_file) { %>disabled<% } %> button" href="<%= syzoj.utils.makeUrl(['user', rejected_candidate.user.id, 'resume_file'], { class: clazz.id }) %>" target="_blank"><i class="file pdf outline icon"></i>
+              <a class="ui button" onclick="$('#modal-rejected-candidate-approval-<%= i %>').modal('show')"><i class="checkmark icon"></i></a>
+            </div>
+          </td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table><br>
+    <% } %>
+  <% } %>
 <% include footer %>

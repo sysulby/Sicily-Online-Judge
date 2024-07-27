@@ -1,0 +1,169 @@
+<% this.title = '更新简历'; %>
+<% include header %>
+<div class="padding">
+  <div class="ui grid">
+    <div class="row">
+      <div class="ten wide column">
+        <div class="ui <% if (error_info === '') { %>success<% } else { %>error<% } %> message" id="error" <% if (error_info === null) { %>hidden<% } %>>
+          <% if (error_info !== null) {
+              if (error_info === '') error_info = '更新成功。';
+          %>
+          	<p id="error_info"><%= error_info %></p>
+          <% } %>
+        </div>
+        <form id="form" action="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'resume'], class_id ? { class : class_id } : {}) %>" method="post" enctype="multipart/form-data" onsubmit="return check()">
+          <div class="ui form">
+            <div class="field">
+              <label for="username">用户名</label>
+              <input type="text" id="username" name="username" value="<%= edited_user.username %>" readonly>
+            </div>
+            <div class="three fields">
+              <div class="four wide field">
+                <label for="name">姓名</label>
+                <input type="text" id="name" name="name" value="<%= resume.name %>">
+              </div>
+              <div class="seven wide field">
+                <label for="school">学校</label>
+                <input type="text" id="school" name="school" value="<%= resume.school %>">
+              </div>
+              <div class="five wide field">
+                <label for="grade">年级</label>
+                <select class="ui dropdown" id="grade" name="grade">
+                  <option value="1" <%=resume.grade==1 ? 'selected' : '' %>>一年级</option>
+                  <option value="2" <%=resume.grade==2 ? 'selected' : '' %>>二年级</option>
+                  <option value="3" <%=resume.grade==3 ? 'selected' : '' %>>三年级</option>
+                  <option value="4" <%=resume.grade==4 ? 'selected' : '' %>>四年级</option>
+                  <option value="5" <%=resume.grade==5 ? 'selected' : '' %>>五年级</option>
+                  <option value="6" <%=resume.grade==6 ? 'selected' : '' %>>六年级</option>
+                  <option value="7" <%=resume.grade==7 ? 'selected' : '' %>>初一</option>
+                  <option value="8" <%=resume.grade==8 ? 'selected' : '' %>>初二</option>
+                  <option value="9" <%=resume.grade==9 ? 'selected' : '' %>>初三</option>
+                  <option value="10" <%=resume.grade==10 ? 'selected' : '' %>>高一</option>
+                  <option value="11" <%=resume.grade==11 ? 'selected' : '' %>>高二</option>
+                  <option value="12" <%=resume.grade==12 ? 'selected' : '' %>>高三</option>
+                  <option value="0" <%=resume.grade==0 ? 'selected' : '' %>>其他</option>
+                </select>
+              </div>
+            </div>
+            <div class="three fields">
+              <div class="four wide field">
+                <label for="contact">联系人</label>
+                <input type="text" id="contact" name="contact" value="<%= resume.contact %>">
+              </div>
+              <div class="seven wide field">
+                <label for="phone_number">联系电话</label>
+                <input type="text" id="phone_number" name="phone_number" value="<%= resume.phone_number %>">
+              </div>
+              <div class="five wide field">
+                <label for="relationship">与本人关系</label>
+                <select class="ui dropdown" id="relationship" name="relationship">
+                  <option value="1" <%=resume.relationship==1 ? 'selected' : '' %>>本人</option>
+                  <option value="2" <%=resume.relationship==2 ? 'selected' : '' %>>父母</option>
+                  <option value="3" <%=resume.relationship==3 ? 'selected' : '' %>>教练</option>
+                  <option value="0" <%=resume.relationship==0 ? 'selected' : '' %>>其他</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="score">校内成绩</label>
+              <input type="number" step="0.1" id="score" name="score" value="<%= resume.score %>">
+            </div>
+            <div class="field">
+              <label for="award1">奖项 1</label>
+              <input type="text" id="award1" name="award1" value="<%= resume.award1 %>" placeholder="重要！">
+            </div>
+            <div class="field">
+              <label for="award2">奖项 2</label>
+              <input type="text" id="award2" name="award2" value="<%= resume.award2 %>" placeholder="选填...">
+            </div>
+            <div class="field">
+              <label for="award3">奖项 3</label>
+              <input type="text" id="award3" name="award3" value="<%= resume.award3 %>" placeholder="选填...">
+            </div>
+            <div class="field">
+              <label for="award4">奖项 4</label>
+              <input type="text" id="award4" name="award4" value="<%= resume.award4 %>" placeholder="选填...">
+            </div>
+            <div class="field">
+              <label for="testdata">上传简历文件（请使用 PDF 格式，最大不超过 2M）</label>
+              <input type="file" id="resume_file" name="resume_file">
+            </div>
+            <div style="text-align: center; margin-top: 30px; ">
+              <button id="submit_button" type="submit" class="ui blue labeled icon button"><i class="ui icon edit"></i>提交</button>
+              <% if (!class_id) { %>
+              <a href="<%= syzoj.utils.makeUrl(['user', edited_user.id]) %>" class="ui labeled icon button"><i class="ui icon angle left"></i>返回</a>
+              <% } else { %>
+              <a href="<%= syzoj.utils.makeUrl(['class', class_id, 'register']) %>" class="ui labeled icon button"><i class="ui icon angle left"></i>返回</a>
+              <% } %>
+            </div>
+          </div>
+		    </form>
+      </div>
+      <div class="six wide column">
+        <h3 style="text-align: center; ">简历文件</h3>
+        <% if (resume_file) { %>
+          <table class="ui very basic center aligned table">
+            <thead>
+              <tr>
+                <th class="left aligned">文件名</th>
+                <th style="width: 100px">文件大小</th>
+                <th style="width: 35px">预览</th>
+                <th style="width: 35px">删除</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="left aligned"><i class="file pdf outline icon"></i> <%= resume_file.filename %></td>
+                <td><%= syzoj.utils.formatSize(resume_file.size) %></td>
+                <td><a style="color: #000; " href="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'resume_file']) %>" target="_blank"><i class="eye icon"></i></td>
+                <td>
+                  <a style="color: #000; " href="#" onclick="$('#modal-delete-resume_file').modal('show')">
+                    <i class="trash alternate icon"></i>
+                  </a>
+                  <div class="ui basic modal" id="modal-delete-resume_file">
+                    <div class="ui icon header">
+                      <i class="trash alternate icon"></i>
+                      <p style="margin-top: 15px; ">删除文件</p>
+                    </div>
+                    <div class="content" style="text-align: center; ">
+                      <p>确认删除「 <samp>简历文件</samp> 」吗？</p>
+                    </div>
+                    <div class="actions">
+                      <div class="ui red basic cancel inverted button">
+                        <i class="remove icon"></i>
+                        否
+                      </div>
+                      <a class="ui green ok inverted button" href-post="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'delete', 'resume_file'], class_id ? { class : class_id } : {}) %>">
+                        <i class="checkmark icon"></i>
+                        是
+                      </a>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        <% } else { %>
+          <h4 style="text-align: center; ">无简历文件</h4>
+        <% } %>
+	    </div>
+	  </div>
+	</div>
+</div>
+<script>
+var bakDefine = undefined;
+if (typeof define !== 'undefined') {
+  bakDefine = define;
+  define = undefined;
+}
+</script>
+<script src="<%- lib('blueimp-md5/2.10.0/js/md5.min.js') %>"></script>
+<script>
+define = bakDefine;
+</script>
+<script>
+$(function () {
+	$('.ui.dropdown:not(.simple)').dropdown();
+});
+</script>
+<% include footer %>

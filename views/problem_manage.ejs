@@ -20,7 +20,7 @@ function getIcon(filename) {
     '.ans': 'file text outline',
     '.txt': 'file text outline',
     '.md': 'file text outline',
-    '.md': 'file text outline',
+    '.pdf': 'file pdf outline',
     '.docx': 'file word outline',
     '.odt': 'file word outline',
     '.xlsx': 'file excel outline',
@@ -162,16 +162,16 @@ function getIcon(filename) {
               <% if (problem.additional_file) { %>
               <tr>
                 <td class="left aligned"><i class="file archive outline icon"></i> 附加文件包</td>
-                <td><%- !testdata.zip.size ? '<i class="minus icon"></i>' : syzoj.utils.formatSize(problem.additional_file.size) %></td>
+                <td><%- !problem.additional_file.size ? '<i class="minus icon"></i>' : syzoj.utils.formatSize(problem.additional_file.size) %></td>
                 <td><a style="color: #000; " href="<%= syzoj.utils.makeUrl(['problem', problem.id, 'download', 'additional_file']) %>"><i class="download icon"></i></td>
                 <% if (problem.allowedEdit) { %>
                   <td>
                     <a style="color: #000; " onclick="$('#modal-delete-additional_file').modal('show')">
-                      <i class="remove icon"></i>
+                      <i class="trash alternate icon"></i>
                     </a>
                     <div class="ui basic modal" id="modal-delete-additional_file">
                       <div class="ui icon header">
-                        <i class="trash icon"></i>
+                        <i class="trash alternate icon"></i>
                         <p style="margin-top: 15px; ">删除文件</p>
                       </div>
                       <div class="content" style="text-align: center; ">
@@ -205,12 +205,12 @@ function getIcon(filename) {
                 </td>
                 <% if (problem.allowedEdit) { %>
                   <td>
-                    <a style="color: #000; " onclick="$('#modal-delete-<%= i %>').modal('show')">
-                      <i class="remove icon"></i>
+                    <a style="color: #000; " href="#" onclick="$('#modal-delete-<%= i %>').modal('show')">
+                      <i class="trash alternate icon"></i>
                     </a>
                     <div class="ui basic modal" id="modal-delete-<%= i %>">
                       <div class="ui icon header">
-                        <i class="trash icon"></i>
+                        <i class="trash alternate icon"></i>
                         <p style="margin-top: 15px; ">删除文件</p>
                       </div>
                       <div class="content" style="text-align: center; ">
