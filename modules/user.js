@@ -287,14 +287,19 @@ app.post('/user/:id/resume', app.multer.fields([{ name: 'resume_file', maxCount:
 
     if (!req.body.name.trim()) throw new ErrorMessage('姓名不能为空。');
     resume.name = req.body.name;
-    if (!req.body.school.trim()) throw new ErrorMessage('学校不能为空。');
+    if (resume.name !== user.nickname) {
+      user.nickname = resume.name;
+      await user.save();
+    }
+    // if (!req.body.school.trim()) throw new ErrorMessage('学校不能为空。');
     resume.school = req.body.school;
     resume.graduation_year = req.body.grade;
+    // [TODO]: 计算实际年级
     resume.grade = resume.graduation_year;
 
-    if (!req.body.contact.trim()) throw new ErrorMessage('联系人姓名不能为空。');
+    // if (!req.body.contact.trim()) throw new ErrorMessage('联系人姓名不能为空。');
     resume.contact = req.body.contact;
-    if (!req.body.phone_number.trim()) throw new ErrorMessage('联系人电话不能为空。');
+    // if (!req.body.phone_number.trim()) throw new ErrorMessage('联系人电话不能为空。');
     resume.phone_number = req.body.phone_number;
     resume.relationship = req.body.relationship;
 

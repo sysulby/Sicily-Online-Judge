@@ -408,10 +408,11 @@ app.get('/submissions/contest/:id', async (req, res) => {
 
     let isFiltered = false;
     if (isSupervisior || contest.isEnded()) {
-      displayConfig.showOthers = true;
-      displayConfig.showResult = true;
       displayConfig.showScore = true;
       displayConfig.showUsage = true;
+      displayConfig.showCode = true;
+      displayConfig.showResult = true;
+      displayConfig.showOthers = true;
     }
     if (displayConfig.showOthers) {
       if (user) {
@@ -546,12 +547,15 @@ app.get('/contest/:id/submission/:sid', async (req, res) => {
     const displayConfig = getDisplayConfig(contest);
     displayConfig.showCode = true;
     if (isSupervisior || contest.isEnded()) {
-      displayConfig.showResult = true;
-      displayConfig.showDetailResult = true;
       displayConfig.showScore = true;
       displayConfig.showUsage = true;
+      displayConfig.showCode = true;
+      displayConfig.showResult = true;
+      displayConfig.showDetailResult = true;
+      displayConfig.showOthers = true;
     }
     if (isSupervisior) {
+      displayConfig.showDetailResult = true;
       displayConfig.showTestdata = true;
       displayConfig.showRejudge = true;
     }

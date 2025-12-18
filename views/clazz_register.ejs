@@ -32,7 +32,7 @@
         <h4 class="ui top attached block header">注意事项</h4>
         <div class="ui bottom attached segment font-content">
           <p>申请开放时段：<%- syzoj.utils.formatDate(clazz.reg_start_time) %> ~ <%- syzoj.utils.formatDate(clazz.reg_end_time) %></p>
-          <p>请提前完善学员资料，点击 <a href="<%= syzoj.utils.makeUrl(['user', user.id, 'resume'], { class: clazz.id }) %>"><i class="linkify icon"></i>此处</a> 填写或更新。</p>
+          <p>请提前完善学员资料（姓名、年级），点击 <a href="<%= syzoj.utils.makeUrl(['user', user.id, 'resume'], { class: clazz.id }) %>"><i class="linkify icon"></i>此处</a> 填写或更新。</p>
         </div>
         <% if (clazz.reg_start_time <= syzoj.utils.getCurrentDate() && syzoj.utils.getCurrentDate() < clazz.reg_end_time) { %>
         <form action="<%= syzoj.utils.makeUrl(['class', clazz.id, 'register']) %>" method="post" id="clazz_reg">

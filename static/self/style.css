@@ -312,3 +312,60 @@ code {
   padding-left: 0.8rem !important;
   padding-right: 0 !important;
 }
+
+#sicily_chan {
+	right: 0px;
+	top: auto;
+	bottom: 0px;
+	position: fixed;
+}
+
+#sicilychan_body{
+	background:url(cartoon/sicilychan3_sprite.png) no-repeat 0px 0px;
+	height:450px;
+	width:300px;
+}
+
+#face {
+	height:450px;
+	width:300px;
+}
+
+#talkbox {
+	margin-left: 50px;
+}
+
+.face1 {
+	background:url(cartoon/sicilychan3_sprite.png) no-repeat -300px 0px;
+}
+
+.face2 {
+	background:url(cartoon/sicilychan3_sprite.png) no-repeat -600px 0px;
+}
+
+.face3 {
+	background:url(cartoon/sicilychan3_sprite.png) no-repeat -900px 0px;
+}
+
+#boxtop {
+	background-image: url("cartoon/box-1.png");
+	background-repeat: no-repeat;
+	width: 219px;
+	height: 16px;
+}
+
+#boxbottom {
+	background-image: url("cartoon/box-3.png");
+	background-repeat: no-repeat;
+	width: 219px;
+	height: 31px;
+}
+
+#boxcnt {
+	background-image: url("cartoon/box-2.png");
+	background-repeat: repeat-y;
+	padding-left: 15px;
+	padding-right: 15px;
+	width: 219px;
+	text-align: left;
+}

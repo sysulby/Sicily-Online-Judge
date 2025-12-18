@@ -47,7 +47,7 @@ function getIcon(filename) {
             <tr>
               <th class="left aligned">文件名</th>
               <th style="width: 100px">文件大小</th>
-              <th style="width: 35px">下载</th>
+              <th style="width: 35px">下载或预览</th>
             </tr>
           </thead>
           <tbody>
@@ -58,9 +58,15 @@ function getIcon(filename) {
               <td class="left aligned"><i class="<%= getIcon(file.filename) %> icon"></i> <%= file.filename %></td>
               <td><%= syzoj.utils.formatSize(file.size) %></td>
               <td>
+                <% if (getIcon(file.filename) === 'file pdf outline') { %>
+                <a style="color: #000; " href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'files', 'preview', file.filename]) %>">
+                  <i class="eye icon"></i>
+                </a>
+                <% } else { %>
                 <a style="color: #000; " href="<%= syzoj.utils.makeUrl(['class', clazz.id, 'files', 'download', file.filename]) %>">
                   <i class="download icon"></i>
                 </a>
+                <% } %>
               </td>
             </tr>
             <% } %>

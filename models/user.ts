@@ -90,17 +90,13 @@ export default class User extends Model {
                      .select(`DISTINCT(problem_id)`)
                      .where('user_id = :user_id', { user_id: this.id })
                      .andWhere('status = :status', { status: 'Accepted' })
-                     .andWhere('type != 1')
                      .orderBy({ problem_id: 'ASC' })
   }
 
   async refreshSubmitInfo() {
     await syzoj.utils.lock(['User::refreshSubmitInfo', this.id], async () => {
       this.ac_num = await JudgeState.countQuery(this.getQueryBuilderForACProblems());
-      this.submit_num = await JudgeState.count({
-        user_id: this.id,
-        type: TypeORM.Not(1) // Not a contest submission
-      });
+      this.submit_num = await JudgeState.count({ user_id: this.id });
 
       await this.save();
     });

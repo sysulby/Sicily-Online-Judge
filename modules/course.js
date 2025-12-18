@@ -10,6 +10,7 @@ let JudgeState = syzoj.model('judge_state');
 let Article = syzoj.model('article');
 let User = syzoj.model('user');
 
+const fs = require('fs-extra');
 const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../libs/submissions_process');
 
 app.get('/courses', async (req, res) => {
@@ -1036,6 +1037,37 @@ app.get('/course/:id/files/download/:filename?', async (req, res) => {
     if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
 
     downloadOrRedirect(req, res, filename, path.basename(filename));
+  } catch (e) {
+    syzoj.log(e);
+    res.status(404);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/course/:id/files/preview/:filename?', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let courseID = parseInt(req.params.id);
+    let course = await Course.findById(courseID);
+
+    if (!course) throw new ErrorMessage('无此课程。');
+    course.subtitle = await syzoj.utils.markdown(course.subtitle);
+
+    const isSupervisior = await course.isSupervisior(curUser);
+
+    if (!isSupervisior) throw new ErrorMessage('您没有权限进行此操作。');
+
+    if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
+
+    let path = require('path');
+    let filename = path.join(course.getCourseFilePath(), req.params.filename);
+    if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
+
+    res.contentType("application/pdf");
+    fs.createReadStream(filename).pipe(res);
   } catch (e) {
     syzoj.log(e);
     res.status(404);

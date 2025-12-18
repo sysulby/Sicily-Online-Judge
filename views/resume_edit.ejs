@@ -19,15 +19,15 @@
             </div>
             <div class="three fields">
               <div class="four wide field">
-                <label for="name">姓名</label>
+                <label for="name">姓名（必填项）</label>
                 <input type="text" id="name" name="name" value="<%= resume.name %>">
               </div>
-              <div class="seven wide field">
+              <div class="six wide field">
                 <label for="school">学校</label>
                 <input type="text" id="school" name="school" value="<%= resume.school %>">
               </div>
-              <div class="five wide field">
-                <label for="grade">年级</label>
+              <div class="six wide field">
+                <label for="grade">年级（必选项）</label>
                 <select class="ui dropdown" id="grade" name="grade">
                   <option value="1" <%=resume.grade==1 ? 'selected' : '' %>>一年级</option>
                   <option value="2" <%=resume.grade==2 ? 'selected' : '' %>>二年级</option>
@@ -50,11 +50,11 @@
                 <label for="contact">联系人</label>
                 <input type="text" id="contact" name="contact" value="<%= resume.contact %>">
               </div>
-              <div class="seven wide field">
+              <div class="six wide field">
                 <label for="phone_number">联系电话</label>
                 <input type="text" id="phone_number" name="phone_number" value="<%= resume.phone_number %>">
               </div>
-              <div class="five wide field">
+              <div class="six wide field">
                 <label for="relationship">与本人关系</label>
                 <select class="ui dropdown" id="relationship" name="relationship">
                   <option value="1" <%=resume.relationship==1 ? 'selected' : '' %>>本人</option>
@@ -115,7 +115,7 @@
               <tr>
                 <td class="left aligned"><i class="file pdf outline icon"></i> <%= resume_file.filename %></td>
                 <td><%= syzoj.utils.formatSize(resume_file.size) %></td>
-                <td><a style="color: #000; " href="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'resume_file']) %>" target="_blank"><i class="eye icon"></i></td>
+                <td><a style="color: #000; " href="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'resume_file']) %>" target="_blank"><i class="eye icon"></i></a></td>
                 <td>
                   <a style="color: #000; " href="#" onclick="$('#modal-delete-resume_file').modal('show')">
                     <i class="trash alternate icon"></i>

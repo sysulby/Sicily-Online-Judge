@@ -9,6 +9,7 @@ let JudgeState = syzoj.model('judge_state');
 let User = syzoj.model('user');
 let Resume = syzoj.model('resume');
 
+const fs = require('fs-extra');
 const jwt = require('jsonwebtoken');
 const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../libs/submissions_process');
 
@@ -430,7 +431,7 @@ app.post('/class/:id/register', async (req, res) => {
     if (syzoj.utils.getCurrentDate() >= clazz.reg_end_time) throw new ErrorMessage('报名已经结束，敬请期待下期课程。');
 
     let resume = await Resume.findById(curUser.id);
-    if (!resume) throw new ErrorMessage('请先完善资料。');
+    if (!resume) throw new ErrorMessage('请先完善资料（姓名、年级）。');
 
     let student = await ClazzStudent.findInClazz({
       class_id: classID,
@@ -602,6 +603,43 @@ app.get('/class/:id/files/download/:filename?', async (req, res) => {
     if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
 
     downloadOrRedirect(req, res, filename, path.basename(filename));
+  } catch (e) {
+    syzoj.log(e);
+    res.status(404);
+    res.render('error', {
+      err: e
+    });
+  }
+});
+
+app.get('/class/:id/files/preview/:filename?', async (req, res) => {
+  try {
+    const curUser = res.locals.user;
+
+    let classID = parseInt(req.params.id);
+    let clazz = await Clazz.findById(classID);
+    if (!clazz) throw new ErrorMessage('无此班级。');
+
+    let course = await Course.findById(clazz.course_id);
+    if (!course) throw new ErrorMessage('错误的课程。');
+
+    const isSupervisior = await clazz.isSupervisior(curUser);
+
+    if (!isSupervisior) {
+      if (!curUser || !await clazz.isStudent(curUser)) {
+        throw new ErrorMessage('仅对班级学员开放，请先完成报名。');
+      }
+      if (!clazz.is_public) throw new ErrorMessage('班级主页维护中，请稍后再试。');
+    }
+
+    if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
+
+    let path = require('path');
+    let filename = path.join(course.getCourseFilePath(), req.params.filename);
+    if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
+
+    res.contentType("application/pdf");
+    fs.createReadStream(filename).pipe(res);
   } catch (e) {
     syzoj.log(e);
     res.status(404);
@@ -1448,10 +1486,11 @@ app.get('/submissions/class/:id/lesson/:lid', async (req, res) => {
 
     let isFiltered = false;
     if (isSupervisior || lesson.isEnded()) {
-      displayConfig.showOthers = true;
-      displayConfig.showResult = true;
       displayConfig.showScore = true;
       displayConfig.showUsage = true;
+      displayConfig.showCode = true;
+      displayConfig.showResult = true;
+      displayConfig.showOthers = true;
     }
     if (displayConfig.showOthers) {
       if (user) {
@@ -1609,12 +1648,14 @@ app.get('/class/:id/lesson/:lid/submission/:sid', async (req, res) => {
     const displayConfig = getDisplayConfig(lesson);
     displayConfig.showCode = true;
     if (isMainTeacher || lesson.isEnded()) {
-      displayConfig.showResult = true;
-      displayConfig.showDetailResult = true;
       displayConfig.showScore = true;
       displayConfig.showUsage = true;
+      displayConfig.showCode = true;
+      displayConfig.showResult = true;
+      displayConfig.showOthers = true;
     }
     if (isMainTeacher) {
+      displayConfig.showDetailResult = true;
       displayConfig.showTestdata = true;
       displayConfig.showRejudge = true;
     }

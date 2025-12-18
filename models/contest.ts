@@ -103,7 +103,7 @@ export default class Contest extends Model {
   }
 
   allowedSeeingTestcase() {
-    if (this.type === 'ioi' || this.type === 'usaco') return true;
+    if (this.type === 'ioi' || this.type === 'usaco' || this.isEnded()) return true;
     return false;
   }
 

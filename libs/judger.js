@@ -253,7 +253,7 @@ module.exports.judge = async function (judge_state, problem, priority) {
     testData: problem.id.toString(),
     type: type,
     priority: priority,
-    realPriority: priority - parseInt(judge_state.id) / 10000000,
+    realPriority: priority + parseInt(judge_state.id) / 10000000,
     param: param
   };
 

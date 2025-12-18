@@ -36,6 +36,7 @@ enum Status {
 @TypeORM.Index(['type', 'is_public', 'problem_id'])
 @TypeORM.Index(['type', 'is_public', 'language', 'problem_id'])
 @TypeORM.Index(['problem_id', 'type', 'pending', 'score'])
+@TypeORM.Index(['user_id'])
 export default class JudgeState extends Model {
   @TypeORM.PrimaryGeneratedColumn()
   id: number;
@@ -139,8 +140,13 @@ export default class JudgeState extends Model {
   async updateRelatedInfo(newSubmission) {
     await this.loadRelationships();
 
+    let contest = null;
+    if (this.type === 1 || this.type === 3) {
+      contest = await Contest.findById(this.type_info);
+    }
+
     const promises = [];
-    promises.push(this.user.refreshSubmitInfo());
+    if (!contest || contest.type !== 'noi' || contest.isEnded()) promises.push(this.user.refreshSubmitInfo());
     promises.push(this.problem.resetSubmissionCount());
 
     if (!newSubmission) {
@@ -149,10 +155,7 @@ export default class JudgeState extends Model {
 
     await Promise.all(promises);
 
-    if (this.type === 1 || this.type === 3) {
-      let contest = await Contest.findById(this.type_info);
-      await contest.newSubmission(this);
-    }
+    if (contest) await contest.newSubmission(this);
   }
 
   async skip() {

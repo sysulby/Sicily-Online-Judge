@@ -202,8 +202,8 @@ if (lesson) {
               const i = $(this).prev().text().match(/\d+/)[0];
               $(this).children().wrapAll("<div class=\"ui form\"><div class=\"grouped fields\">").each(function() {
                 if ($(this).is("p") && $(this).text().substring(0, 4) === "[ ] ") {
-                  let s = $(this).text().substring(4);
-                  let v = s.substring(0, s.indexOf('.'));
+                  let s = $(this).html().substring(4);
+                  let v = $(this).text().substring(4, 5);
                   $(this).wrap("<div class=\"field\"><div class=\"ui radio checkbox\"></div></div>")
                          .replaceWith(function() {
                             return "<input type=\"radio\" name=\"quiz-" + i + "\" value=\"" + v + "\"><label>" + s + "</label>";
