@@ -15,20 +15,17 @@
           <div class="ui form">
             <div class="field">
               <label for="username">用户名</label>
-              <input type="text" id="username" name="username" value="<%= edited_user.username %>" readonly>
+              <input type="text" id="username" name="username" value="<%= edited_user.username %>" disabled>
             </div>
             <div class="three fields">
               <div class="four wide field">
-                <label for="name">姓名（必填项）</label>
+                <label for="name"><span style="color: red;">*</span> 姓名</label>
                 <input type="text" id="name" name="name" value="<%= resume.name %>">
               </div>
               <div class="six wide field">
-                <label for="school">学校</label>
-                <input type="text" id="school" name="school" value="<%= resume.school %>">
-              </div>
-              <div class="six wide field">
-                <label for="grade">年级（必选项）</label>
+                <label for="grade"><span style="color: red;">*</span> 年级（<% if (currentMonth < 9) { %>春季<% } else { %>秋季<% } %>学期）</label>
                 <select class="ui dropdown" id="grade" name="grade">
+                  <option value="0" <%=resume.grade==0 ? 'selected' : '' %>>其他</option>
                   <option value="1" <%=resume.grade==1 ? 'selected' : '' %>>一年级</option>
                   <option value="2" <%=resume.grade==2 ? 'selected' : '' %>>二年级</option>
                   <option value="3" <%=resume.grade==3 ? 'selected' : '' %>>三年级</option>
@@ -41,8 +38,11 @@
                   <option value="10" <%=resume.grade==10 ? 'selected' : '' %>>高一</option>
                   <option value="11" <%=resume.grade==11 ? 'selected' : '' %>>高二</option>
                   <option value="12" <%=resume.grade==12 ? 'selected' : '' %>>高三</option>
-                  <option value="0" <%=resume.grade==0 ? 'selected' : '' %>>其他</option>
                 </select>
+              </div>
+              <div class="six wide field">
+                <label for="school">学校</label>
+                <input type="text" id="school" name="school" value="<%= resume.school %>">
               </div>
             </div>
             <div class="three fields">
@@ -65,7 +65,7 @@
               </div>
             </div>
             <div class="field">
-              <label for="score">校内成绩</label>
+              <label for="score">校内数学</label>
               <input type="number" step="0.1" id="score" name="score" value="<%= resume.score %>">
             </div>
             <div class="field">

@@ -46,7 +46,7 @@ app.get('/courses', async (req, res) => {
 
     activeClasses.sort((a, b) => {
       let x = (!a.is_public ? (a.teachers === '' ? 0 : 1) : 2);
-      let y = (!b.is_public ? (b.teachers !== '' ? 0 : 1) : 2);
+      let y = (!b.is_public ? (b.teachers === '' ? 0 : 1) : 2);
       return x != y ? x - y : b.start_time - a.start_time;
     });
 

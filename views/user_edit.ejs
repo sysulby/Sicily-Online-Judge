@@ -12,7 +12,7 @@
       <div class="ui form">
       <div class="field">
 	    	<label for="username">用户名</label>
-	    	<input type="text" id="username" name="username" value="<%= edited_user.username %>"<% if (!user.allowedManage) { %> readonly<% } %>>
+	    	<input type="text" id="username" name="username" value="<%= edited_user.username %>"<% if (!user.allowedManage) { %> disabled<% } %>>
 	    </div>
       <div class="three fields">
         <div class="four wide field">

@@ -181,10 +181,12 @@
             <% } %>
             <% if (user) { %>
             <div class="right menu">
+              <!-- [Deprecate]
               <% if (user.is_admin || user.email.substring(user.email.indexOf('@') + 1) === syzoj.config.domain) { %>
                 <% include reg_token %>
                 <a class="header item" href="#" style="color: white; " onclick="reg_token();return false;"><i class="paper plane icon"></i> 获取邀请码</a>
               <% } %>
+              -->
               <% if (user.is_admin) { %>
               <div class="ui simple dropdown item" style="color: white; ">
                 <i class="settings icon"></i> <b>网站管理</b> <i class="dropdown icon"></i>

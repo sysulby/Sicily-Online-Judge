@@ -11,9 +11,9 @@
         <tr>
           <th>用户名</th>
           <th>姓名</th>
-          <th>学校</th>
           <th>年级</th>
-          <th>校内成绩</th>
+          <th>学校</th>
+          <th>校内数学</th>
           <th>主要奖项</th>
           <th class="two wide">操作</th>
         </tr>
@@ -27,8 +27,8 @@
         <tr>
           <td><a href="<%= syzoj.utils.makeUrl(['user', candidate.user.id]) %>"><%= candidate.user.username %></a></td>
           <td><%- candidate.resume.name %></td>
+          <td><%- candidate.resume.grade_level %></td>
           <td><%- candidate.resume.school %></td>
-          <td><%- candidate.resume.grade %></td>
           <td><%- candidate.resume.score %></td>
           <td><%- candidate.resume.award1 %></td>
           <td>
@@ -40,9 +40,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- candidate.resume.name %><br>
-                  学校/年级：<%- candidate.resume.school %> / <%- candidate.resume.grade %><br>
-                  联系人：<%- candidate.resume.contact %> (<%- candidate.resume.contact_relationship %>) / <%- candidate.resume.phone_number %><br>
-                  校内成绩：<%- candidate.resume.score %><br>
+                  年级：<%- candidate.resume.grade_level %><br>
+                  学校：<%- candidate.resume.school %><br>
+                  联系人(<%- candidate.resume.contact_relationship %>)：<%- candidate.resume.contact %> / <%- candidate.resume.phone_number %><br>
+                  校内数学：<%- candidate.resume.score %><br>
                   奖项 1：<%- candidate.resume.award1 %><br>
                   奖项 2：<%- candidate.resume.award2 %><br>
                   奖项 3：<%- candidate.resume.award3 %><br>
@@ -71,9 +72,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- candidate.resume.name %><br>
-                  学校/年级：<%- candidate.resume.school %> / <%- candidate.resume.grade %><br>
-                  联系人：<%- candidate.resume.contact %> (<%- candidate.resume.contact_relationship %>) / <%- candidate.resume.phone_number %><br>
-                  校内成绩：<%- candidate.resume.score %><br>
+                  年级：<%- candidate.resume.grade_level %><br>
+                  学校：<%- candidate.resume.school %><br>
+                  联系人(<%- candidate.resume.contact_relationship %>)：<%- candidate.resume.contact %> / <%- candidate.resume.phone_number %><br>
+                  校内数学：<%- candidate.resume.score %><br>
                   奖项 1：<%- candidate.resume.award1 %><br>
                   奖项 2：<%- candidate.resume.award2 %><br>
                   奖项 3：<%- candidate.resume.award3 %><br>
@@ -107,9 +109,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- candidate.resume.name %><br>
-                  学校/年级：<%- candidate.resume.school %> / <%- candidate.resume.grade %><br>
-                  联系人：<%- candidate.resume.contact %> (<%- candidate.resume.contact_relationship %>) / <%- candidate.resume.phone_number %><br>
-                  校内成绩：<%- candidate.resume.score %><br>
+                  年级：<%- candidate.resume.grade_level %><br>
+                  学校：<%- candidate.resume.school %><br>
+                  联系人(<%- candidate.resume.contact_relationship %>)：<%- candidate.resume.contact %> / <%- candidate.resume.phone_number %><br>
+                  校内数学：<%- candidate.resume.score %><br>
                   奖项 1：<%- candidate.resume.award1 %><br>
                   奖项 2：<%- candidate.resume.award2 %><br>
                   奖项 3：<%- candidate.resume.award3 %><br>
@@ -162,8 +165,8 @@
       <tr>
         <th>用户名</th>
         <th>姓名</th>
-        <th>学校</th>
         <th>年级</th>
+        <th>学校</th>
         <th>Rating</th>
         <% if (isClassOwner) { %>
         <th class="two wide">操作</th>
@@ -179,8 +182,8 @@
       <tr>
         <td><a href="<%= syzoj.utils.makeUrl(['user', student.user.id]) %>"><%= student.user.username %></a></td>
         <td><%- student.resume.name %></td>
+        <td><%- student.resume.grade_level %></td>
         <td><%- student.resume.school %></td>
-        <td><%- student.resume.grade %></td>
         <td><%- student.user.rating %></td>
         <% if (isClassOwner) { %>
         <td>
@@ -192,9 +195,10 @@
             <div class="content" style="text-align: center; ">
               <p>
                 姓名：<%- student.resume.name %><br>
-                学校/年级：<%- student.resume.school %> / <%- student.resume.grade %><br>
-                联系人：<%- student.resume.contact %> (<%- student.resume.contact_relationship %>) / <%- student.resume.phone_number %><br>
-                校内成绩：<%- student.resume.score %><br>
+                年级：<%- student.resume.grade_level %><br>
+                学校：<%- student.resume.school %><br>
+                联系人(<%- student.resume.contact_relationship %>)：<%- student.resume.contact %> / <%- student.resume.phone_number %><br>
+                校内数学：<%- student.resume.score %><br>
                 奖项 1：<%- student.resume.award1 %><br>
                 奖项 2：<%- student.resume.award2 %><br>
                 奖项 3：<%- student.resume.award3 %><br>
@@ -223,9 +227,10 @@
             <div class="content" style="text-align: center; ">
               <p>
                 姓名：<%- student.resume.name %><br>
-                学校/年级：<%- student.resume.school %> / <%- student.resume.grade %><br>
-                联系人：<%- student.resume.contact %> (<%- student.resume.contact_relationship %>) / <%- student.resume.phone_number %><br>
-                校内成绩：<%- student.resume.score %><br>
+                年级：<%- student.resume.grade_level %><br>
+                学校：<%- student.resume.school %><br>
+                联系人(<%- student.resume.contact_relationship %>)：<%- student.resume.contact %> / <%- student.resume.phone_number %><br>
+                校内数学：<%- student.resume.score %><br>
                 奖项 1：<%- student.resume.award1 %><br>
                 奖项 2：<%- student.resume.award2 %><br>
                 奖项 3：<%- student.resume.award3 %><br>
@@ -278,8 +283,8 @@
         <tr>
           <th>用户名</th>
           <th>姓名</th>
-          <th>学校</th>
           <th>年级</th>
+          <th>学校</th>
           <th>Rating</th>
           <% if (isClassOwner) { %>
           <th class="two wide">操作</th>
@@ -295,8 +300,8 @@
         <tr>
           <td><a href="<%= syzoj.utils.makeUrl(['user', removed_student.user.id]) %>"><%= removed_student.user.username %></a></td>
           <td><%- removed_student.resume.name %></td>
+          <td><%- removed_student.resume.grade_level %></td>
           <td><%- removed_student.resume.school %></td>
-          <td><%- removed_student.resume.grade %></td>
           <td><%- removed_student.user.rating %></td>
           <% if (isClassOwner) { %>
           <td>
@@ -308,9 +313,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- removed_student.resume.name %><br>
-                  学校/年级：<%- removed_student.resume.school %> / <%- removed_student.resume.grade %><br>
-                  联系人：<%- removed_student.resume.contact %> (<%- removed_student.resume.contact_relationship %>) / <%- removed_student.resume.phone_number %><br>
-                  校内成绩：<%- removed_student.resume.score %><br>
+                  年级：<%- removed_student.resume.grade_level %><br>
+                  学校：<%- removed_student.resume.school %><br>
+                  联系人(<%- removed_student.resume.contact_relationship %>)：<%- removed_student.resume.contact %> / <%- removed_student.resume.phone_number %><br>
+                  校内数学：<%- removed_student.resume.score %><br>
                   奖项 1：<%- removed_student.resume.award1 %><br>
                   奖项 2：<%- removed_student.resume.award2 %><br>
                   奖项 3：<%- removed_student.resume.award3 %><br>
@@ -339,9 +345,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- removed_student.resume.name %><br>
-                  学校/年级：<%- removed_student.resume.school %> / <%- removed_student.resume.grade %><br>
-                  联系人：<%- removed_student.resume.contact %> (<%- removed_student.resume.contact_relationship %>) / <%- removed_student.resume.phone_number %><br>
-                  校内成绩：<%- removed_student.resume.score %><br>
+                  年级：<%- removed_student.resume.grade_level %><br>
+                  学校：<%- removed_student.resume.school %><br>
+                  联系人(<%- removed_student.resume.contact_relationship %>)：<%- removed_student.resume.contact %> / <%- removed_student.resume.phone_number %><br>
+                  校内数学：<%- removed_student.resume.score %><br>
                   奖项 1：<%- removed_student.resume.award1 %><br>
                   奖项 2：<%- removed_student.resume.award2 %><br>
                   奖项 3：<%- removed_student.resume.award3 %><br>
@@ -388,9 +395,9 @@
         <tr>
           <th>用户名</th>
           <th>姓名</th>
-          <th>学校</th>
           <th>年级</th>
-          <th>校内成绩</th>
+          <th>学校</th>
+          <th>校内数学</th>
           <th>主要奖项</th>
           <th class="two wide">操作</th>
         </tr>
@@ -404,8 +411,8 @@
         <tr>
           <td><a href="<%= syzoj.utils.makeUrl(['user', rejected_candidate.user.id]) %>"><%= rejected_candidate.user.username %></a></td>
           <td><%- rejected_candidate.resume.name %></td>
+          <td><%- rejected_candidate.resume.grade_level %></td>
           <td><%- rejected_candidate.resume.school %></td>
-          <td><%- rejected_candidate.resume.grade %></td>
           <td><%- rejected_candidate.resume.score %></td>
           <td><%- rejected_candidate.resume.award1 %></td>
           <td>
@@ -417,9 +424,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- rejected_candidate.resume.name %><br>
-                  学校/年级：<%- rejected_candidate.resume.school %> / <%- rejected_candidate.resume.grade %><br>
-                  联系人：<%- rejected_candidate.resume.contact %> (<%- rejected_candidate.resume.contact_relationship %>) / <%- rejected_candidate.resume.phone_number %><br>
-                  校内成绩：<%- rejected_candidate.resume.score %><br>
+                  年级：<%- rejected_candidate.resume.grade_level %><br>
+                  学校：<%- rejected_candidate.resume.school %><br>
+                  联系人(<%- rejected_candidate.resume.contact_relationship %>)：<%- rejected_candidate.resume.contact %> / <%- rejected_candidate.resume.phone_number %><br>
+                  校内数学：<%- rejected_candidate.resume.score %><br>
                   奖项 1：<%- rejected_candidate.resume.award1 %><br>
                   奖项 2：<%- rejected_candidate.resume.award2 %><br>
                   奖项 3：<%- rejected_candidate.resume.award3 %><br>
@@ -448,9 +456,10 @@
               <div class="content" style="text-align: center; ">
                 <p>
                   姓名：<%- rejected_candidate.resume.name %><br>
-                  学校/年级：<%- rejected_candidate.resume.school %> / <%- rejected_candidate.resume.grade %><br>
-                  联系人：<%- rejected_candidate.resume.contact %> (<%- rejected_candidate.resume.contact_relationship %>) / <%- rejected_candidate.resume.phone_number %><br>
-                  校内成绩：<%- rejected_candidate.resume.score %><br>
+                  年级：<%- rejected_candidate.resume.grade_level %><br>
+                  学校：<%- rejected_candidate.resume.school %><br>
+                  联系人(<%- rejected_candidate.resume.contact_relationship %>)：<%- rejected_candidate.resume.contact %> / <%- rejected_candidate.resume.phone_number %><br>
+                  校内数学：<%- rejected_candidate.resume.score %><br>
                   奖项 1：<%- rejected_candidate.resume.award1 %><br>
                   奖项 2：<%- rejected_candidate.resume.award2 %><br>
                   奖项 3：<%- rejected_candidate.resume.award3 %><br>

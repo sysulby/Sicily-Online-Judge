@@ -13,7 +13,7 @@ const fs = require('fs-extra');
 const jwt = require('jsonwebtoken');
 const { getSubmissionInfo, getRoughResult, processOverallResult } = require('../libs/submissions_process');
 
-const grade = ['其他', '一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三', '高一', '高二', '高三'];
+const grade_level = ['其他', '一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三', '高一', '高二', '高三'];
 const contact_relationship = ['其他', '本人', '父母', '教练'];
 
 app.get('/class/:id', async (req, res) => {
@@ -224,7 +224,12 @@ app.get('/class/:id/students', async (req, res) => {
     await allParticipants.forEachAsync(async x => {
       x.user = await User.findById(x.user_id);
       x.resume = await Resume.findById(x.user_id);
-      x.resume.grade = grade[x.resume.graduation_year];
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth();
+      let grade = (month < 9 ? 6 : 7) + year - x.resume.graduation_year;
+      if (grade < 1 || grade > 12) grade = 0;
+      x.resume.grade_level = grade_level[grade];
+      if (!x.resume.school || !x.resume.school.trim()) x.resume.school = '无';
       x.resume.contact_relationship = contact_relationship[x.resume.relationship];
       if (!x.resume.award1 || !x.resume.award1.trim()) x.resume.award1 = '无';
       if (!x.resume.award2 || !x.resume.award2.trim()) x.resume.award2 = '无';
@@ -384,7 +389,12 @@ app.get('/class/:id/register', async (req, res) => {
     let resume = await Resume.findById(curUser.id);
     let resume_file = null;
     if (resume) {
-      resume.grade = grade[resume.graduation_year];
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth();
+      let grade = (month < 9 ? 6 : 7) + year - resume.graduation_year;
+      if (grade < 1 || grade > 12) grade = 0;
+      resume.grade_level = grade_level[grade];
+      if (!resume.school || !resume.school.trim()) resume.school = '无';
       resume.contact_relationship = contact_relationship[resume.relationship];
       if (!resume.award1 || !resume.award1.trim()) resume.award1 = '无';
       if (!resume.award2 || !resume.award2.trim()) resume.award2 = '无';
@@ -486,11 +496,9 @@ app.post('/class/:id/approval', async (req, res) => {
         lesson.id = lessonID;
         lesson.start_time = clazz.start_time;
         lesson.end_time = clazz.end_time;
-        if (contest.type === 'usaco') {
-          lesson.duration = contest.duration;
-          lesson.reg_info = '请独立完成试题。';
-          lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
-        }
+        if (contest.type === 'usaco') lesson.duration = contest.duration;
+        lesson.reg_info = '请独立完成试题。';
+        lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
         lesson.is_public = false;
         lesson.hide_statistics = (contest.type === 'noi');
 
@@ -1013,11 +1021,9 @@ app.post('/class/:id/lesson/:lid/import', async (req, res) => {
 
       lesson.start_time = clazz.start_time;
       lesson.end_time = clazz.end_time;
-      if (contest.type === 'usaco') {
-        lesson.duration = contest.duration;
-        lesson.reg_info = '请独立完成试题。';
-        lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
-      }
+      if (contest.type === 'usaco') lesson.duration = contest.duration;
+      lesson.reg_info = '请独立完成试题。';
+      lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
       lesson.is_public = false;
       lesson.hide_statistics = (contest.type === 'noi');
 

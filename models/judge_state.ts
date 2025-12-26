@@ -36,7 +36,6 @@ enum Status {
 @TypeORM.Index(['type', 'is_public', 'problem_id'])
 @TypeORM.Index(['type', 'is_public', 'language', 'problem_id'])
 @TypeORM.Index(['problem_id', 'type', 'pending', 'score'])
-@TypeORM.Index(['user_id'])
 export default class JudgeState extends Model {
   @TypeORM.PrimaryGeneratedColumn()
   id: number;

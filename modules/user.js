@@ -248,7 +248,11 @@ app.get('/user/:id/resume', async (req, res) => {
       resume.id = id;
       resume.graduation_year = 0;
     }
-    resume.grade = resume.graduation_year;
+
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth();
+    resume.grade = (month < 9 ? 6 : 7) + year - resume.graduation_year;
+    if (resume.grade < 1 || resume.grade > 12) resume.grade = 0;
 
     let resume_file = await resume.loadResumeFile();
 
@@ -256,6 +260,7 @@ app.get('/user/:id/resume', async (req, res) => {
       edited_user: user,
       resume: resume,
       resume_file: resume_file,
+      currentMonth: new Date().getMonth(),
       class_id: parseInt(req.query.class),
       error_info: null
     });
@@ -291,11 +296,17 @@ app.post('/user/:id/resume', app.multer.fields([{ name: 'resume_file', maxCount:
       user.nickname = resume.name;
       await user.save();
     }
+
+    if (1 <= req.body.grade && req.body.grade <= 12) {
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth();
+      resume.graduation_year = year + (month < 9 ? 6 : 7) - req.body.grade;
+    } else {
+      resume.graduation_year = 0;
+    }
+
     // if (!req.body.school.trim()) throw new ErrorMessage('学校不能为空。');
     resume.school = req.body.school;
-    resume.graduation_year = req.body.grade;
-    // [TODO]: 计算实际年级
-    resume.grade = resume.graduation_year;
 
     // if (!req.body.contact.trim()) throw new ErrorMessage('联系人姓名不能为空。');
     resume.contact = req.body.contact;
@@ -311,6 +322,7 @@ app.post('/user/:id/resume', app.multer.fields([{ name: 'resume_file', maxCount:
 
     await resume.save();
 
+    resume_file = await resume.loadResumeFile();
     if (req.files['resume_file']){
       let file = req.files['resume_file'][0];
       if (file.mimetype !== 'application/pdf') throw new ErrorMessage('请上传 PDF 类型的文件。');
@@ -328,6 +340,7 @@ app.post('/user/:id/resume', app.multer.fields([{ name: 'resume_file', maxCount:
       edited_user: user,
       resume: resume,
       resume_file: resume_file,
+      currentMonth: new Date().getMonth(),
       class_id: parseInt(req.query.class),
       error_info: ''
     });
@@ -340,10 +353,13 @@ app.post('/user/:id/resume', app.multer.fields([{ name: 'resume_file', maxCount:
       console.error(e);
     }
 
+    resume_file = await resume.loadResumeFile();
+
     res.render('resume_edit', {
       edited_user: user,
       resume: resume,
       resume_file: resume_file,
+      currentMonth: new Date().getMonth(),
       class_id: parseInt(req.query.class),
       error_info: e.message
     });

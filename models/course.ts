@@ -69,7 +69,7 @@ export default class Course extends Model {
   }
 
   getCourseFilePath() {
-    return syzoj.utils.resolvePath(syzoj.config.upload_dir, 'couse_file', this.id.toString());
+    return syzoj.utils.resolvePath(syzoj.config.upload_dir, 'course_file', this.id.toString());
   }
 
   async updateCourseFile(path, noLimit) {
