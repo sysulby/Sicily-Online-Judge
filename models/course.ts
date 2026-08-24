@@ -94,7 +94,9 @@ export default class Course extends Model {
 
   async uploadCourseSingleFile(filename, filepath, size, noLimit) {
     await syzoj.utils.lock(['Promise::CourseFile', this.id], async () => {
+      filename = syzoj.utils.safeBasename(filename);
       let dir = this.getCourseFilePath();
+      const targetPath = syzoj.utils.safePath(dir, filename);
       await fs.ensureDir(dir);
 
       let oldSize = 0, list = await this.listCourseFile(), replace = false, oldCount = 0;
@@ -109,16 +111,16 @@ export default class Course extends Model {
       if (!noLimit && oldSize + size > syzoj.config.limit.testdata) throw new ErrorMessage('数据包太大。');
       if (!noLimit && oldCount + (!replace as any as number) > syzoj.config.limit.testdata_filecount) throw new ErrorMessage('数据包中的文件太多。');
 
-      await fs.move(filepath, path.join(dir, filename), { overwrite: true });
+      await fs.move(filepath, targetPath, { overwrite: true });
 
       let execFileAsync = util.promisify(require('child_process').execFile);
-      try { await execFileAsync('dos2unix', [path.join(dir, filename)]); } catch (e) {}
+      try { await execFileAsync('dos2unix', [targetPath]); } catch (e) {}
     });
   }
 
   async deleteCourseSingleFile(filename) {
     await syzoj.utils.lock(['Promise::CourseFile', this.id], async () => {
-      await fs.remove(path.join(this.getCourseFilePath(), filename));
+      await fs.remove(syzoj.utils.safePath(this.getCourseFilePath(), filename));
     });
   }
 

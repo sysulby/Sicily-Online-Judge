@@ -173,6 +173,9 @@ app.get('/api/v2/search/course/:id/problems/:keyword*?', async (req, res) => {
 
 app.get('/api/v2/search/sets/:keyword*?', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) return res.send({ success: false });
+
     let Problem = syzoj.model('problem');
     let ProblemSet = syzoj.model('problem_set');
 
@@ -198,6 +201,9 @@ app.get('/api/v2/search/sets/:keyword*?', async (req, res) => {
 
 app.get('/api/v2/search/tags/:keyword*?', async (req, res) => {
   try {
+    const curUser = res.locals.user;
+    if (!curUser) return res.send({ success: false });
+
     let Problem = syzoj.model('problem');
     let ProblemTag = syzoj.model('problem_tag');
 

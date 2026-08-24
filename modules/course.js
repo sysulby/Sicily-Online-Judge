@@ -1033,7 +1033,7 @@ app.get('/course/:id/files/download/:filename?', async (req, res) => {
     if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
 
     let path = require('path');
-    let filename = path.join(course.getCourseFilePath(), req.params.filename);
+    let filename = syzoj.utils.safePath(course.getCourseFilePath(), req.params.filename);
     if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
 
     downloadOrRedirect(req, res, filename, path.basename(filename));
@@ -1062,8 +1062,7 @@ app.get('/course/:id/files/preview/:filename?', async (req, res) => {
 
     if (!req.params.filename) throw new ErrorMessage('请指定文件名。');
 
-    let path = require('path');
-    let filename = path.join(course.getCourseFilePath(), req.params.filename);
+    let filename = syzoj.utils.safePath(course.getCourseFilePath(), req.params.filename);
     if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
 
     res.contentType("application/pdf");

@@ -314,6 +314,24 @@ module.exports = {
       return false;
     }
   },
+  safePath(base, filename) {
+    if (typeof filename !== 'string' || filename.length === 0) throw new ErrorMessage('非法的文件名。');
+
+    const basePath = path.resolve(base);
+    const fullPath = path.resolve(basePath, filename);
+    if (fullPath !== basePath && !fullPath.startsWith(basePath + path.sep)) {
+      throw new ErrorMessage('非法的文件名。');
+    }
+
+    return fullPath;
+  },
+  safeBasename(filename) {
+    if (typeof filename !== 'string') throw new ErrorMessage('非法的文件名。');
+
+    filename = path.basename(filename);
+    if (filename === '.' || filename === '..') throw new ErrorMessage('非法的文件名。');
+    return filename;
+  },
   async saveConfig() {
     let fs = require('fs-extra');
     fs.writeFileAsync(syzoj.configDir, JSON.stringify(syzoj.configInFile, null, 2));
