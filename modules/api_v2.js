@@ -189,6 +189,7 @@ app.get('/api/v2/search/sets/:keyword*?', async (req, res) => {
       }
     });
 
+    sets = await sets.filterAsync(async x => x.is_public || await x.isSupervisior(curUser));
     let result = sets.slice(0, syzoj.config.page.edit_problem_set_list);
 
     result = result.map(x => ({ name: x.title, value: x.id }));
@@ -203,6 +204,9 @@ app.get('/api/v2/search/tags/:keyword*?', async (req, res) => {
   try {
     const curUser = res.locals.user;
     if (!curUser) return res.send({ success: false });
+    if (!await curUser.hasPrivilege('manage_problem') && !await curUser.hasPrivilege('manage_problem_tag')) {
+      return res.send({ success: false });
+    }
 
     let Problem = syzoj.model('problem');
     let ProblemTag = syzoj.model('problem_tag');
@@ -237,28 +241,14 @@ app.apiRouter.post('/api/v2/markdown', async (req, res) => {
   }
 });
 
-function verifyJWT(token) {
-  try {
-    jwt.verify(token, syzoj.config.session_secret);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
 app.apiRouter.get('/api/v2/download/:token', async (req, res) => {
   try {
-    const token = req.params.token, data = jwt.decode(token);
-    if (!data) throw new ErrorMessage("无效的令牌。");
+    const data = jwt.verify(req.params.token, syzoj.config.session_secret);
     if (url.parse(syzoj.utils.getCurrentLocation(req, true)).href !== url.parse(syzoj.config.site_for_download).href) {
       throw new ErrorMessage("无效的下载地址。");
     }
 
-    if (verifyJWT(token)) {
-      res.download(data.filename, data.sendName);
-    } else {
-      res.redirect(data.originUrl);
-    }
+    res.download(data.filename, data.sendName);
   } catch (e) {
     syzoj.log(e);
     res.render('error', {

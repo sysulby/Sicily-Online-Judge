@@ -429,25 +429,25 @@ app.get('/submissions/contest/:id', async (req, res) => {
     }
 
     if (displayConfig.showScore) {
-      let minScore = parseInt(req.body.min_score);
+      let minScore = parseInt(req.query.min_score);
       if (!isNaN(minScore)) query.andWhere('score >= :minScore', { minScore });
-      let maxScore = parseInt(req.body.max_score);
+      let maxScore = parseInt(req.query.max_score);
       if (!isNaN(maxScore)) query.andWhere('score <= :maxScore', { maxScore });
 
       if (!isNaN(minScore) || !isNaN(maxScore)) isFiltered = true;
     }
 
     if (req.query.language) {
-      if (req.body.language === 'submit-answer') {
+      if (req.query.language === 'submit-answer') {
         query.andWhere(new TypeORM.Brackets(qb => {
           qb.orWhere('language = :language', { language: '' })
             .orWhere('language IS NULL');
         }));
-      } else if (req.body.language === 'non-submit-answer') {
+      } else if (req.query.language === 'non-submit-answer') {
         query.andWhere('language != :language', { language: '' })
              .andWhere('language IS NOT NULL');
       } else {
-        query.andWhere('language = :language', { language: req.body.language })
+        query.andWhere('language = :language', { language: req.query.language })
       }
       isFiltered = true;
     }
@@ -460,7 +460,7 @@ app.get('/submissions/contest/:id', async (req, res) => {
     }
 
     if (req.query.problem_id) {
-      problem_id = problems_id[parseInt(req.query.problem_id) - 1] || 0;
+      let problem_id = problems_id[parseInt(req.query.problem_id) - 1] || 0;
       query.andWhere('problem_id = :problem_id', { problem_id })
       isFiltered = true;
     }

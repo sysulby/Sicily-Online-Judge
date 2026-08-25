@@ -93,7 +93,7 @@ export default class Clazz extends Model {
     });
     if (!student) return false;
     if (student.status === 'Accepted' || student.status === 'Waiting') return true;
-    return !this.isEnded() && syzoj.utils.getCurrentDate() - student.last_modified <= 3600 * 24 * 10;
+    return false;
   }
 
   async getMainTeacher() {
