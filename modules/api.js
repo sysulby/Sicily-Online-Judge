@@ -5,8 +5,16 @@ let File = syzoj.model('file');
 const Email = require('../libs/email');
 const jwt = require('jsonwebtoken');
 
-function setLoginCookie(username, password, res) {
-  res.cookie('login', JSON.stringify([username, password]), { maxAge: 10 * 365 * 24 * 60 * 60 * 1000 });
+function setLoginCookie(user, res) {
+  const token = jwt.sign({ userId: user.id }, syzoj.config.session_secret, {
+    expiresIn: '10y'
+  });
+  res.cookie('login', token, {
+    maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: syzoj.production
+  });
 }
 
 // Login
@@ -20,7 +28,7 @@ app.post('/api/login', async (req, res) => {
     else if (user.password !== req.body.password) res.send({ error_code: 1002 });
     else {
       req.session.user_id = user.id;
-      setLoginCookie(user.username, user.password, res);
+      setLoginCookie(user, res);
       res.send({ error_code: 1 });
     }
   } catch (e) {
@@ -156,7 +164,7 @@ app.post('/api/sign_up', async (req, res) => {
       await user.save();
 
       req.session.user_id = user.id;
-      setLoginCookie(user.username, user.password, res);
+      setLoginCookie(user, res);
 
       res.send(JSON.stringify({ error_code: 1 }));
     }
@@ -243,7 +251,7 @@ app.get('/api/sign_up_confirm', async (req, res) => {
     await user.save();
 
     req.session.user_id = user.id;
-    setLoginCookie(user.username, user.password, res);
+    setLoginCookie(user, res);
 
     res.redirect(obj.prevUrl || '/');
   } catch (e) {
@@ -286,7 +294,7 @@ app.get('/api/sign_up/:token', async (req, res) => {
     await user.save();
 
     req.session.user_id = user.id;
-    setLoginCookie(user.username, user.password, res);
+    setLoginCookie(user, res);
 
     res.redirect(obj.prevUrl || '/');
   } catch (e) {

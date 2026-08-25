@@ -7,7 +7,8 @@ const fs = require('fs'),
       commandLineArgs = require('command-line-args'),
       objectPath = require('object-path'),
       deepAssign = require('object-assign-deep'),
-      deepCopy = require('deepcopy');
+      deepCopy = require('deepcopy'),
+      jwt = require('jsonwebtoken');
 
 const optionDefinitions = [
   { name: 'config', alias: 'c', type: String, defaultValue: __dirname + '/config.json' }
@@ -65,7 +66,7 @@ const configEnvOverride = (() => {
   }
   return override;
 })();
-const configOverrideExtra = eval('(' + (process.env['SYZOJ_WEB_CONFIG_OVERRIDE'] || '{}') + ')');
+const configOverrideExtra = JSON.parse(process.env['SYZOJ_WEB_CONFIG_OVERRIDE'] || '{}');
 function loadConfig(config) {
   return deepAssign(deepCopy(configBase), config, configEnvOverride, configOverrideExtra);
 }
@@ -241,7 +242,7 @@ global.syzoj = {
     let FileStore = require('session-file-store')(Session);
     let sessionConfig = {
       secret: this.config.session_secret,
-      cookie: { httpOnly: false },
+      cookie: { httpOnly: true, sameSite: 'lax' },
       rolling: true,
       saveUninitialized: true,
       resave: true,
@@ -249,7 +250,7 @@ global.syzoj = {
     };
     if (syzoj.production) {
       app.set('trust proxy', 1);
-      sessionConfig.cookie.secure = false;
+      sessionConfig.cookie.secure = true;
     }
     app.use(Session(sessionConfig));
 
@@ -269,30 +270,21 @@ global.syzoj = {
         });
       } else {
         if (req.cookies.login) {
-          let obj;
-          try {
-            obj = JSON.parse(req.cookies.login);
-            User.findOne({
-              where: {
-                username: String(obj[0]),
-                password: String(obj[1])
-              }
-            }).then(user => {
-              if (!user) throw null;
+          (async () => {
+            try {
+              const payload = jwt.verify(req.cookies.login, syzoj.config.session_secret);
+              const user = await User.findById(payload.userId);
+              if (!user) throw new Error('Invalid user');
               res.locals.user = user;
               req.session.user_id = user.id;
               next();
-            }).catch(err => {
+            } catch (err) {
               console.log(err);
               res.locals.user = null;
               req.session.user_id = null;
               next();
-            });
-          } catch (e) {
-            res.locals.user = null;
-            req.session.user_id = null;
-            next();
-          }
+            }
+          })();
         } else {
           res.locals.user = null;
           req.session.user_id = null;

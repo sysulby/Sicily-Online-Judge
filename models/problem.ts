@@ -187,7 +187,9 @@ export default class Problem extends Model {
 
   async uploadTestdataSingleFile(filename, filepath, size, noLimit) {
     await syzoj.utils.lock(['Promise::Testdata', this.id], async () => {
+      filename = syzoj.utils.safeBasename(filename);
       let dir = this.getTestdataPath();
+      const targetPath = syzoj.utils.safePath(dir, filename);
       await fs.ensureDir(dir);
 
       let oldSize = 0, list = await this.listTestdata(), replace = false, oldCount = 0;
@@ -202,10 +204,10 @@ export default class Problem extends Model {
       if (!noLimit && oldSize + size > syzoj.config.limit.testdata) throw new ErrorMessage('数据包太大。');
       if (!noLimit && oldCount + (!replace as any as number) > syzoj.config.limit.testdata_filecount) throw new ErrorMessage('数据包中的文件太多。');
 
-      await fs.move(filepath, path.join(dir, filename), { overwrite: true });
+      await fs.move(filepath, targetPath, { overwrite: true });
 
       let execFileAsync = util.promisify(require('child_process').execFile);
-      try { await execFileAsync('dos2unix', [path.join(dir, filename)]); } catch (e) {}
+      try { await execFileAsync('dos2unix', [targetPath]); } catch (e) {}
 
       await fs.remove(this.getTestdataArchivePath());
     });
@@ -213,7 +215,7 @@ export default class Problem extends Model {
 
   async deleteTestdataSingleFile(filename) {
     await syzoj.utils.lock(['Promise::Testdata', this.id], async () => {
-      await fs.remove(path.join(this.getTestdataPath(), filename));
+      await fs.remove(syzoj.utils.safePath(this.getTestdataPath(), filename));
       await fs.remove(this.getTestdataArchivePath());
     });
   }

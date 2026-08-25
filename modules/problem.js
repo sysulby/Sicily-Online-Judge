@@ -858,7 +858,7 @@ app.get('/problem/:id/testdata/download/:filename?', async (req, res) => {
     }
 
     let path = require('path');
-    let filename = req.params.filename ? path.join(problem.getTestdataPath(), req.params.filename) : (problem.getTestdataArchivePath());
+    let filename = req.params.filename ? syzoj.utils.safePath(problem.getTestdataPath(), req.params.filename) : (problem.getTestdataArchivePath());
     if (!await syzoj.utils.isFile(filename)) throw new ErrorMessage('文件不存在。');
 
     downloadOrRedirect(req, res, filename, path.basename(filename));
