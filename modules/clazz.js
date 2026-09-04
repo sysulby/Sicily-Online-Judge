@@ -485,33 +485,6 @@ app.post('/class/:id/approval', async (req, res) => {
 
     if (!clazz.teachers.trim()) throw new ErrorMessage('请先设定任课教师。');
 
-    // only public lessons will be synced
-    if (!clazz.lessons.trim()) {
-      let lessonIDs = await course.getLessons();
-      let templateLessons = (await lessonIDs.mapAsync(async id => await Contest.findById(id))).filter(x => x.is_public);
-      let lessons = await templateLessons.mapAsync(async contest => {
-        let lessonID = (await Contest.create()).id;
-        let lesson = await Contest.create(contest);
-
-        lesson.id = lessonID;
-        lesson.start_time = clazz.start_time;
-        lesson.end_time = clazz.end_time;
-        if (contest.type === 'usaco') lesson.duration = contest.duration;
-        lesson.reg_info = '请独立完成试题。';
-        lesson.reg_token = Math.floor(100000 + Math.random() * 900000).toString();
-        lesson.is_public = false;
-        lesson.hide_statistics = (contest.type === 'noi');
-
-        lesson.holder_id = classID;
-        let ranklist = await ContestRanklist.create();
-        ranklist.ranking_params = {};
-        await ranklist.save();
-        lesson.ranklist_id = ranklist.id;
-
-        return await lesson.save();
-      });
-      clazz.lessons = lessons.map(x => x.id).join('|');
-    }
     clazz.is_public = true;
 
     await clazz.save();
